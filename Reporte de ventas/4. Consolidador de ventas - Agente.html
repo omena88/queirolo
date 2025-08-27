@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Consolidador de Ventas - Agente</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  
+  <style>
+    .reporte-app {
+      font-family: 'Inter', sans-serif;
+      width: 1200px;
+      height: 800px;
+      margin: 0 auto;
+      padding: 10px;
+      display: flex;
+      gap: 20px;
+    }
+    
+    .chat-section {
+      width: 40%;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .actions-section {
+      width: 60%;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+    }
+    
+    .chat-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px 0;
+      margin-bottom: 10px;
+    }
+    
+    .chat-area::-webkit-scrollbar { width: 6px; }
+    .chat-area::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 3px; }
+    .chat-area::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 3px; }
+    
+    .chat-area p, .chat-area div, .chat-area span {
+      margin-bottom: 0 !important;
+      line-height: 1.3 !important;
+    }
+    
+    .typing-indicator { display: inline-flex; align-items: center; gap: 4px; }
+    .typing-dot { width: 8px; height: 8px; border-radius: 50%; background-color: #9CA3AF; animation: typing 1.4s infinite ease-in-out; }
+    .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+    .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+    
+    @keyframes typing {
+      0%, 80%, 100% { transform: scale(0); opacity: 0.5; }
+      40% { transform: scale(1); opacity: 1; }
+    }
+    
+    .fade-in { animation: fadeIn 0.5s ease-in; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .reporte-app select.select-arrow, .reporte-app input.styled-input, .reporte-app input[type="date"].styled-input {
+      color: #111827 !important;
+      background-color: #ffffff !important;
+      border: 2px solid #e5e7eb !important;
+      border-radius: 0.5rem !important;
+      padding: 0.75rem 1rem !important;
+      font-size: 0.875rem !important;
+      line-height: 1.25rem !important;
+      height: auto !important;
+      min-height: 44px !important;
+      width: 100% !important;
+      font-weight: 500 !important;
+      appearance: none !important;
+      -webkit-appearance: none !important;
+    }
+    
+    .reporte-app select.select-arrow {
+      padding-right: 2.5rem !important;
+      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e") !important;
+      background-position: right 0.75rem center !important;
+      background-repeat: no-repeat !important;
+      background-size: 1.25em 1.25em !important;
+    }
+
+    .reporte-app select.select-arrow:focus, .reporte-app input.styled-input:focus, .reporte-app input[type="date"].styled-input:focus {
+      border-color: #3b82f6 !important;
+      box-shadow: 0 0 0 3px rgba(59,130,246,.25) !important;
+      outline: none !important;
+    }
+
+    .hidden { display: none; }
+    
+    @media (max-width: 1200px) {
+      .reporte-app { width: 100%; flex-direction: column; height: auto; }
+      .chat-section { width: 100%; height: 300px; }
+      .actions-section { width: 100%; }
+    }
+    
+    /* Custom styles for report table */
+    .reporte-tabla { width: 100%; border-collapse: collapse; }
+    .reporte-tabla th, .reporte-tabla td { padding: 8px 12px; border: 1px solid #e5e7eb; text-align: left; }
+    .reporte-tabla thead th { background-color: #f9fafb; font-weight: 600; }
+    .reporte-tabla tbody tr:nth-child(even) { background-color: #f9fafb; }
+    .reporte-tabla .column-concepto { font-weight: 600; }
+    .reporte-tabla .fila-total { font-weight: 700; background-color: #f3f4f6; }
+    .clickeable { cursor: pointer; }
+  </style>
+</head>
+<body class="bg-gray-50">
+  <div class="reporte-app">
+    <!-- Sección del Chat -->
+    <div class="chat-section">
+      <div id="chat-messages" class="chat-area space-y-4"></div>
+    </div>
+
+    <!-- Sección de Acciones -->
+    <div class="actions-section">
+      <div class="flex justify-end items-center mb-2">
+         <button id="reset-btn" class="py-2 px-4 text-sm font-semibold rounded-lg border text-gray-600 bg-white hover:bg-gray-100 transition-all duration-200">
+            <i class="fas fa-redo mr-2"></i>Empezar de nuevo
+         </button>
+      </div>
+      <div id="input-area" class="hidden">
+        <!-- Contenido dinámico aquí -->
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Namespace for the app
+      window.app = {};
+
+      // === GLOBAL STATE ===
+      const appState = {
+        reportType: '',
+        csvData: [],
+        selectedCurrency: '',
+        selectedCsvUrl: '',
+        selectedDate: '',
+        ventasDetalladasGlobal: {},
+        semanal: {
+          weekIsoDates: [],
+          csvData: [],
+          selectedCurrency: '',
+          selectedCsvUrl: '',
+          processedData: []
+        }
+      };
+
+      const conceptMapping = {
+        'MC Y VISA': ['DE PROCESOS DE MEDIOS', 'MC', 'VISA'],
+        'DINERS CLUB': ['DINERS CLUB'],
+        'AMEX': ['COMPAN', 'CIA DE SERV']
+      };
+
+      // === CHAT UI FUNCTIONS ===
+      const chat = {
+        showTypingIndicator() {
+          const chatMessages = document.getElementById('chat-messages');
+          const typingDiv = document.createElement('div');
+          typingDiv.id = 'typing-indicator';
+          typingDiv.className = 'flex items-start gap-3 fade-in';
+          typingDiv.innerHTML = `
+            <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+              <i class="fas fa-robot text-white text-sm"></i>
+            </div>
+            <div class="bg-gray-100 rounded-lg rounded-tl-none p-4 max-w-md">
+              <div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>
+            </div>`;
+          chatMessages.appendChild(typingDiv);
+          this.scrollToBottom();
+        },
+        hideTypingIndicator() {
+          document.getElementById('typing-indicator')?.remove();
+        },
+        addBotMessage(message, actions = []) {
+          this.hideTypingIndicator();
+          const chatMessages = document.getElementById('chat-messages');
+          const messageDiv = document.createElement('div');
+          messageDiv.className = 'flex items-start gap-3 fade-in';
+          messageDiv.innerHTML = `
+            <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+              <i class="fas fa-robot text-white text-sm"></i>
+            </div>
+            <div class="bg-gray-100 rounded-lg rounded-tl-none p-4 max-w-md">
+              <p class="text-gray-800">${message}</p>
+            </div>`;
+          
+          if (actions.length > 0) {
+            const actionsContainer = document.createElement('div');
+            actionsContainer.className = 'flex flex-wrap gap-2 mt-3';
+            actions.forEach(action => {
+              const button = document.createElement('button');
+              button.className = 'py-2 px-4 text-sm font-semibold rounded-lg border-transparent text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none transition-all duration-200';
+              button.textContent = action.text;
+              button.onclick = () => {
+                window.app[action.action]();
+                // Disable buttons after click
+                actionsContainer.querySelectorAll('button').forEach(btn => btn.disabled = true);
+              };
+              actionsContainer.appendChild(button);
+            });
+            messageDiv.querySelector('.max-w-md').appendChild(actionsContainer);
+          }
+          chatMessages.appendChild(messageDiv);
+          this.scrollToBottom();
+        },
+        addUserMessage(message) {
+            const chatMessages = document.getElementById('chat-messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'flex items-start gap-3 justify-end fade-in';
+            messageDiv.innerHTML = `
+                <div class="bg-blue-600 text-white rounded-lg rounded-br-none p-4 max-w-md">
+                    <p>${message}</p>
+                </div>
+                <div class="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center flex-shrink-0">
+                    <i class="fas fa-user text-gray-600 text-sm"></i>
+                </div>`;
+            chatMessages.appendChild(messageDiv);
+            this.scrollToBottom();
+        },
+        scrollToBottom() {
+          const chatMessages = document.getElementById('chat-messages');
+          setTimeout(() => chatMessages.scrollTop = chatMessages.scrollHeight, 100);
+        }
+      };
+
+      // === UTILITY FUNCTIONS (from consolidador) ===
+      const utils = {
+        parseDateFromCSV(dateStr) {
+          if (!dateStr?.trim()) return null;
+          
+          const dateParts = dateStr.trim().split('/');
+          if (dateParts.length === 3) {
+            const [day, month, year] = dateParts.map(Number);
+            if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
+              return new Date(Date.UTC(year, month - 1, day));
+            }
+          }
+          return null;
+        },
+
+        formatDateISO(date) {
+          if (!(date instanceof Date) || isNaN(date)) return '';
+          return date.toISOString().split('T')[0];
+        },
+
+        formatDate(date) {
+          if (!(date instanceof Date) || isNaN(date)) return '--/--/----';
+          return date.toLocaleDateString('es-ES', { 
+            day: '2-digit', 
+            month: '2-digit', 
+            year: 'numeric',
+            timeZone: 'UTC'
+          });
+        },
+
+        formatNumber(num) {
+          if (num === 0 || isNaN(num)) return '0.00';
+          return num.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        },
+
+        parseCSVLine(line) {
+          const result = [];
+          let current = '';
+          let inQuotes = false;
+          
+          for (const char of line) {
+            if (char === '"') {
+              inQuotes = !inQuotes;
+            } else if (char === ',' && !inQuotes) {
+              result.push(current.trim());
+              current = '';
+            } else {
+              current += char;
+            }
+          }
+          result.push(current.trim());
+          return result;
+        }
+      };
+      
+      const weekUtils = {
+        getMonday(date) {
+          const dayOfWeek = date.getUTCDay();
+          const diff = date.getUTCDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+          return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), diff));
+        },
+        getWeekDays(fromDate) {
+          const weekDays = [];
+          const startOfWeek = this.getMonday(fromDate);
+          for (let i = 0; i < 7; i++) {
+            const day = new Date(Date.UTC(startOfWeek.getUTCFullYear(), startOfWeek.getUTCMonth(), startOfWeek.getUTCDate() + i));
+            weekDays.push(day);
+          }
+          return weekDays;
+        },
+        populateMonths(yearSelector, monthSelector, weekSelector) {
+            monthSelector.innerHTML = '<option value="">Seleccionar mes</option>';
+            weekSelector.innerHTML = '<option value="">Seleccionar semana</option>';
+            if (!yearSelector.value) return;
+            const months = [
+                { value: '01', name: 'Enero' }, { value: '02', name: 'Febrero' }, { value: '03', name: 'Marzo' },
+                { value: '04', name: 'Abril' }, { value: '05', name: 'Mayo' }, { value: '06', name: 'Junio' },
+                { value: '07', name: 'Julio' }, { value: '08', name: 'Agosto' }, { value: '09', name: 'Septiembre' },
+                { value: '10', name: 'Octubre' }, { value: '11', name: 'Noviembre' }, { value: '12', name: 'Diciembre' }
+            ];
+            months.forEach(month => {
+                const option = document.createElement('option');
+                option.value = month.value;
+                option.textContent = month.name;
+                monthSelector.appendChild(option);
+            });
+        },
+        populateWeeksOfMonth(yearSelector, monthSelector, weekSelector) {
+          weekSelector.innerHTML = '<option value="">Seleccionar semana</option>';
+          if (!yearSelector.value || !monthSelector.value) return;
+          const year = parseInt(yearSelector.value);
+          const month = parseInt(monthSelector.value);
+          const weeks = [];
+          let currentDate = new Date(Date.UTC(year, month - 1, 1));
+          while (currentDate.getUTCMonth() === month - 1) {
+            const weekDays = this.getWeekDays(currentDate);
+            const firstWeekDay = weekDays[0];
+            const lastWeekDay = weekDays[6];
+            const daysInMonth = weekDays.filter(date => date.getUTCMonth() === month - 1).length;
+            if (daysInMonth > 0) {
+              const weekOption = {
+                value: utils.formatDateISO(firstWeekDay),
+                text: `${utils.formatDate(firstWeekDay).slice(0, 5)} al ${utils.formatDate(lastWeekDay).slice(0, 5)}`,
+                dates: weekDays.map(d => utils.formatDateISO(d))
+              };
+              if (!weeks.some(w => w.value === weekOption.value)) weeks.push(weekOption);
+            }
+            currentDate = new Date(Date.UTC(lastWeekDay.getUTCFullYear(), lastWeekDay.getUTCMonth(), lastWeekDay.getUTCDate() + 1));
+            currentDate = this.getMonday(currentDate);
+          }
+          weeks.forEach(week => {
+            const option = document.createElement('option');
+            option.value = week.value;
+            option.textContent = week.text;
+            option.dataset.dates = JSON.stringify(week.dates);
+            weekSelector.appendChild(option);
+          });
+        }
+      };
+
+      // === DATA PROCESSING (from consolidador) ===
+      const dataProcessor = {
+        consolidateConcept(concepto) {
+            const conceptoUpper = concepto.toUpperCase();
+            for (const [consolidatedName, keywords] of Object.entries(conceptMapping)) {
+                if (keywords.some(keyword => conceptoUpper.includes(keyword))) return consolidatedName;
+            }
+            return null;
+        },
+        async loadCSVData(url) {
+            const proxyUrl = 'https://corsproxy.io/?' + url;
+            const response = await fetch(proxyUrl);
+            if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
+            const csvText = await response.text();
+            const lines = csvText.split('\n').filter(line => line.trim() !== '');
+            return lines.map(line => utils.parseCSVLine(line));
+        },
+        processSalesData(csvData, targetDate) {
+            const selectedDateObj = new Date(targetDate + 'T00:00:00.000Z');
+            const selectedDateISO = utils.formatDateISO(selectedDateObj);
+            const ventasConsolidadas = {};
+            const ventasDetalladas = {};
+            csvData.forEach((row, index) => {
+                if (index === 0 || !row || row.length < 4) return;
+                const [fechaStr, concepto = '', proveedor = '', montoStr = '0'] = row;
+                const fecha = utils.parseDateFromCSV(fechaStr);
+                if (!fecha || utils.formatDateISO(fecha) !== selectedDateISO) return;
+                const monto = parseFloat(montoStr.replace(/[^-0-9.]/g, '')) || 0;
+                if (monto > 0) {
+                    const consolidatedConcept = this.consolidateConcept(concepto);
+                    if (consolidatedConcept) {
+                        if (!ventasConsolidadas[consolidatedConcept]) {
+                            ventasConsolidadas[consolidatedConcept] = { cantidad: 0, montoTotal: 0 };
+                            ventasDetalladas[consolidatedConcept] = [];
+                        }
+                        ventasConsolidadas[consolidatedConcept].cantidad += 1;
+                        ventasConsolidadas[consolidatedConcept].montoTotal += monto;
+                        ventasDetalladas[consolidatedConcept].push({ concepto, proveedor, monto });
+                    }
+                }
+            });
+            return { ventasConsolidadas, ventasDetalladas };
+        },
+        procesarDatosSemanal() {
+            if (!appState.semanal.csvData || appState.semanal.csvData.length === 0) return [];
+            const registrosSemana = [];
+            appState.semanal.csvData.forEach((row, rowIndex) => {
+                if (rowIndex === 0 || !row || row.length < 7) return;
+                const [fechaStr, concepto, proveedor, montoStr, , operacion, hora, referencia] = row.map(r => r || '');
+                const fecha = utils.parseDateFromCSV(fechaStr);
+                if (!fecha) return;
+                const fechaISO = utils.formatDateISO(fecha);
+                if (appState.semanal.weekIsoDates.includes(fechaISO)) {
+                    const monto = parseFloat(montoStr.replace(/[^-0-9.]/g, '')) || 0;
+                    const conceptoUpper = concepto.toUpperCase();
+                    if (conceptoUpper.includes('SALDO INICIAL') || conceptoUpper.includes('SALDO FINAL')) return;
+                    if (monto !== 0) {
+                        registrosSemana.push({
+                            fecha: utils.formatDate(fecha), concepto, proveedor, monto, operacion, hora, referencia
+                        });
+                    }
+                }
+            });
+            return registrosSemana;
+        }
+      };
+
+      // === APP LOGIC ===
+      const inputArea = document.getElementById('input-area');
+
+      function showUI(html) {
+        inputArea.innerHTML = html;
+        inputArea.classList.remove('hidden');
+        inputArea.classList.add('fade-in');
+      }
+
+      app.resetApp = () => {
+        // Clear UI
+        document.getElementById('chat-messages').innerHTML = '';
+        const inputArea = document.getElementById('input-area');
+        inputArea.innerHTML = '';
+        inputArea.classList.add('hidden');
+
+        // Reset state
+        appState.reportType = '';
+        appState.csvData = [];
+        appState.selectedCurrency = '';
+        appState.selectedCsvUrl = '';
+        appState.selectedDate = '';
+        appState.ventasDetalladasGlobal = {};
+        appState.semanal = {
+          weekIsoDates: [],
+          csvData: [],
+          selectedCurrency: '',
+          selectedCsvUrl: '',
+          processedData: []
+        };
+        
+        // Restart conversation
+        init();
+      };
+
+      app.startVentaTarjetas = () => {
+        appState.reportType = 'venta-tarjetas';
+        chat.addUserMessage("Venta Tarjetas");
+        chat.showTypingIndicator();
+        setTimeout(() => {
+          chat.addBotMessage("Excelente. Para el consolidado de ventas por tarjeta, primero necesito la fecha.");
+          showUI(`
+            <div class="p-5 bg-white rounded-xl shadow-lg border border-gray-200 space-y-4">
+              <div>
+                <label class="text-sm font-medium text-gray-700">1. Seleccionar fecha</label>
+                <input type="date" id="date-selector" class="styled-input mt-1">
+              </div>
+              <div id="currency-step" class="hidden">
+                <label class="text-sm font-medium text-gray-700">2. Seleccionar moneda</label>
+                <select id="currency-selector" class="select-arrow mt-1">
+                  <option value="">Seleccionar moneda</option>
+                  <option value="PEN" data-url="https://docs.google.com/spreadsheets/d/e/2PACX-1vRRhWBlTXTz5h_v8OIH-3LrKdc6tjqLR15ZG1LlxsFRbZ6867Rn0L3jnWYOUtH6Cv-LQ7QRpULms8ah/pub?gid=0&single=true&output=csv">PEN</option>
+                  <option value="USD" data-url="https://docs.google.com/spreadsheets/d/e/2PACX-1vS9bRPb-3jZj8mBz7Al-4p39nG2ua3WWgva9ieg46GvH9jAg2AYk5oSXpEW1H0lWXEJCFZgSnhCv3z3/pub?gid=0&single=true&output=csv">USD</option>
+                </select>
+              </div>
+              <button id="btn-buscar-ventas" class="py-3 px-6 w-full text-sm font-semibold rounded-lg border-transparent text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none transition-all duration-200" disabled>
+                <i class="fas fa-search"></i> Buscar ventas
+              </button>
+            </div>
+            <div id="tabla-ventas-container" class="mt-4"></div>
+          `);
+          setupVentaTarjetasListeners();
+        }, 1000);
+      };
+      
+      function setupVentaTarjetasListeners() {
+        const dateSelector = document.getElementById('date-selector');
+        const currencySelector = document.getElementById('currency-selector');
+        const btnBuscarVentas = document.getElementById('btn-buscar-ventas');
+        
+        dateSelector.addEventListener('change', function() {
+          appState.selectedDate = this.value;
+          if (appState.selectedDate) {
+            document.getElementById('currency-step').classList.remove('hidden');
+            chat.addBotMessage('Perfecto. Ahora selecciona la moneda.');
+          }
+        });
+        
+        currencySelector.addEventListener('change', function() {
+          const selectedOption = this.options[this.selectedIndex];
+          appState.selectedCurrency = this.value;
+          appState.selectedCsvUrl = selectedOption.dataset.url || '';
+          if (appState.selectedCurrency && appState.selectedCsvUrl) {
+            btnBuscarVentas.disabled = false;
+          }
+        });
+
+        btnBuscarVentas.addEventListener('click', buscarVentasDelDia);
+      }
+
+      async function buscarVentasDelDia() {
+        const btn = document.getElementById('btn-buscar-ventas');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Buscando...';
+        chat.addBotMessage('Estoy buscando las ventas, un momento por favor...');
+
+        try {
+          appState.csvData = await dataProcessor.loadCSVData(appState.selectedCsvUrl);
+          const { ventasConsolidadas, ventasDetalladas } = dataProcessor.processSalesData(appState.csvData, appState.selectedDate);
+          appState.ventasDetalladasGlobal = ventasDetalladas;
+          
+          if (Object.keys(ventasConsolidadas).length > 0) {
+            chat.addBotMessage('¡Listo! Encontré los siguientes resultados.');
+            mostrarVentasConsolidadas(ventasConsolidadas);
+          } else {
+            chat.addBotMessage('No encontré ventas para la fecha seleccionada.');
+            document.getElementById('tabla-ventas-container').innerHTML = `<div class="p-4 text-center bg-gray-100 rounded-lg">No se encontraron ventas.</div>`;
+          }
+        } catch (error) {
+          console.error('Error al buscar ventas:', error);
+          chat.addBotMessage(`Ocurrió un error: ${error.message}`);
+        } finally {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fas fa-search"></i> Buscar ventas';
+        }
+      }
+
+      function mostrarVentasConsolidadas(ventas) {
+        let totalTransacciones = 0;
+        let totalMonto = 0;
+        let tableHTML = `
+          <div class="p-5 bg-white rounded-xl shadow-lg border border-gray-200">
+            <h3 class="font-semibold mb-2">Ventas consolidadas</h3>
+            <table class="reporte-tabla">
+              <thead><tr><th>Medio de pago</th><th>Transacciones</th><th>Monto Total</th></tr></thead>
+              <tbody>`;
+
+        Object.entries(ventas).forEach(([medioPago, datos]) => {
+          tableHTML += `<tr>
+            <td class="column-concepto">${medioPago}</td>
+            <td class="text-center">${datos.cantidad}</td>
+            <td class="text-right">${utils.formatNumber(datos.montoTotal)}</td>
+          </tr>`;
+          totalTransacciones += datos.cantidad;
+          totalMonto += datos.montoTotal;
+        });
+
+        tableHTML += `
+              <tr class="fila-total">
+                <td class="column-concepto">TOTAL</td>
+                <td class="text-center">${totalTransacciones}</td>
+                <td class="text-right">${utils.formatNumber(totalMonto)}</td>
+              </tr>
+            </tbody></table>
+          </div>`;
+        document.getElementById('tabla-ventas-container').innerHTML = tableHTML;
+      }
+
+      app.startVentasSemanales = () => {
+        appState.reportType = 'ventas-semanales';
+        chat.addUserMessage("Ventas Semanales");
+        chat.showTypingIndicator();
+        setTimeout(() => {
+          chat.addBotMessage("Claro. Para generar el reporte de ventas semanales, por favor selecciona el periodo.");
+          showUI(`
+            <div class="p-5 bg-white rounded-xl shadow-lg border border-gray-200 space-y-4">
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                      <label class="text-sm font-medium text-gray-700">Año</label>
+                      <select id="year-selector-semanal" class="select-arrow mt-1">
+                          <option value="">Año</option><option value="2025">2025</option><option value="2026">2026</option>
+                      </select>
+                  </div>
+                  <div>
+                      <label class="text-sm font-medium text-gray-700">Mes</label>
+                      <select id="month-selector-semanal" class="select-arrow mt-1"><option value="">Mes</option></select>
+                  </div>
+                  <div>
+                      <label class="text-sm font-medium text-gray-700">Semana</label>
+                      <select id="week-selector-semanal" class="select-arrow mt-1"><option value="">Semana</option></select>
+                  </div>
+              </div>
+              <div id="currency-step-semanal" class="hidden">
+                  <label class="text-sm font-medium text-gray-700">Moneda</label>
+                  <select id="currency-selector-semanal" class="select-arrow mt-1">
+                      <option value="">Seleccionar moneda</option>
+                      <option value="PEN" data-url="https://docs.google.com/spreadsheets/d/e/2PACX-1vRRhWBlTXTz5h_v8OIH-3LrKdc6tjqLR15ZG1LlxsFRbZ6867Rn0L3jnWYOUtH6Cv-LQ7QRpULms8ah/pub?gid=0&single=true&output=csv">PEN</option>
+                      <option value="USD" data-url="https://docs.google.com/spreadsheets/d/e/2PACX-1vS9bRPb-3jZj8mBz7Al-4p39nG2ua3WWgva9ieg46GvH9jAg2AYk5oSXpEW1H0lWXEJCFZgSnhCv3z3/pub?gid=0&single=true&output=csv">USD</option>
+                  </select>
+              </div>
+              <button id="btn-generar-excel" class="py-3 px-6 w-full text-sm font-semibold rounded-lg border-transparent text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:pointer-events-none transition-all duration-200" disabled>
+                  <i class="fas fa-file-excel"></i> Generar Excel
+              </button>
+            </div>`);
+          setupVentasSemanalesListeners();
+        }, 1000);
+      };
+
+      function setupVentasSemanalesListeners() {
+        const year = document.getElementById('year-selector-semanal');
+        const month = document.getElementById('month-selector-semanal');
+        const week = document.getElementById('week-selector-semanal');
+        const currency = document.getElementById('currency-selector-semanal');
+        const btn = document.getElementById('btn-generar-excel');
+
+        year.addEventListener('change', () => weekUtils.populateMonths(year, month, week));
+        month.addEventListener('change', () => weekUtils.populateWeeksOfMonth(year, month, week));
+        week.addEventListener('change', () => {
+          if (week.value) {
+            document.getElementById('currency-step-semanal').classList.remove('hidden');
+            const selectedOption = week.options[week.selectedIndex];
+            appState.semanal.weekIsoDates = JSON.parse(selectedOption.dataset.dates);
+            chat.addBotMessage('Periodo seleccionado. Ahora elige la moneda.');
+          }
+        });
+        currency.addEventListener('change', function() {
+          const selectedOption = this.options[this.selectedIndex];
+          appState.semanal.selectedCurrency = this.value;
+          appState.semanal.selectedCsvUrl = selectedOption.dataset.url || '';
+          if (appState.semanal.selectedCurrency && appState.semanal.selectedCsvUrl) {
+            btn.disabled = false;
+          }
+        });
+        btn.addEventListener('click', generarExcel);
+      }
+      
+      async function generarExcel() {
+        const btn = document.getElementById('btn-generar-excel');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando...';
+        chat.addBotMessage('Estoy preparando tu archivo Excel, esto puede tardar un momento...');
+        try {
+          appState.semanal.csvData = await dataProcessor.loadCSVData(appState.semanal.selectedCsvUrl);
+          const registrosSemana = dataProcessor.procesarDatosSemanal();
+          if (registrosSemana.length === 0) {
+            chat.addBotMessage('No encontré registros para la semana seleccionada.');
+            return;
+          }
+          const excelData = registrosSemana.map(r => ({
+              'Fecha': r.fecha, 'Concepto': r.concepto, 'Proveedor': r.proveedor, 'Monto': r.monto,
+              '# Operacion': r.operacion, 'Hora': r.hora, 'Referencia': r.referencia
+          }));
+          const ws = XLSX.utils.json_to_sheet(excelData);
+          ws['!cols'] = [{wch:12},{wch:30},{wch:25},{wch:15},{wch:15},{wch:10},{wch:20}];
+          const wb = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(wb, ws, "Ventas_Semanales");
+          
+          const weekSelector = document.getElementById('week-selector-semanal');
+          const period = weekSelector.options[weekSelector.selectedIndex].textContent.replace(/[^\w\s]/g, '').replace(/\s+/g, '_');
+          const fileName = `Ventas_Semanales_${appState.semanal.selectedCurrency}_${period}.xlsx`;
+
+          XLSX.writeFile(wb, fileName);
+          chat.addBotMessage(`¡Tu Excel "${fileName}" ha sido generado y la descarga ha comenzado!`);
+
+        } catch (error) {
+          console.error('Error generando Excel:', error);
+          chat.addBotMessage(`Ocurrió un error al generar el Excel: ${error.message}`);
+        } finally {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fas fa-file-excel"></i> Generar Excel';
+        }
+      }
+
+      // === INITIALIZATION ===
+      function init() {
+        setTimeout(() => {
+          chat.showTypingIndicator();
+          setTimeout(() => {
+            chat.addBotMessage(
+              '¡Hola! 👋 Soy tu Asistente para consolidar ventas. ¿Qué tipo de reporte necesitas generar hoy?',
+              [
+                { text: 'Venta Tarjetas', action: 'startVentaTarjetas' },
+                { text: 'Ventas Semanales', action: 'startVentasSemanales' }
+              ]
+            );
+          }, 1000);
+        }, 500);
+      }
+
+      document.getElementById('reset-btn').addEventListener('click', app.resetApp);
+      init();
+    });
+  </script>
+</body>
+</html>

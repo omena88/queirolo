@@ -1,0 +1,477 @@
+<!--
+  HERO SECTION HTML - INTERFAZ VISUAL
+  
+  Este archivo contiene solo la presentación visual.
+  La lógica de WordPress está en hero-section.php
+  
+  Datos disponibles desde PHP via heroData:
+  - is_logged_in: Estado de login del usuario
+  - agentes_url: URL de la página de agentes
+  - login_url: URL del formulario de login de WordPress
+  - lostpassword_url: URL para recuperar contraseña
+  - login_error: Mensaje de error si existe
+  - show_logout_message: Mostrar mensaje de logout
+-->
+
+<style>
+  .hero-container {
+    position: relative !important;
+    padding: 80px 20px !important;
+    text-align: center !important;
+    font-family: inherit !important;
+    background: transparent !important;
+    overflow: hidden !important;
+  }
+  
+  .hero-title {
+    font-size: 3.5rem !important;
+    font-weight: 700 !important;
+    line-height: 1.2 !important;
+    margin-bottom: 24px !important;
+    color: #202E3A !important;
+    max-width: 800px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+  
+  .hero-gradient-text {
+    background: linear-gradient(135deg, #1EAD7E 0%, #334155 100%) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    background-clip: text !important;
+    color: transparent !important;
+  }
+  
+  .hero-subtitle {
+    font-size: 1.25rem !important;
+    line-height: 1.6 !important;
+    color: #334155 !important;
+    margin-bottom: 40px !important;
+    max-width: 600px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+  
+  .hero-button {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    padding: 16px 32px !important;
+    background-color: #1EAD7E !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 8px !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    transition: all 0.3s ease !important;
+    text-decoration: none !important;
+  }
+  
+  .hero-button:hover {
+    background-color: #16a085 !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 25px rgba(30, 173, 126, 0.3) !important;
+  }
+  
+  .modal-overlay {
+    display: none !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    background-color: rgba(0, 0, 0, 0.5) !important;
+    z-index: 9999 !important;
+  }
+  
+  .modal-overlay.active {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  
+  .modal-content {
+    background: white !important;
+    border-radius: 12px !important;
+    padding: 32px !important;
+    width: 90% !important;
+    max-width: 400px !important;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3) !important;
+  }
+  
+  .modal-header {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    margin-bottom: 24px !important;
+    padding-bottom: 16px !important;
+    border-bottom: 1px solid #e5e7eb !important;
+  }
+  
+  .modal-title {
+    font-size: 1.5rem !important;
+    font-weight: 700 !important;
+    color: #202E3A !important;
+    margin: 0 !important;
+  }
+  
+  .close-button {
+    background: none !important;
+    border: none !important;
+    font-size: 24px !important;
+    cursor: pointer !important;
+    color: #6b7280 !important;
+    padding: 4px !important;
+  }
+  
+  .form-group {
+    margin-bottom: 20px !important;
+  }
+  
+  .form-label {
+    display: block !important;
+    margin-bottom: 8px !important;
+    font-weight: 500 !important;
+    color: #334155 !important;
+    font-size: 14px !important;
+  }
+  
+  .form-input {
+    width: 100% !important;
+    padding: 12px 16px !important;
+    border: 1px solid #d1d5db !important;
+    border-radius: 6px !important;
+    font-size: 16px !important;
+    transition: border-color 0.3s ease !important;
+    box-sizing: border-box !important;
+  }
+  
+  .form-input:focus {
+    outline: none !important;
+    border-color: #1EAD7E !important;
+    box-shadow: 0 0 0 3px rgba(30, 173, 126, 0.1) !important;
+  }
+  
+  .checkbox-group {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin-bottom: 24px !important;
+  }
+  
+  .submit-button {
+    width: 100% !important;
+    padding: 12px !important;
+    background-color: #1EAD7E !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 6px !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    transition: background-color 0.3s ease !important;
+  }
+  
+  .submit-button:hover {
+    background-color: #16a085 !important;
+  }
+  
+  .forgot-password {
+    text-align: center !important;
+    margin-top: 16px !important;
+  }
+  
+  .forgot-password a {
+    color: #3b82f6 !important;
+    text-decoration: none !important;
+    font-size: 14px !important;
+  }
+  
+  .forgot-password a:hover {
+    text-decoration: underline !important;
+  }
+  
+  /* Animaciones mejoradas para el ícono de carga */
+  .loading-spinner {
+    animation: spin 1s linear infinite !important;
+    transform-origin: center !important;
+  }
+  
+  .loading-dots {
+    animation: pulse 1.5s ease-in-out infinite !important;
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+  
+  .submit-button:disabled {
+    opacity: 0.7 !important;
+    cursor: not-allowed !important;
+  }
+  
+  @media (max-width: 768px) {
+    .hero-title {
+      font-size: 2.5rem !important;
+    }
+    
+    .hero-subtitle {
+      font-size: 1.1rem !important;
+    }
+    
+    .hero-container {
+      padding: 60px 16px !important;
+    }
+  }
+</style>
+
+<!-- Hero Section -->
+<div class="hero-container">
+  <h1 class="hero-title">
+    Gestiona todos tus
+    <span class="hero-gradient-text">agentes de IA</span>
+    desde un solo lugar
+  </h1>
+  
+  <p class="hero-subtitle">
+    Centraliza el control de todos tus asistentes de inteligencia artificial en una plataforma única y potente. Optimiza tu flujo de trabajo y maximiza la eficiencia de tus procesos automatizados.
+  </p>
+  
+  <!-- Botón dinámico basado en estado de login -->
+  <button id="hero-main-button" class="hero-button">
+    <svg id="hero-button-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+      <polyline points="10,17 15,12 10,7"/>
+      <line x1="15" x2="3" y1="12" y2="12"/>
+    </svg>
+    <span id="hero-button-text">Ingresar</span>
+  </button>
+</div>
+
+<!-- Login Modal -->
+<div id="login-modal" class="modal-overlay">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="modal-title">Iniciar Sesión</h3>
+      <button class="close-button" onclick="closeModal()">&times;</button>
+    </div>
+    
+    <form id="wp-login-form" method="post" action="">
+      <div class="form-group">
+        <label class="form-label" for="log">Usuario o Email</label>
+        <input class="form-input" type="text" id="log" name="log" placeholder="Ingresa tu usuario o email" required autocomplete="username">
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label" for="pwd">Contraseña</label>
+        <input class="form-input" type="password" id="pwd" name="pwd" placeholder="Ingresa tu contraseña" required autocomplete="current-password">
+      </div>
+      
+      <div class="checkbox-group">
+        <input type="checkbox" id="rememberme" name="rememberme" value="forever">
+        <label for="rememberme" style="color: #334155 !important; font-size: 14px !important;">Recordarme</label>
+      </div>
+      
+      <input type="hidden" name="redirect_to" id="redirect_to">
+      <input type="hidden" name="testcookie" value="1">
+      <input type="hidden" name="wp-submit" value="Log In">
+      
+      <button type="submit" class="submit-button" id="login-submit-btn">
+        <svg id="login-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px; display: inline-block; vertical-align: middle;">
+          <path d="M9 12l2 2 4-4"/>
+          <circle cx="12" cy="12" r="10"/>
+        </svg>
+        <span id="login-button-text">Iniciar Sesión</span>
+      </button>
+    </form>
+    
+    <div class="forgot-password">
+      <a id="forgot-password-link" href="#">¿Olvidaste tu contraseña?</a>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Variables globales para manejar el estado
+  let heroData = window.heroData || {};
+  
+  // Debug: Verificar que los datos se estén pasando correctamente
+  console.log('Hero Data:', heroData);
+  
+  // Inicializar la interfaz cuando el DOM esté listo
+  document.addEventListener('DOMContentLoaded', function() {
+    initializeHeroSection();
+    setupEventListeners();
+    handleLoginStates();
+  });
+  
+  function initializeHeroSection() {
+    const mainButton = document.getElementById('hero-main-button');
+    const buttonIcon = document.getElementById('hero-button-icon');
+    const buttonText = document.getElementById('hero-button-text');
+    const loginForm = document.getElementById('wp-login-form');
+    const forgotLink = document.getElementById('forgot-password-link');
+    const redirectInput = document.getElementById('redirect_to');
+    
+    console.log('Inicializando Hero Section...');
+    console.log('Estado de login:', heroData.is_logged_in);
+    
+    // Configurar URLs desde WordPress
+    if (heroData.login_url) {
+      loginForm.action = heroData.login_url;
+      console.log('URL de login configurada:', heroData.login_url);
+    } else {
+      // Fallback para WordPress estándar
+      loginForm.action = '/wp-login.php';
+      console.log('Usando URL de login por defecto');
+    }
+    
+    if (heroData.lostpassword_url) {
+      forgotLink.href = heroData.lostpassword_url;
+    } else {
+      forgotLink.href = '/wp-login.php?action=lostpassword';
+    }
+    
+    if (heroData.agentes_url) {
+      redirectInput.value = heroData.agentes_url;
+    } else {
+      redirectInput.value = '/agentes';
+    }
+    
+    // Configurar botón principal según estado de login
+    if (heroData.is_logged_in === true) {
+      // Usuario logueado - mostrar botón "Ver agentes"
+      buttonIcon.innerHTML = '<path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/>';
+      buttonText.textContent = 'Ver agentes';
+      mainButton.onclick = function() {
+        window.location.href = heroData.agentes_url || '/agentes';
+      };
+      console.log('Usuario logueado - botón configurado para Ver agentes');
+    } else {
+      // Usuario no logueado - mostrar botón "Ingresar"
+      buttonIcon.innerHTML = '<path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10,17 15,12 10,7"/><line x1="15" x2="3" y1="12" y2="12"/>';
+      buttonText.textContent = 'Ingresar';
+      mainButton.onclick = openModal;
+      console.log('Usuario no logueado - botón configurado para Ingresar');
+    }
+  }
+  
+  function setupEventListeners() {
+    // Modal events
+    const modal = document.getElementById('login-modal');
+    if (modal) {
+      modal.addEventListener('click', function(e) {
+        if (e.target === this) {
+          closeModal();
+        }
+      });
+    }
+    
+    // Escape key to close modal
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        closeModal();
+      }
+    });
+    
+    // Form submission with improved loading animation
+    const loginForm = document.getElementById('wp-login-form');
+    if (loginForm) {
+      loginForm.addEventListener('submit', function(e) {
+        showLoadingState();
+      });
+    }
+  }
+  
+  function openModal() {
+    const modal = document.getElementById('login-modal');
+    if (modal) {
+      modal.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+  }
+  
+  function closeModal() {
+    const modal = document.getElementById('login-modal');
+    if (modal) {
+      modal.classList.remove('active');
+      document.body.style.overflow = 'auto';
+    }
+  }
+  
+  function showLoadingState() {
+    const submitBtn = document.getElementById('login-submit-btn');
+    const loginIcon = document.getElementById('login-icon');
+    const buttonText = document.getElementById('login-button-text');
+    
+    if (submitBtn && loginIcon && buttonText) {
+      // Deshabilitar botón
+      submitBtn.disabled = true;
+      
+      // Cambiar a ícono de carga mejorado
+      loginIcon.innerHTML = '<circle cx="12" cy="12" r="3"/><path d="M12 1v6m0 6v6m11-7h-6m-6 0H1"/>';
+      loginIcon.classList.add('loading-spinner');
+      
+      // Cambiar texto con puntos animados
+      buttonText.innerHTML = 'Procesando<span class="loading-dots">...</span>';
+    }
+  }
+  
+  function handleLoginStates() {
+    // Mostrar errores de login si existen
+    if (heroData.login_error) {
+      openModal();
+      showLoginError(heroData.login_error);
+    }
+    
+    // Mostrar mensaje de logout exitoso
+    if (heroData.show_logout_message) {
+      showLogoutMessage();
+    }
+  }
+  
+  function showLoginError(errorMessage) {
+    const modal = document.querySelector('.modal-content');
+    const form = document.getElementById('wp-login-form');
+    
+    if (modal && form) {
+      const errorDiv = document.createElement('div');
+      errorDiv.style.cssText = 'background-color: #fee2e2 !important; color: #dc2626 !important; padding: 12px !important; border-radius: 6px !important; margin-bottom: 16px !important; font-size: 14px !important; border-left: 4px solid #dc2626 !important;';
+      errorDiv.innerHTML = '<strong>⚠️ Error:</strong> ' + errorMessage;
+      modal.insertBefore(errorDiv, form);
+      
+      // Auto-remover después de 5 segundos
+      setTimeout(() => {
+        if (errorDiv.parentNode) {
+          errorDiv.parentNode.removeChild(errorDiv);
+        }
+      }, 5000);
+    }
+  }
+  
+  function showLogoutMessage() {
+    const successDiv = document.createElement('div');
+    successDiv.style.cssText = 'position: fixed !important; top: 20px !important; right: 20px !important; background-color: #d1fae5 !important; color: #065f46 !important; padding: 12px 20px !important; border-radius: 8px !important; font-size: 14px !important; z-index: 10000 !important; box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important; border-left: 4px solid #10b981 !important;';
+    successDiv.innerHTML = '<strong>✅ Éxito:</strong> Sesión cerrada correctamente.';
+    document.body.appendChild(successDiv);
+    
+    // Auto-remover después de 3 segundos con animación
+    setTimeout(() => {
+      successDiv.style.opacity = '0';
+      successDiv.style.transform = 'translateX(100%)';
+      successDiv.style.transition = 'all 0.3s ease';
+      setTimeout(() => {
+        if (successDiv.parentNode) {
+          successDiv.parentNode.removeChild(successDiv);
+        }
+      }, 300);
+    }, 3000);
+  }
+</script>

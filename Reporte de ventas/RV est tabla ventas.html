@@ -1,0 +1,3841 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reporte de Ventas</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Librerías externas CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <!-- Actualizar jsPDF y autoTable a versiones específicas estables -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+  
+  <!-- Estilos -->
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
+    :root {
+      /* Paleta basada en los colores corporativos proporcionados */
+      --color-principal: #1b8943;      /* Verde corporativo */
+      --color-principal-hover: #157235; /* Verde más oscuro */
+      --color-secundario: #a98f43;     /* Dorado/Marrón corporativo */
+      --color-secundario-hover: #8f7a39; /* Dorado más oscuro */
+      
+      /* Colores complementarios */
+      --color-success: #2ecc71;        /* Verde éxito */
+      --color-warning: #e67e22;        /* Naranja advertencia */
+      --color-danger: #e74c3c;         /* Rojo peligro */
+      
+      /* Fondos y superficies - más oscuros para un tema más elegante */
+      --color-fondo: #f5f5f5;          /* Fondo general más oscuro */
+      --color-superficie: #ffffff;     /* Blanco para tarjetas */
+      --color-superficie-alt: #edf2ed; /* Fondo alternativo con tono verde suave */
+      --color-superficie-sec: #f5f2e6; /* Fondo alternativo con tono dorado suave */
+      
+      /* Textos */
+      --color-texto: #333333;          /* Texto principal casi negro */
+      --color-texto-secundario: #666666; /* Texto secundario gris oscuro */
+      --color-texto-claro: #ffffff;    /* Texto claro/blanco */
+      
+      /* Bordes y separadores */
+      --color-borde: #e0e0e0;          /* Borde claro */
+      --color-borde-enfasis: #cccccc;  /* Borde con énfasis */
+      
+      /* Sombras */
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.1);
+      --shadow-md: 0 2px 4px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+      --shadow-lg: 0 4px 6px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.06);
+      
+      /* Bordes redondeados */
+      --border-radius-sm: 4px;
+      --border-radius: 6px;
+      --border-radius-lg: 8px;
+      
+      /* Espaciado */
+      --spacing-xs: 4px;
+      --spacing-sm: 8px;
+      --spacing-md: 12px;
+      --spacing-lg: 16px;
+      --spacing-xl: 24px;
+      --spacing-xxl: 32px;
+      
+      font-size: 16px;  /* Aumentar tamaño base de fuente */
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--color-fondo);
+      color: var(--color-texto);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      min-height: 100vh;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* Contenedor principal */
+    .reporte-container {
+      max-width: 100%;
+      width: 1380px;
+      margin: 0 auto;
+      padding: var(--spacing-lg);
+      box-sizing: border-box;
+    }
+
+    /* Cabecera con estilo dashboard moderno */
+    .titulo-reporte {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--spacing-xl);
+    }
+    
+    .titulo-reporte h1 {
+      color: var(--color-texto);
+      font-size: 22px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+    }
+    
+    .titulo-reporte h1 i {
+      color: var(--color-principal);
+    }
+    
+    #fecha-reporte {
+      display: inline-block;
+      background-color: var(--color-superficie-alt);
+      color: var(--color-texto-secundario);
+      padding: 6px var(--spacing-md);
+      border-radius: 30px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    /* Card para acordeón de configuración */
+    .config-accordion {
+      background-color: var(--color-superficie);
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow-sm);
+      margin-bottom: var(--spacing-xl);
+      overflow: hidden;
+      border: 1px solid var(--color-borde);
+      transition: box-shadow 0.3s ease;
+    }
+    
+    .config-accordion:hover {
+      box-shadow: var(--shadow-md);
+    }
+    
+    .accordion-header {
+      background-color: var(--color-superficie);
+      padding: var(--spacing-md) var(--spacing-lg);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+      transition: background-color 0.2s ease;
+    }
+    
+    .accordion-header:hover {
+      background-color: var(--color-superficie-alt);
+    }
+    
+    .accordion-header h3 {
+      color: var(--color-texto);
+      font-size: 15px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+    }
+    
+    .accordion-header h3 i {
+      color: var(--color-principal);
+    }
+    
+    .accordion-header i.fas.fa-chevron-down {
+      color: var(--color-texto-secundario);
+      transition: transform 0.3s ease;
+      font-size: 13px;
+    }
+    
+    .accordion-header.active i.fas.fa-chevron-down {
+      transform: rotate(180deg);
+    }
+    
+    .accordion-content {
+      padding: 0;
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease, padding 0.3s ease;
+    }
+    
+    .accordion-content.active {
+      padding: var(--spacing-lg);
+      max-height: 500px;
+    }
+
+    /* Grid para configuración */
+    .config-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: var(--spacing-lg);
+    }
+    
+    .config-item {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-sm);
+    }
+    
+    .config-label {
+      color: var(--color-texto);
+      font-weight: 500;
+      font-size: 13px;
+      margin-bottom: var(--spacing-xs);
+    }
+    
+    .config-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--spacing-sm);
+      width: 100%;
+    }
+
+    /* Inputs y selects estilizados */
+    .styled-selector,
+    input[type="text"],
+    input[type="number"] {
+      background-color: var(--color-superficie);
+      border: 1px solid var(--color-borde);
+      color: var(--color-texto);
+      padding: 8px var(--spacing-md);
+      border-radius: var(--border-radius-sm);
+      font-family: inherit;
+      font-size: 13px;
+      flex-grow: 1;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      min-width: 80px;
+      outline: none;
+    }
+    
+    .styled-selector:focus,
+    input[type="text"]:focus,
+    input[type="number"]:focus {
+      border-color: var(--color-principal);
+      box-shadow: 0 0 0 3px rgba(27, 137, 67, 0.15);
+    }
+    
+    #year-selector { flex-grow: 0.5; min-width: 90px; }
+    #month-selector { flex-grow: 1; min-width: 120px; }
+    #week-selector { flex-grow: 1.5; min-width: 200px; }
+
+    /* Botones modernos */
+    .btn {
+      background-color: var(--color-principal);
+      color: white;
+      border: none;
+      padding: 8px var(--spacing-md);
+      border-radius: var(--border-radius-sm);
+      cursor: pointer;
+      font-size: 13px;
+      font-family: inherit;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+      transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+      white-space: nowrap;
+      box-shadow: var(--shadow-sm);
+    }
+    
+    .btn:hover:not(:disabled) {
+      background-color: var(--color-principal-hover);
+      box-shadow: var(--shadow-md);
+      transform: translateY(-1px);
+    }
+    
+    .btn:active:not(:disabled) {
+      transform: translateY(0);
+      box-shadow: var(--shadow-sm);
+    }
+    
+    .btn:disabled {
+      background-color: var(--color-texto-secundario);
+      cursor: not-allowed;
+      opacity: 0.7;
+      box-shadow: none;
+    }
+    
+    .btn i {
+      font-size: 13px;
+    }
+
+    /* Secciones y cards */
+    .seccion {
+      margin-bottom: var(--spacing-xl);
+    }
+    
+    .seccion-title {
+      color: var(--color-texto);
+      margin-bottom: var(--spacing-md);
+      font-size: 16px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+    }
+    
+    .reporte-ventas-container, 
+    .reporte-inferior-grid > div {
+      background-color: var(--color-superficie);
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow-sm);
+      transition: box-shadow 0.3s ease;
+      overflow: hidden;
+      border: 1px solid var(--color-borde);
+      max-width: 100%;
+    }
+    
+    .reporte-ventas-container:hover,
+    .reporte-inferior-grid > div:hover {
+      box-shadow: var(--shadow-md);
+    }
+    
+    .reporte-inferior-grid {
+      display: grid;
+      grid-template-columns: 44% 28% 28%; /* Volver a la distribución deseada */
+      gap: var(--spacing-lg);
+      width: 100%;
+      max-width: 100%;
+      overflow: hidden;
+      align-items: start; 
+    }
+
+    @media (max-width: 992px) {
+      .reporte-inferior-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Contenedor de tabla con cabecera y padding */
+    .reporte-tabla-container {
+      width: 100%;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .tabla-header {
+      padding: var(--spacing-md) var(--spacing-lg);
+      border-bottom: 1px solid var(--color-borde);
+      background-color: var(--color-superficie);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .tabla-header h3 {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--color-texto);
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+    }
+    
+    .tabla-header h3 i {
+      color: var(--color-principal);
+    }
+    
+    .tabla-body {
+      padding: 0;
+      overflow: hidden;
+    }
+
+    /* Tablas modernas - ajustadas para caber en 1400px */
+    .reporte-tabla {
+      width: 100% !important;
+      max-width: none !important;
+      border-collapse: separate;
+      border-spacing: 0;
+      margin: 0;
+      table-layout: auto; /* Mantener auto para mejor renderizado */
+      position: relative;
+      border-radius: var(--border-radius);
+      overflow: hidden;
+    }
+    
+    /* Ajuste de anchos específicos de columnas para asegurar que quepa */
+    .reporte-tabla th:first-child {
+      width: 80px; /* Fecha - mantener ancho original */
+      text-align: left;
+    }
+    
+    /* Establecer el mismo ancho para todas las columnas de datos sin usar fixed layout */
+    .reporte-tabla th:not(:first-child):not(:last-child) {
+      width: calc((100% - 180px) / 15); /* Distribuir uniformemente restando fecha (80px) y total (100px) */
+    }
+    
+    /* Ancho para la columna total */
+    .reporte-tabla th:last-child {
+      width: 100px;
+    }
+    
+    .reporte-tabla th {
+      background-color: var(--color-superficie-alt);
+      color: var(--color-texto);
+      font-weight: 600;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      font-size: 12px;
+      white-space: normal;
+      word-wrap: break-word;
+      hyphens: auto;
+      vertical-align: middle;
+      height: auto;
+      min-height: 50px;
+      text-align: center;
+      padding: 10px 8px;
+    }
+    
+    .reporte-tabla th, 
+    .reporte-tabla td {
+      position: relative;
+      border-bottom: 1px solid var(--color-borde);
+    }
+    
+    .reporte-tabla td {
+      white-space: nowrap;
+      text-align: right;
+      padding: 10px 8px; /* Aumentado de 6px 1px a 10px 8px */
+      font-size: 12px; /* Aumentado de 10px a 16px */
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Sistema de sombreado de filas y columnas con hover */
+    .reporte-tabla tr:hover td,
+    .reporte-tabla tr:hover th {
+      background-color: rgba(27, 137, 67, 0.15);
+    }
+    
+    /* Efecto para sombrear columnas enteras */
+    /* SE ELIMINAN LAS REGLAS CSS OBSOLETAS PARA EL HOVER DE COLUMNAS */
+    /*
+    .reporte-tabla td,
+    .reporte-tabla th {
+      position: relative;
+    }
+    
+    .reporte-tabla tbody td:hover::after,
+    .reporte-tabla thead th:hover::after {
+      content: '';
+      position: absolute;
+      background-color: rgba(27, 137, 67, 0.15);
+      width: 100%;
+      height: 100000%;
+      left: 0;
+      top: -50000%;
+      z-index: -1;
+      pointer-events: none; /* Para evitar ciclos de hover */
+    /*}
+    
+    /* Aplicamos el mismo efecto a las celdas de la misma columna */
+    /*
+    .reporte-tabla colgroup col:hover,
+    .reporte-tabla colgroup col.hover {
+      background-color: rgba(27, 137, 67, 0.15);
+    }
+    */
+    
+    /* Arreglo específico para columnas */
+    .reporte-tabla td:nth-child(n),
+    .reporte-tabla th:nth-child(n) {
+      position: relative;
+    }
+    
+    .reporte-tabla tbody tr {
+      border-bottom: 1px solid var(--color-borde);
+      transition: background-color 0.2s ease;
+    }
+    
+    .reporte-tabla tbody tr:last-child {
+      border-bottom: none;
+    }
+    
+    .reporte-tabla .column-fecha {
+      font-weight: 600;
+      text-align: left;
+      position: sticky;
+      left: 0;
+      background-color: var(--color-superficie);
+      z-index: 5;
+      border-right: 1px solid var(--color-borde);
+    }
+    
+    .reporte-tabla tbody tr:hover .column-fecha {
+      background-color: rgba(27, 137, 67, 0.15);
+    }
+    
+    .reporte-tabla .fila-total {
+      font-weight: 700;
+      background-color: var(--color-superficie-alt);
+      color: var(--color-principal);
+    }
+    
+    .reporte-tabla .fila-total .column-fecha {
+      background-color: var(--color-superficie-alt);
+    }
+    
+    /* Estilo para el hover de columnas usando JavaScript */
+    .column-hover {
+      background-color: rgba(27, 137, 67, 0.15) !important;
+      position: relative;
+      z-index: 1;
+    }
+    
+    /* Estados y notificaciones */
+    #ocr-status {
+      font-size: 11px;
+      color: var(--color-texto-secundario);
+      font-style: italic;
+      padding: 4px 8px;
+      background-color: var(--color-superficie-alt);
+      border-radius: 4px;
+      display: inline-block;
+      max-width: 200px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    /* Formularios ocultos */
+    #file-input, #tc-image-input {
+      display: none;
+    }
+    
+    /* Responsive para móviles y tablets */
+    @media (max-width: 768px) {
+      .reporte-container {
+        padding: var(--spacing-md);
+      }
+      
+      .titulo-reporte {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-md);
+      }
+      
+      .config-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .reporte-inferior-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .reporte-tabla th, 
+      .reporte-tabla td {
+        padding: 6px 4px;
+        font-size: 11px;
+      }
+      
+      .seccion-title {
+        font-size: 15px;
+      }
+    }
+
+    /* Estilo de pasos secuenciales */
+    .config-steps {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-xl);
+    }
+    
+    .config-step {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-md);
+      padding: var(--spacing-md);
+      border-radius: var(--border-radius);
+      background-color: var(--color-superficie);
+      border: 1px solid var(--color-borde);
+      position: relative;
+    }
+    
+    .config-step:hover {
+      box-shadow: var(--shadow-sm);
+    }
+    
+    .step-header {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-md);
+      margin-bottom: var(--spacing-sm);
+    }
+    
+    .step-number {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 60px;
+      height: 30px;
+      background-color: var(--color-principal);
+      color: var(--color-texto-claro);
+      font-weight: 600;
+      font-size: 14px;
+      border-radius: 15px;
+    }
+    
+    .step-title {
+      font-weight: 600;
+      font-size: 15px;
+      color: var(--color-texto);
+    }
+    
+    .step-content {
+      padding-left: 70px; /* Alinear con el título */
+    }
+    
+    .step-placeholder {
+      color: var(--color-texto-secundario);
+      font-style: italic;
+      font-size: 13px;
+    }
+    
+    .config-step.disabled {
+      opacity: 0.7;
+      background-color: var(--color-superficie-alt);
+    }
+    
+    .config-step.disabled .step-number {
+      background-color: var(--color-texto-secundario);
+    }
+
+    /* Estilos de pasos en grid */
+    .config-steps-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr); /* Cambiado de 6 a 4 */
+      gap: var(--spacing-lg);
+      margin-top: var(--spacing-sm);
+    }
+    
+    .config-step {
+      background-color: var(--color-superficie);
+      border: 1px solid var(--color-borde);
+      border-radius: var(--border-radius);
+      padding: var(--spacing-md);
+      transition: all 0.2s ease;
+    }
+    
+    .config-step:hover {
+      box-shadow: var(--shadow-sm);
+      border-color: var(--color-borde-enfasis);
+    }
+    
+    .step-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: var(--spacing-md);
+      gap: var(--spacing-sm);
+    }
+    
+    .step-number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      background-color: var(--color-principal);
+      color: white;
+      border-radius: 50%;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    
+    .step-header h4 {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--color-texto);
+    }
+    
+    .step-content {
+      padding-left: 0;
+    }
+    
+    .step-placeholder {
+      color: var(--color-texto-secundario);
+      font-style: italic;
+      font-size: 13px;
+      margin: 0;
+      text-align: center;
+    }
+    
+    .config-step.future {
+      background-color: var(--color-superficie-alt);
+      opacity: 0.75;
+    }
+    
+    .config-step.future .step-number {
+      background-color: var(--color-texto-secundario);
+    }
+    
+    /* Estilos para el estado de los pasos */
+    .step-status {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--color-texto-secundario);
+    }
+    
+    .step-status i {
+      font-size: 14px;
+    }
+    
+    .config-step.completed .step-status {
+      color: var(--color-success);
+    }
+    
+    .config-step.active .step-status {
+      color: var(--color-principal);
+    }
+    
+    .config-step.future .step-status {
+      color: var(--color-texto-secundario);
+    }
+    
+    /* Animación de completado */
+    @keyframes checkmarkAppear {
+      0% { transform: scale(0); opacity: 0; }
+      50% { transform: scale(1.5); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    
+    .config-step.completed .step-status i {
+      animation: checkmarkAppear 0.5s ease-out forwards;
+    }
+    
+    /* Estilos para el estado active (paso actual) */
+    .config-step.active {
+      border-color: var(--color-principal);
+      box-shadow: 0 0 0 1px var(--color-principal);
+    }
+    
+    /* Responsive para pasos */
+    @media (max-width: 1200px) {
+      .config-steps-grid {
+        grid-template-columns: repeat(2, 1fr); /* Cambiado de 3 a 2 */
+      }
+    }
+    
+    @media (max-width: 768px) {
+      .config-steps-grid {
+        grid-template-columns: 1fr; /* Cambiado de 2 a 1 */
+      }
+    }
+    
+    /* Eliminado el breakpoint de 600px ya que 768px ahora es 1fr */
+    /*
+    @media (max-width: 600px) {
+      .config-steps-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    */
+
+    /* Estilos para la tabla de resumen de ventas totales */
+    #tabla-resumen-ventas th, 
+    #tabla-resumen-ventas td {
+      text-align: right;
+    }
+    
+    #tabla-resumen-ventas th:first-child, 
+    #tabla-resumen-ventas td:first-child {
+      text-align: left;
+    }
+    
+    /* Columnas USD y TC en gris */
+    #tabla-resumen-ventas th:nth-child(5),
+    #tabla-resumen-ventas td:nth-child(5),
+    #tabla-resumen-ventas th:nth-child(6),
+    #tabla-resumen-ventas td:nth-child(6) {
+      color: #888888;
+      background-color: #f5f5f5;
+    }
+
+    /* Estilos para la distribución 2x2 de secciones inferiores */
+    .seccion-grid-2x2 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      grid-template-rows: repeat(2, auto);
+      gap: var(--spacing-lg);
+      margin-top: var(--spacing-lg);
+    }
+    
+    .seccion-grid-2x2 > div {
+      background-color: var(--color-superficie);
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow-sm);
+      transition: box-shadow 0.3s ease;
+      overflow: hidden;
+      border: 1px solid var(--color-borde);
+    }
+    
+    .seccion-grid-2x2 > div:hover {
+      box-shadow: var(--shadow-md);
+    }
+    
+    /* Responsive para tablets y móviles */
+    @media (max-width: 992px) {
+      .seccion-grid-2x2 {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto;
+      }
+    }
+    
+    /* Estilos específicos para la tabla de venta por tipo */
+    #tabla-venta-tipo th:first-child,
+    #tabla-venta-cliente th:first-child {
+      text-align: left;
+    }
+    
+    #tabla-venta-tipo td,
+    #tabla-venta-cliente td {
+      text-align: right;
+    }
+    
+    /* Separación visual mejorada para la tabla de venta por tipo */
+    #tabla-venta-tipo th, 
+    #tabla-venta-tipo td {
+      position: relative;
+      padding: 12px;
+    }
+    
+    /* Crear una separación visual entre columnas */
+    #tabla-venta-tipo th:not(:last-child):after,
+    #tabla-venta-tipo td:not(:last-child):after {
+      content: '';
+      position: absolute;
+      right: 0;
+      top: 25%;
+      height: 50%;
+      width: 1px;
+      background-color: var(--color-borde);
+    }
+    
+    /* Fondo diferente para las columnas para mejor distinción */
+    #tabla-venta-tipo th:nth-child(2),
+    #tabla-venta-tipo td:nth-child(2) {
+      background-color: rgba(27, 137, 67, 0.05);
+    }
+    
+    #tabla-venta-tipo th:nth-child(3),
+    #tabla-venta-tipo td:nth-child(3) {
+      background-color: rgba(169, 143, 67, 0.05);
+    }
+    
+    /* Estilo para fila de total */
+    #tabla-venta-tipo tr.fila-total {
+      border-top: 2px solid var(--color-principal);
+      font-weight: 700;
+    }
+    
+    #tabla-venta-tipo tr.fila-total td {
+      color: var(--color-principal);
+      font-size: 12px; /* Reducir a 12px para asegurar que sea igual o menor que los otros totales */
+    }
+
+    /* Estilos para la distribución de la columna derecha */
+    .seccion-columna-derecha {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-lg);
+      height: 100%;
+      max-width: 100%;
+      width: 100%;
+    }
+    
+    .seccion-columna-derecha > div {
+      background-color: var(--color-superficie);
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow-sm);
+      transition: box-shadow 0.3s ease;
+      overflow: hidden;
+      border: 1px solid var(--color-borde);
+      flex: 1;
+      max-width: 100%;
+      width: 100%;
+    }
+    
+    /* Eliminar el borde inferior del primer card y el borde superior del segundo */
+    .seccion-columna-derecha > div:first-child {
+      border-bottom: none;
+      border-bottom-left-radius: 0;
+      border-bottom-right-radius: 0;
+    }
+    
+    .seccion-columna-derecha > div:last-child {
+      border-top: none;
+      border-top-left-radius: 0;
+      border-top-right-radius: 0;
+    }
+    
+    .seccion-columna-derecha > div:hover {
+      box-shadow: var(--shadow-md);
+    }
+    
+    @media (max-width: 992px) {
+      .seccion-columna-derecha {
+        flex-direction: column;
+      }
+    }
+
+    /* Estilos para la tabla de ventas por cliente */
+    #tabla-venta-cliente th:first-child {
+      text-align: left;
+    }
+
+    #tabla-venta-cliente td {
+      text-align: right;
+    }
+    
+    /* Estilos para el modal simple */
+    .modal {
+      display: none; /* Oculto por defecto */
+      position: fixed; 
+      z-index: 1001; /* Encima de otros elementos */
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0,0,0,0.5); /* Fondo semi-transparente */
+    }
+    
+    .modal-content {
+      background-color: #fff;
+      margin: 20% auto;
+      padding: 30px;
+      border: 1px solid #ddd;
+      width: fit-content; /* Ancho ajustado al contenido */
+      max-width: 300px;
+      text-align: center;
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow-lg);
+      position: relative;
+      font-size: 16px;
+      color: var(--color-texto);
+    }
+    
+    .close-button {
+      color: #aaa;
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      font-size: 24px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    
+    .close-button:hover,
+    .close-button:focus {
+      color: #333;
+    }
+
+    /* Añadir estilos para los inputs de tipo de cambio */
+    .tc-input {
+      width: 100%;
+      border: 1px solid var(--color-borde);
+      border-radius: var(--border-radius-sm);
+      padding: 4px 6px;
+      font-size: inherit;
+      text-align: right;
+      background-color: #f9f9f9;
+      transition: border-color 0.2s, background-color 0.2s;
+    }
+
+    .tc-input:hover, .tc-input:focus {
+      border-color: var(--color-principal);
+      background-color: white;
+      outline: none;
+    }
+
+    /* Estilos mejorados para la tabla de producción y ocupabilidad */
+    #tabla-produccion-ocup {
+      width: 100%;
+      table-layout: fixed;
+      margin: 0;
+      border-collapse: collapse;
+    }
+
+    #tabla-produccion-ocup th,
+    #tabla-produccion-ocup td {
+      padding: 8px 6px; /* Reducir padding horizontal */
+      word-break: break-word;
+      vertical-align: middle;
+      font-size: 12px;
+    }
+
+    #tabla-produccion-ocup td {
+      text-align: right;
+      font-weight: 600;
+      color: var(--color-principal);
+      /* Eliminar white-space: nowrap para permitir el ajuste de línea */
+    }
+
+    /* Asegurar que la tabla no se salga del contenedor */
+    .reporte-inferior-grid > div:nth-child(3) {
+      max-width: 100%;
+      overflow: hidden;
+      margin-right: 32px; /* Restaurar margen derecho */
+      padding-right: var(--spacing-lg); /* Añadir padding interno a la derecha */
+    }
+
+    .reporte-inferior-grid > div:nth-child(3) .reporte-tabla-container {
+      width: 100%;
+      overflow: hidden;
+    }
+
+    /* Ajuste específico para la tercera columna (Producción) */
+    .reporte-inferior-grid > div:nth-child(3) .tabla-header h3 {
+      font-size: 14px; /* Reducir tamaño si es necesario */
+    }
+  </style>
+</head>
+<body>
+  <!-- Contenido del Body -->
+  <div class="reporte-container">
+    <!-- Título del reporte -->
+    <div class="titulo-reporte">
+      <h1><i class="fas fa-chart-line"></i> Reporte de Ventas</h1>
+      <span id="fecha-reporte">-- Seleccionar periodo --</span>
+    </div>
+    
+    <!-- Acordeón de configuración -->
+    <div class="config-accordion">
+      <div class="accordion-header" id="accordion-toggle">
+        <h3><i class="fas fa-sliders-h"></i> Configuración</h3>
+        <i class="fas fa-chevron-down" id="accordion-icon"></i>
+      </div>
+      <div class="accordion-content" id="config-content">
+         <!-- Pasos en grid de 6 columnas -->
+         <div class="config-steps-grid">
+           <!-- Paso 01 -->
+           <div class="config-step active">
+             <div class="step-header">
+               <div class="step-number">01</div>
+               <h4>Seleccionar periodo</h4>
+               <div class="step-status"><i class="fas fa-sync"></i></div>
+             </div>
+             <div class="step-content">
+               <div class="config-controls">
+                 <select id="year-selector" class="styled-selector">
+                   <option value="">Año</option>
+                   <option value="2024">2024</option>
+                   <option value="2025">2025</option>
+                   <option value="2026">2026</option>
+                 </select>
+                 <select id="month-selector" class="styled-selector">
+                   <option value="">Mes</option>
+                 </select>
+                 <select id="week-selector" class="styled-selector">
+                   <option value="">Semana</option>
+                 </select>
+               </div>
+             </div>
+           </div>
+           
+           <!-- Paso 02 -->
+           <div class="config-step">
+             <div class="step-header">
+               <div class="step-number">02</div>
+               <h4>Cargar datos de ventas</h4>
+               <div class="step-status"><i class="fas fa-circle"></i></div>
+             </div>
+             <div class="step-content">
+               <div class="config-controls">
+                 <button id="btn-cargar-archivo" class="btn">
+                   <i class="fas fa-file-excel"></i> Seleccionar Excel
+                 </button>
+                 <input type="file" id="file-input" accept=".xls,.xlsx">
+               </div>
+             </div>
+           </div>
+           
+           <!-- Paso 03 -->
+           <div class="config-step future">
+             <div class="step-header">
+               <div class="step-number">03</div>
+               <h4>Cargar propinas</h4>
+               <div class="step-status"><i class="fas fa-circle"></i></div>
+             </div>
+             <div class="step-content">
+               <p class="step-placeholder">Seleccione archivo para extraer propinas</p>
+             </div>
+           </div>
+
+           <!-- Paso 04 -->
+           <div class="config-step future">
+             <div class="step-header">
+               <div class="step-number">04</div>
+               <h4>Cargar archivos de producción</h4>
+               <div class="step-status"><i class="fas fa-circle"></i></div>
+             </div>
+             <div class="step-content">
+               <p class="step-placeholder">Seleccione los archivos de producción</p>
+             </div>
+           </div>
+
+           <!-- Paso 05 -->
+           <div class="config-step active">
+             <div class="step-header">
+               <div class="step-number">05</div>
+               <h4>Cargar datos de clientes</h4>
+               <div class="step-status"><i class="fas fa-circle"></i></div>
+             </div>
+             <div class="step-content">
+               <div class="config-controls">
+                 <button id="btn-cargar-clientes" class="btn">
+                   <i class="fas fa-file-excel"></i> Seleccionar Excel
+                 </button>
+                 <input type="file" id="clientes-input" accept=".xls,.xlsx" style="display: none;">
+                 <span id="clientes-nombre" style="font-size: 12px; color: var(--color-texto-secundario); margin-left: 8px;"></span>
+               </div>
+             </div>
+           </div>
+           
+           <!-- Paso 06 -->
+           <div class="config-step future"> <!-- Marcar como future inicialmente -->
+             <div class="step-header">
+               <div class="step-number">06</div>
+               <h4>Descargar reporte PDF</h4>
+               <div class="step-status"><i class="fas fa-circle"></i></div> <!-- Estado inicial -->
+             </div>
+             <div class="step-content">
+               <div class="config-controls">
+                 <button id="btn-exportar-pdf" class="btn"> <!-- Siempre habilitado -->
+                   <i class="fas fa-file-pdf"></i> Generar PDF
+                 </button>
+               </div>
+             </div>
+           </div>
+         </div>
+      </div>
+    </div>
+    
+    <!-- SECCIÓN PRINCIPAL: Tabla de Ventas -->
+    <div class="seccion reporte-ventas-container">
+      <div class="tabla-header">
+        <h3><i class="fas fa-table"></i> Resumen de venta por día</h3>
+      </div>
+      <div class="tabla-body">
+        <div class="reporte-tabla-container">
+          <table class="reporte-tabla" id="tabla-ventas">
+            <colgroup>
+              <col class="column-col-fecha">
+              <col span="1" class="column-col-data">
+              <col span="1" class="column-col-data">
+              <col span="1" class="column-col-data">
+              <col span="1" class="column-col-data">
+              <col span="1" class="column-col-data">
+              <col span="1" class="column-col-data">
+              <col span="1" class="column-col-data">
+              <col span="1" class="column-col-data">
+              <col span="1" class="column-col-data">
+              <col span="1" class="column-col-data">
+            </colgroup>
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>CREDITO</th>
+                <th>DEPOSITO DOLARES</th>
+                <th>DEPOSITO SOLES</th>
+                <th>EFECTIVO DOLARES</th>
+                <th>EFECTIVO SOLES</th>
+                <th>TARJETA DOLARES AMEX-DOL</th>
+                <th>TARJETA DOLARES DC-DOL</th>
+                <th>TARJETA DOLARES MC-DOL</th>
+                <th>TARJETA DOLARES VISA-DOL</th>
+                <th>TARJETA SOLES AMEX-SOL</th>
+                <th>TARJETA SOLES DC-SOL</th>
+                <th>TARJETA SOLES MC-SOL</th>
+                <th>TARJETA SOLES VISA-SOL</th>
+                <th>TRANSFER. DOLARES</th>
+                <th>TRANSFER. SOLES</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+               <!-- Filas de placeholder (igual estructura, los estilos se aplican vía CSS) -->
+              <tr data-date="placeholder-1">
+                <th class="column-fecha">--/--/----</th>
+                <td>--</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td>
+                <td>--</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td>
+                <td>--</td><td>--</td>
+              </tr>
+              <tr data-date="placeholder-2">
+                <th class="column-fecha">--/--/----</th>
+                <td>--</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td>
+                <td>--</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td>
+                <td>--</td><td>--</td>
+              </tr>
+              <tr data-date="placeholder-3">
+                <th class="column-fecha">--/--/----</th>
+                <td>--</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td>
+                <td>--</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td>
+                <td>--</td><td>--</td>
+              </tr>
+              <tr data-date="placeholder-4">
+                <th class="column-fecha">--/--/----</th>
+                <td>--</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td>
+                <td>--</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td>
+                <td>--</td><td>--</td>
+              </tr>
+              <tr data-date="placeholder-5">
+                <th class="column-fecha">--/--/----</th>
+                <td>--</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td>
+                <td>--</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td>
+                <td>--</td><td>--</td>
+              </tr>
+              <tr data-date="placeholder-6">
+                <th class="column-fecha">--/--/----</th>
+                <td>--</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td>
+                <td>--</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td>
+                <td>--</td><td>--</td>
+              </tr>
+              <tr data-date="placeholder-7">
+                <th class="column-fecha">--/--/----</th>
+                <td>--</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td>
+                <td>--</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td>
+                <td>--</td><td>--</td>
+              </tr>
+               <!-- Filas de totales -->
+              <tr class="fila-total">
+                <th class="column-fecha">TOTAL PEN</th>
+                <td>--</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td>
+                <td>--</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td>
+                <td>--</td><td>--</td>
+              </tr>
+              <!-- Nueva fila para TOTAL USD -->
+              <tr class="fila-total fila-total-usd">
+                <th class="column-fecha">TOTAL USD</th>
+                <td>--</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td>
+                <td>--</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td>
+                <td>--</td><td>--</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECCIÓN INFERIOR: Grid de 3 columnas -->
+    <div class="seccion reporte-inferior-grid">
+       <!-- Columna 1: Resumen de ventas totales -->
+       <div>
+         <div class="tabla-header">
+           <h3><i class="fas fa-chart-bar"></i> Resumen de ventas totales</h3>
+         </div>
+         <div class="tabla-body">
+           <div class="reporte-tabla-container">
+             <table class="reporte-tabla" id="tabla-resumen-ventas">
+              <colgroup>
+                <col class="column-col-fecha">
+                <col class="column-col-data">
+                <col class="column-col-data">
+                <col class="column-col-data">
+                <col class="column-col-data">
+                <col class="column-col-data">
+              </colgroup>
+              <thead>
+                <tr>
+                     <th>Fecha</th>
+                     <th>Total PEN</th>
+                     <th>PEN</th>
+                     <th>USD en PEN</th>
+                     <th>USD</th>
+                     <th>T.C.</th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- Las filas se generarán/actualizarán con JavaScript -->
+              </tbody>
+              <tfoot>
+                <tr class="fila-total">
+                     <th>TOTALES</th>
+                     <td>--</td>
+                     <td>--</td>
+                     <td>--</td>
+                     <td>--</td>
+                     <td>--</td>
+                </tr>
+                <tr class="fila-porcentaje">
+                     <th>%</th>
+                     <td>--</td>
+                     <td>--</td>
+                     <td>--</td>
+                     <td>--</td>
+                     <td>--</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Columna 2: Sección derecha dividida en dos -->
+      <div class="seccion-columna-derecha">
+        <!-- Card Superior: Venta por tipo -->
+        <div>
+          <div class="tabla-header">
+            <h3><i class="fas fa-tags"></i> Venta por tipo</h3>
+          </div>
+          <div class="tabla-body">
+            <div class="reporte-tabla-container">
+              <table class="reporte-tabla" id="tabla-venta-tipo">
+                <colgroup>
+                  <col class="column-col-tipo" style="width: 40%;">
+                  <col class="column-col-venta" style="width: 30%;">
+                  <col class="column-col-saldo" style="width: 30%;">
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th>Tipo</th>
+                    <th>Venta PEN</th>
+                    <th>SUBTOTAL</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th>TIENDA DE VINOS</th>
+                    <td>--</td>
+                    <td>--</td>
+                  </tr>
+                  <tr>
+                    <th>PROPINAS</th>
+                    <td>--</td>
+                    <td>--</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card Inferior: Venta por cliente -->
+        <div>
+          <div class="tabla-header">
+            <h3><i class="fas fa-users"></i> Venta por cliente</h3>
+          </div>
+          <div class="tabla-body">
+            <div class="reporte-tabla-container">
+              <table class="reporte-tabla" id="tabla-venta-cliente">
+                <colgroup>
+                  <col class="column-col-tipo" style="width: 50%;">
+                  <col class="column-col-venta" style="width: 25%;">
+                  <col class="column-col-porcentaje" style="width: 25%;">
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th>CLIENTES</th>
+                    <th>TOTAL PEN</th>
+                    <th>%</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th>VARIOS</th>
+                    <td id="varios-total">--</td>
+                    <td id="varios-porcentaje">--</td>
+                  </tr>
+                  <tr>
+                    <th>SANTIAGO QUEIROLO SAC</th>
+                    <td id="queirolo-total">--</td>
+                    <td id="queirolo-porcentaje">--</td>
+                  </tr>
+                  <tr class="fila-total">
+                    <th>TOTAL</th>
+                    <td id="cliente-total">--</td>
+                    <td>100%</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Columna 3: Tendencia Semanal (Ahora con Producción y Ocupabilidad) -->
+      <div>
+        <div class="tabla-header">
+          <h3><i class="fas fa-industry"></i> Producción y Ocupabilidad</h3>
+        </div>
+        <div class="tabla-body">
+          <div class="reporte-tabla-container">
+            <table class="reporte-tabla" id="tabla-produccion-ocup">
+              <colgroup>
+                <col style="width: 50%;">
+                <col style="width: 50%;">
+              </colgroup>
+              <tbody>
+                <tr>
+                  <th style="text-align: left;">PRODUCCION C/ IMP.</th>
+                  <td id="produccion-con-imp-2">--</td>
+                </tr>
+                <tr>
+                  <th style="text-align: left;">PRODUCCION S/ IMP.</th>
+                  <td id="produccion-sin-imp-2">--</td>
+                </tr>
+                <tr>
+                  <th style="text-align: left;">% OCUPABILIDAD</th>
+                  <td id="ocupabilidad-2">--</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Estilos para la distribución de la columna derecha -->
+    <style>
+      .seccion-columna-derecha {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-lg);
+        height: 100%;
+        max-width: 100%;
+        width: 100%;
+      }
+      
+      .seccion-columna-derecha > div {
+        background-color: var(--color-superficie);
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow-sm);
+        transition: box-shadow 0.3s ease;
+        overflow: hidden;
+        border: 1px solid var(--color-borde);
+        flex: 1;
+        max-width: 100%;
+        width: 100%;
+      }
+      
+      .seccion-columna-derecha > div:hover {
+        box-shadow: var(--shadow-md);
+      }
+      
+      @media (max-width: 992px) {
+        .seccion-columna-derecha {
+          flex-direction: column;
+        }
+      }
+    </style>
+  </div>
+
+  <!-- Modal Simple - Eliminar o reemplazar por algo más sutil -->
+  <div id="avanzandoModal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <span class="close-button" id="closeAvanzandoModal">&times;</span>
+      <p>Generando PDF...</p>
+    </div>
+  </div>
+
+  <!-- Scripts externos (iguales) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <!-- Actualizar las versiones de jsPDF y autoTable para asegurar carga correcta -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+  <!-- Usar CDN directo para asegurar carga correcta -->
+  <script src="https://unpkg.com/tesseract.js@4.1.1/dist/tesseract.min.js"></script>
+  <!-- Librería para procesamiento de imágenes (versión estable) -->
+  <script src="https://unpkg.com/jimp@0.16.3/browser/lib/jimp.min.js"></script>
+  
+  <!-- =========================================== -->
+  <!-- === FUNCIONES GLOBALES PARA EL MODAL Y PDF === -->
+  <!-- =========================================== -->
+  <script>
+    // Función mejorada para generar PDF (definida globalmente)
+    function generarPDF() {
+      try {
+        console.log("Iniciando generación de PDF...");
+        
+        // Verificación detallada de la disponibilidad de jsPDF
+        if (typeof window.jspdf === 'undefined') {
+          console.error("Error crítico: La biblioteca jsPDF no está disponible como window.jspdf");
+          alert("Error: No se pudo generar el PDF. Las librerías necesarias no están cargadas correctamente.");
+          return;
+        }
+
+        // Verificar que jsPDF está correctamente cargado
+        if (typeof window.jspdf.jsPDF !== 'function') {
+          console.error("Error crítico: window.jspdf.jsPDF no es una función constructora");
+          alert("Error: No se pudo generar el PDF. Las librerías necesarias no están cargadas correctamente.");
+          return;
+        }
+        
+        console.log("jsPDF encontrado, creando instancia...");
+        
+        // Usar la biblioteca jspdf directamente
+        const { jsPDF } = window.jspdf;
+        
+        // Crear una instancia de jsPDF
+        const pdf = new jsPDF({
+          orientation: 'landscape',
+          unit: 'mm',
+          format: 'a4'
+        });
+        
+        // Verificar que autoTable está disponible como método de la instancia PDF
+        if (typeof pdf.autoTable !== 'function') {
+          console.error("Error crítico: El plugin autoTable no está disponible en la instancia de jsPDF");
+          alert("Error: No se pudo generar el PDF. Las librerías necesarias no están cargadas correctamente.");
+          return;
+        }
+        
+        console.log("jsPDF y autoTable verificados y disponibles, continuando con la generación...");
+        
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        const M = { top: 10, left: 5, right: 5, bottom: 5 };
+        const pageContentWidth = pageWidth - M.left - M.right;
+
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(12);
+        pdf.text(`Reporte de Ventas ${document.getElementById('fecha-reporte').textContent}`, pageWidth / 2, M.top, { align: 'center' });
+
+        const titleSpacing = 3;
+        const tableSpacing = 8; // Aumentado para mayor separación entre secciones
+
+        // Tabla Principal
+        const fechaTotalColWidth = 18;
+        const numDataCols = 15;
+        const dataColWidth = (pageContentWidth - (2 * fechaTotalColWidth)) / numDataCols;
+        
+        console.log("Generando tabla principal...");
+        pdf.autoTable({
+            html: '#tabla-ventas',
+            startY: M.top + 4,
+            margin: { left: M.left, right: M.right },
+            styles: { fontSize: 5.5, cellPadding: 0.8, font: 'helvetica', overflow: 'linebreak' },
+            headStyles: { fillColor: [50, 50, 50], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 6, cellPadding: 1 },
+            theme: 'grid',
+            columnStyles: { 
+                0: { cellWidth: fechaTotalColWidth, halign: 'left' },
+                1: { cellWidth: dataColWidth }, 2: { cellWidth: dataColWidth }, 3: { cellWidth: dataColWidth },
+                4: { cellWidth: dataColWidth }, 5: { cellWidth: dataColWidth }, 6: { cellWidth: dataColWidth },
+                7: { cellWidth: dataColWidth }, 8: { cellWidth: dataColWidth }, 9: { cellWidth: dataColWidth },
+                10: { cellWidth: dataColWidth }, 11: { cellWidth: dataColWidth }, 12: { cellWidth: dataColWidth },
+                13: { cellWidth: dataColWidth }, 14: { cellWidth: dataColWidth }, 15: { cellWidth: dataColWidth },
+                16: { cellWidth: fechaTotalColWidth }
+            },
+            didParseCell: function (hooksData) {
+                const totalRows = ['TOTAL PEN', 'TOTAL USD'];
+                if (hooksData.section === 'body' && totalRows.includes(String(hooksData.row.cells[0]?.raw || '').trim().toUpperCase())) {
+                    Object.values(hooksData.row.cells).forEach(cell => {
+                        cell.styles.fillColor = [50, 50, 50];
+                        cell.styles.textColor = [255, 255, 255];
+                        cell.styles.fontStyle = 'bold';
+                    });
+                }
+            }
+        });
+
+        let finalYVentas = pdf.lastAutoTable.finalY;
+        console.log(`Tabla principal generada, finalY: ${finalYVentas}`);
+
+        // Tablas Inferiores - Distribuidas como en el HTML (3 columnas)
+        const tableSpacingPdf = 4.2; // Aproximación de 16px (var(--spacing-lg)) en mm
+        const startYRow2 = finalYVentas + tableSpacingPdf * 2; // Usar el mismo espaciado vertical
+        
+        // Calcular anchos de columna basados en porcentaje y espaciado
+        const totalGapWidth = tableSpacingPdf * 2;
+        const availableWidth = pageContentWidth - totalGapWidth;
+        const col1PdfWidth = availableWidth * 0.44;
+        const col2PdfWidth = availableWidth * 0.28;
+        const col3PdfWidth = availableWidth * 0.28; // Ancho base de la tercera columna
+        
+        // Calcular posición X de inicio para cada tabla
+        const startX1 = M.left;
+        const startX2 = M.left + col1PdfWidth + tableSpacingPdf;
+        const startX3 = M.left + col1PdfWidth + tableSpacingPdf + col2PdfWidth + tableSpacingPdf;
+        
+        // Ajustar el ancho de la tercera columna para dejar el margen derecho deseado (aprox 32px = 8.5mm)
+        const desiredRightMargin = 8.5; // Margen derecho deseado en mm
+        const effectiveCol3Width = pageContentWidth - startX3 - desiredRightMargin;
+        const effectiveMarginRight3 = M.right + desiredRightMargin;
+
+        pdf.setFontSize(8);
+        pdf.setTextColor(0, 0, 0);
+
+        // === PRIMERA COLUMNA (44%): Resumen Total ===
+        console.log("Generando tabla Resumen...");
+        pdf.text('Resumen de ventas totales', M.left, startYRow2);
+        
+        // --- Inicio: Leer valores actuales de TC antes de generar la tabla --- 
+        const currentTCValues = {};
+        document.querySelectorAll('#tabla-resumen-ventas tbody tr[data-date] .tc-input').forEach(input => {
+            const row = input.closest('tr');
+            const dateISO = row?.dataset.date;
+            if (dateISO && !dateISO.startsWith('placeholder')) {
+                currentTCValues[dateISO] = input.value; 
+            }
+        });
+        console.log("Valores TC actuales leídos para PDF:", currentTCValues);
+        // --- Fin: Leer valores actuales de TC --- 
+        
+        pdf.autoTable({
+            html: '#tabla-resumen-ventas',
+            startY: startYRow2 + titleSpacing,
+            margin: { left: startX1, right: pageWidth - startX1 - col1PdfWidth }, // Definir por ancho
+            tableWidth: col1PdfWidth,
+            styles: { fontSize: 6, cellPadding: 1, font: 'helvetica' },
+            headStyles: { fillColor: [50, 50, 50], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 6.5 },
+            footStyles: { fillColor: [50, 50, 50], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 6.5 },
+            theme: 'striped',
+            didParseCell: function(hooksData) {
+                // Para las celdas de TC (columna 5), usar el valor actual leído previamente
+                if (hooksData.column.index === 5 && hooksData.section === 'body') {
+                    let tcValue = null;
+                    let dateISO = null;
+
+                    // Obtener fecha ISO desde el contenido de la primera celda (Fecha DD/MM/YYYY)
+                    const firstCellContent = hooksData.row?.cells?.[0]?.content || hooksData.row?.cells?.[0]?.text?.[0] || '';
+                    const formattedDate = String(firstCellContent).trim();
+                    
+                    if (/^\d{2}\/\d{2}\/\d{4}$/.test(formattedDate)) {
+                        const parts = formattedDate.split('/');
+                        // Convertir DD/MM/YYYY a YYYY-MM-DD
+                        dateISO = `${parts[2]}-${parts[1]}-${parts[0]}`;
+                    } else {
+                        console.warn("No se pudo parsear la fecha de la primera celda (PDF):", formattedDate, "Fila:", hooksData.row.index);
+                    }
+                    
+                    // Si tenemos una fecha ISO válida, buscar el valor de TC prerregistrado
+                    if (dateISO && currentTCValues.hasOwnProperty(dateISO)) {
+                        tcValue = currentTCValues[dateISO];
+                    } else {
+                       // Si no se pudo obtener el TC (fecha inválida o no encontrada en caché)
+                       console.warn("No se encontró valor de TC en caché para la fecha (PDF):", dateISO, "Fila:", hooksData.row.index);
+                    }
+
+                    // Si se encontró un valor de TC, usarlo. De lo contrario, poner placeholder.
+                    if (tcValue !== null) {
+                        // Asegurarse de que el texto sea un array de strings
+                        hooksData.cell.text = [String(tcValue)]; 
+                    } else {
+                         hooksData.cell.text = ['--']; // Poner placeholder si no hay valor
+                    }
+                }
+            }
+        });
+        const finalYResumen = pdf.lastAutoTable.finalY;
+        console.log(`Tabla Resumen generada, finalY: ${finalYResumen}`);
+
+        // === SEGUNDA COLUMNA (28%): Venta por Tipo y Cliente ===
+        console.log("Generando tabla Venta Tipo...");
+        pdf.text('Venta por tipo', M.left + col1PdfWidth + tableSpacingPdf, startYRow2);
+        pdf.autoTable({
+            html: '#tabla-venta-tipo',
+            startY: startYRow2 + titleSpacing,
+            margin: { left: startX2, right: pageWidth - startX2 - col2PdfWidth }, // Definir por ancho
+            tableWidth: col2PdfWidth,
+            styles: { fontSize: 6, cellPadding: 1, font: 'helvetica' },
+            headStyles: { fillColor: [50, 50, 50], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 6.5 },
+            theme: 'grid'
+        });
+        const finalYTipo = pdf.lastAutoTable.finalY;
+        console.log(`Tabla Venta Tipo generada, finalY: ${finalYTipo}`);
+        
+        // Venta por Cliente (en la misma columna, debajo de Venta por tipo)
+        console.log("Generando tabla Venta Cliente...");
+        pdf.text('Venta por cliente', M.left + col1PdfWidth + tableSpacingPdf, finalYTipo + tableSpacingPdf);
+        pdf.autoTable({
+            html: '#tabla-venta-cliente',
+            startY: finalYTipo + tableSpacingPdf + titleSpacing,
+            margin: { left: startX2, right: pageWidth - startX2 - col2PdfWidth }, // Definir por ancho
+            tableWidth: col2PdfWidth,
+            styles: { fontSize: 6, cellPadding: 1, font: 'helvetica' },
+            headStyles: { fillColor: [50, 50, 50], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 6.5 },
+            theme: 'grid',
+            didParseCell: function (hooksData) {
+                if (hooksData.section === 'body' && String(hooksData.row.cells[0]?.raw || '').trim().toUpperCase() === 'TOTAL') {
+                    Object.values(hooksData.row.cells).forEach(cell => {
+                        cell.styles.fillColor = [50, 50, 50];
+                        cell.styles.textColor = [255, 255, 255];
+                        cell.styles.fontStyle = 'bold';
+                    });
+                }
+            }
+        });
+        const finalYCliente = pdf.lastAutoTable.finalY;
+
+        // === TERCERA COLUMNA (28%): Producción y Ocupabilidad ===
+        console.log("Generando tabla Producción...");
+        pdf.text('Producción y Ocupabilidad', M.left + col1PdfWidth + col2PdfWidth + tableSpacingPdf * 2, startYRow2);
+        pdf.autoTable({
+            html: '#tabla-produccion-ocup',
+            startY: startYRow2 + titleSpacing,
+            margin: { left: startX3, right: effectiveMarginRight3 }, // Usar margen derecho efectivo calculado
+            tableWidth: effectiveCol3Width, // Usar ancho efectivo calculado
+            styles: { fontSize: 6, cellPadding: 1, font: 'helvetica' },
+            didParseCell: function(hooksData) {
+              if (hooksData.section === 'body' && hooksData.column.index === 0) {
+                  hooksData.cell.styles.fontStyle = 'bold';
+              }
+            },
+            theme: 'grid'
+        });
+        const finalYProd = pdf.lastAutoTable.finalY;
+        console.log(`Tabla Producción generada, finalY: ${finalYProd}`);
+
+        // Guardar PDF
+        let periodoSeleccionado = document.getElementById('fecha-reporte').textContent.replace('del ', '').replace(/\//g, '-').replace(' al ', '_');
+        if (periodoSeleccionado.includes('-- Seleccionar periodo --')) {
+            periodoSeleccionado = `_${new Date().toISOString().slice(0, 10)}`;
+        }
+        const nombreArchivo = `Reporte_Ventas_${periodoSeleccionado}.pdf`;
+        
+        console.log(`Guardando PDF como: ${nombreArchivo}`);
+        pdf.save(nombreArchivo);
+        console.log(`PDF generado y guardado: ${nombreArchivo}`);
+        
+        // Activar el paso 6 como completado
+        const paso6 = document.querySelector('.config-step:nth-child(6)');
+        if (paso6) {
+          paso6.classList.remove('active');
+          paso6.classList.add('completed');
+          const statusIcon = paso6.querySelector('.step-status i');
+          if (statusIcon) {
+            statusIcon.className = 'fas fa-check-circle';
+          }
+        }
+      } catch (error) {
+        console.error("Error durante generación del PDF:", error);
+        alert(`Error: No se pudo generar el PDF. Detalles: ${error.message}`);
+      }
+    }
+    
+    // Función para destacar columnas al pasar el mouse
+    function setupTableColumnHover() {
+      const tables = document.querySelectorAll('.reporte-tabla');
+      
+      tables.forEach(table => {
+        const cells = table.querySelectorAll('th, td');
+        
+        cells.forEach(cell => {
+          cell.addEventListener('mouseenter', function() {
+            // Usar parentNode.cells para obtener las celdas de la fila actual
+            // y luego Array.from().indexOf() para obtener el índice correcto
+            const cellIndex = Array.from(this.parentNode.cells).indexOf(this);
+            
+            // Aplicar clase a todas las celdas de la misma columna
+            table.querySelectorAll('tr').forEach(row => {
+              // Asegurarse de que la celda existe en esa fila antes de añadir la clase
+              const cellToHighlight = row.cells[cellIndex];
+              if (cellToHighlight) {
+                cellToHighlight.classList.add('column-hover');
+              }
+            });
+          });
+          
+          cell.addEventListener('mouseleave', function() {
+            // Quitar clase al salir de cualquier celda de la tabla
+            table.querySelectorAll('.column-hover').forEach(highlightedCell => {
+              highlightedCell.classList.remove('column-hover');
+            });
+          });
+        });
+      });
+    }
+  </script>
+  
+  <script>
+    // Mover la definición de exchangeRates y usdColumns aquí para que sean globales
+    let exchangeRates = {}; // Usar let para poder reasignar
+    const usdColumns = [
+      "DEPOSITO DOLARES",
+      "EFECTIVO DOLARES",
+      "TARJETA DOLARES AMEX-DOL",
+      "TARJETA DOLARES DC-DOL",
+      "TARJETA DOLARES MC-DOL",
+      "TARJETA DOLARES VISA-DOL",
+      "TRANSFER. DOLARES"
+    ];
+
+    // Mover funciones auxiliares necesarias al ámbito global
+    function convertToNumber(value) {
+      if (typeof value === 'number') return value;
+      
+      if (typeof value === 'string') {
+        // Limpiar strings como "$123.45" o "S/ 123,45", permitir punto y coma como decimal
+        // Primero, quitar separadores de miles (asumiendo que son comas o espacios)
+        let clean = value.replace(/[, ](?=\d{3})/g, ''); 
+        // Reemplazar coma decimal por punto
+        clean = clean.replace(',', '.');
+        // Quitar caracteres no numéricos excepto punto y signo menos inicial
+        clean = clean.replace(/[^\d.\-]/g, ''); 
+        const num = parseFloat(clean);
+        return isNaN(num) ? 0 : num;
+      }
+      
+      return 0;
+    }
+    
+    function formatNumber(num, decimals = 2, forceInteger = false) {
+      const numericValue = Number(num);
+      if (isNaN(numericValue)) {
+        // Devolver 0 formateado o un string vacío/placeholder si se prefiere
+        return Number(0).toLocaleString('en-US', { 
+          minimumFractionDigits: decimals, 
+          maximumFractionDigits: decimals 
+        });
+      }
+      // Usar toLocaleString para incluir separadores de miles
+      return numericValue.toLocaleString('en-US', { 
+        minimumFractionDigits: decimals, 
+        maximumFractionDigits: decimals 
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      // Configurar captura global de errores (sin cambios)
+      window.onerror = function(msg, url, line, col, error) {
+        console.error('Error global:', {
+          message: msg, url: url, line: line, column: col, error: error, stack: error ? error.stack : 'No stack trace disponible'
+        });
+        return false;
+      };
+
+      // Habilitar el paso 6 y el botón PDF desde el inicio
+      setTimeout(function() {
+        activarPaso6();
+        configurarPaso6();
+      }, 500);
+
+      // Variables para datos y estado
+      let extractedReportData = [];
+      let tiendaVentaTotal = 0; // Total de venta de tienda
+      let propinasTotal = 0; // Total de propinas
+      let ventaTotalGeneral = 0; // Total general de ventas en PEN
+      let produccionConImp = 0; // Producción con impuesto
+      let produccionSinImp = 0; // Producción sin impuesto
+      let ocupabilidad = 0; // Porcentaje de ocupabilidad
+
+      // Constantes
+      const headerSearchReference = 'SECC.';
+      const knownHeaderSample = 'CREDITO';
+      const apiToken = 'apis-token-12950.udHumwDUX2jFHWzATs6Ao8NDPGuq3qx1';
+
+      // == Funciones Auxiliares ==
+      function isDateValue(value) {
+        return value instanceof Date && !isNaN(value);
+      }
+      
+      function isDateString(str) {
+        // Verificar formatos comunes de fecha como DD/MM/YYYY o DD-MM-YYYY
+        return /^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}$/.test(str);
+      }
+      
+      function excelDateToJSDate(serial) {
+        const utc_days = Math.floor(serial - 25569);
+        const utc_value = utc_days * 86400;
+        const date_info = new Date(utc_value * 1000);
+        
+        // Corrección para zona horaria: Crear fecha UTC
+        // Excel no tiene zona horaria, así que interpretamos el número serial como días desde 1900 en UTC.
+        return new Date(Date.UTC(date_info.getUTCFullYear(), date_info.getUTCMonth(), date_info.getUTCDate()));
+      }
+      
+      // Función mejorada para convertir fechas de Excel a JS
+      function convertToDate(value) {
+        if (value instanceof Date && !isNaN(value.getTime())) return value;
+        
+        if (typeof value === 'number') {
+          // Primero verificar si es un número serial de Excel
+          const excelDate = excelDateToJSDate(value);
+          if (!isNaN(excelDate.getTime())) return excelDate;
+        }
+        
+        if (typeof value === 'string') {
+          // Intentar parsear diferentes formatos de fecha
+          let date = null;
+          const trimmedValue = value.trim();
+
+          // Intentar formato DD/MM/YYYY
+          if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(trimmedValue)) {
+            const parts = trimmedValue.split('/');
+            date = new Date(Date.UTC(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0])));
+          } else if (/^\d{4}-\d{2}-\d{2}$/.test(trimmedValue)) {
+            const parts = trimmedValue.split('-');
+            // Usar UTC para evitar problemas de zona horaria al parsear ISO
+            date = new Date(Date.UTC(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2])));
+          } else if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(trimmedValue)) {
+            const parts = trimmedValue.split('-');
+            date = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+          }
+          // Añadir más formatos si es necesario
+          
+          if (date && !isNaN(date.getTime())) return date;
+        }
+        
+        // Si no es string, número ni Date, devolver null
+        return null;
+      }
+      
+      // Funciones de formato
+      function formatDateISO(date) {
+        if (!(date instanceof Date) || isNaN(date)) return '';
+        // Asegurar UTC para consistencia con conversión
+        const year = date.getUTCFullYear();
+        const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(date.getUTCDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      }
+
+      function formatDate(date) {
+        if (!(date instanceof Date) || isNaN(date)) return '--/--/----';
+        // Usar getUTC para mostrar la fecha correcta independientemente de la zona horaria local
+        const day = String(date.getUTCDate()).padStart(2, '0');
+        const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+        const year = date.getUTCFullYear();
+        return `${day}/${month}/${year}`;
+      }
+
+      function formatDateShort(date) {
+        if (!(date instanceof Date) || isNaN(date)) return '--/--';
+        const day = String(date.getUTCDate()).padStart(2, '0');
+        const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+        return `${day}/${month}`;
+      }
+
+      // == Funciones Principales ==
+
+      // Toggle Accordion (adaptado a nuevas clases/estructura si aplica)
+      function toggleAccordion() {
+        const content = document.getElementById('config-content');
+        const header = document.getElementById('accordion-toggle'); // El header completo
+        const icon = document.getElementById('accordion-icon');
+        
+        content.classList.toggle('active');
+        header.classList.toggle('active'); // Añadir/quitar clase al header también
+        // El cambio de icono se maneja con CSS :not(.active) y .active en el header/icono
+      }
+
+      // Populate Months
+      function populateMonths() {
+        const yearSelector = document.getElementById('year-selector');
+        const monthSelector = document.getElementById('month-selector');
+        const weekSelector = document.getElementById('week-selector');
+        
+        monthSelector.innerHTML = '<option value="">Mes</option>';
+        weekSelector.innerHTML = '<option value="">Semana</option>';
+        updateWeekTitle();
+        if (!yearSelector.value) return;
+        
+        // Definir meses en orden correcto con números de dos dígitos como valor
+        const months = [
+          { value: '01', name: 'Enero' }, { value: '02', name: 'Febrero' },
+          { value: '03', name: 'Marzo' }, { value: '04', name: 'Abril' },
+          { value: '05', name: 'Mayo' }, { value: '06', name: 'Junio' },
+          { value: '07', name: 'Julio' }, { value: '08', name: 'Agosto' },
+          { value: '09', name: 'Septiembre' }, { value: '10', name: 'Octubre' },
+          { value: '11', name: 'Noviembre' }, { value: '12', name: 'Diciembre' }
+        ];
+        
+        months.forEach(month => {
+          const option = document.createElement('option');
+          option.value = month.value;
+          option.textContent = month.name;
+          monthSelector.appendChild(option);
+        });
+      }
+      
+      // Populate Weeks of Month
+      function populateWeeksOfMonth() {
+        const yearSelector = document.getElementById('year-selector');
+        const monthSelector = document.getElementById('month-selector');
+        const weekSelector = document.getElementById('week-selector');
+        
+        weekSelector.innerHTML = '<option value="">Semana</option>';
+        updateWeekTitle();
+        if (!yearSelector.value || !monthSelector.value) return;
+        
+        const year = parseInt(yearSelector.value);
+        const month = parseInt(monthSelector.value); // Mes es 1-12
+        
+        const weeks = [];
+        let currentDate = new Date(Date.UTC(year, month - 1, 1)); // Empezar en UTC
+        
+        while (currentDate.getUTCMonth() === month - 1) {
+            const weekDays = getWeekDays(currentDate); // Obtiene semana Lunes-Domingo UTC
+            const firstWeekDay = weekDays[0];
+            const lastWeekDay = weekDays[6];
+
+            // Asegurarse que la semana contenga días del mes seleccionado
+            const daysInMonth = weekDays.filter(date => date.getUTCMonth() === month - 1).length;
+
+            if (daysInMonth > 0) {
+                const weekOption = {
+                  value: formatDateISO(firstWeekDay), // Valor es el ISO del Lunes
+                  text: `${formatDateShort(firstWeekDay)} al ${formatDateShort(lastWeekDay)}`,
+                  dates: weekDays.map(d => formatDateISO(d)) // Guardar ISOs de todos los días
+                };
+
+                // Evitar duplicados si una semana ya fue añadida
+                if (!weeks.some(w => w.value === weekOption.value)) {
+                    weeks.push(weekOption);
+                }
+            }
+
+            // Avanzar al siguiente Lunes para evitar recalcular la misma semana
+            currentDate = new Date(Date.UTC(lastWeekDay.getUTCFullYear(), lastWeekDay.getUTCMonth(), lastWeekDay.getUTCDate() + 1));
+            currentDate = getMonday(currentDate); // Asegurar que es Lunes
+        }
+        
+        weeks.forEach(week => {
+          const option = document.createElement('option');
+          option.value = week.value;
+          option.textContent = week.text;
+          option.dataset.dates = JSON.stringify(week.dates); // Guardar array de ISOs
+          weekSelector.appendChild(option);
+        });
+      }
+      
+      // Obtiene Lunes a Domingo de la semana que contiene fromDate (en UTC)
+      function getWeekDays(fromDate) {
+        const weekDays = [];
+        const startOfWeek = getMonday(fromDate); // Obtiene Lunes UTC
+        for (let i = 0; i < 7; i++) {
+          const day = new Date(Date.UTC(startOfWeek.getUTCFullYear(), startOfWeek.getUTCMonth(), startOfWeek.getUTCDate() + i));
+          weekDays.push(day);
+        }
+        return weekDays;
+      }
+      
+      // Obtiene el Lunes de la semana de la fecha dada (en UTC)
+      function getMonday(date) {
+        const dayOfWeek = date.getUTCDay(); // 0 = Domingo, 1 = Lunes, ... 6 = Sábado
+        const diff = date.getUTCDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1); // Ajuste para Lunes
+        const monday = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), diff));
+        return monday;
+      }
+      
+      // Update Week Title
+      function updateWeekTitle() {
+        const weekSelector = document.getElementById('week-selector');
+        const fechaReporteSpan = document.getElementById('fecha-reporte');
+        
+        let titleText = "-- Seleccionar periodo --";
+        weekIsoDates = []; // Limpiar fechas de la semana anterior
+        
+        if (weekSelector.value) {
+          const selectedOption = weekSelector.options[weekSelector.selectedIndex];
+          titleText = "del " + selectedOption.textContent;
+          if (selectedOption.dataset.dates) {
+            try {
+               weekIsoDates = JSON.parse(selectedOption.dataset.dates); // Guardar las fechas ISO
+               // Cargar tipos de cambio automáticamente
+               fetchExchangeRates(weekIsoDates);
+            } catch (e) {
+               console.error("Error parseando fechas ISO de la semana:", e);
+               weekIsoDates = [];
+            }
+          }
+        }
+        
+        fechaReporteSpan.textContent = titleText;
+        // Actualizar ambas tablas (ventas y TC) con las nuevas fechas
+        updateTableDates(weekIsoDates);
+      }
+      
+      // Función para obtener tipos de cambio de la API
+      async function fetchExchangeRates(dates) {
+        /* 
+        * FUNCIÓN COMENTADA: Esta función originalmente obtenía los tipos de cambio desde una API.
+        * Se ha comentado y reemplazado con valores fijos para evitar consumo de API.
+        * Cuando se requiera volver a activar el consumo desde la API, solo hay que
+        * descomentar esta función y comentar el bloque de tipos de cambio fijos abajo.
+        */
+        
+        // Asegurarse que el fetch está activo y el bloque fijo comentado
+        if (!dates || dates.length === 0) return;
+        
+        try {
+          console.log("Obteniendo tipos de cambio para fechas:", dates);
+          
+          // Crear FormData con las fechas en formato JSON
+          const formData = new FormData();
+          formData.append('dates', JSON.stringify(dates));
+          
+          // Llamar al endpoint PHP
+          const response = await fetch('1.1 tipo de cambio.php', {
+            method: 'POST',
+            body: formData
+          });
+          
+          if (!response.ok) {
+            throw new Error(`Error HTTP: ${response.status}`);
+          }
+          
+          const responseData = await response.json();
+          
+          if (responseData.success) {
+            // Guardar tipos de cambio
+            exchangeRates = responseData.data.rates || {};
+            console.log("Tipos de cambio obtenidos:", exchangeRates);
+            
+            // Actualizar la tabla con los nuevos tipos de cambio
+            updateResumenVentasTable();
+            
+            // Actualizar tabla de tipos de cambio
+            // populateExchangeRateTable(); <-- ELIMINAR ESTA LLAMADA
+          } else {
+            console.error("Error al obtener tipos de cambio:", responseData.message);
+          }
+        } catch (error) {
+          console.error("Error al consultar tipos de cambio:", error);
+        }
+        
+        
+        // TIPOS DE CAMBIO FIJOS
+        // Este bloque reemplaza temporalmente la llamada a la API para evitar consumo innecesario
+        // Cuando se desee volver a los tipos de cambio dinámicos, comentar este bloque y descomentar la función original
+        /*
+        console.log("Utilizando tipos de cambio fijos según configuración");
+        exchangeRates = {
+          "2025-03-31": 3.654,
+          "2025-04-01": 3.677,
+          "2025-04-02": 3.676,
+          "2025-04-03": 3.680,
+          "2025-04-04": 3.667,
+          "2025-04-05": 3.691,
+          "2025-04-06": 3.691
+        };
+        
+        // Agregar también las fechas solicitadas con valor predeterminado
+        if (dates && dates.length > 0) {
+          dates.forEach(date => {
+            if (!exchangeRates[date]) {
+              exchangeRates[date] = 3.670; // Valor predeterminado
+            }
+          });
+          console.log("Tipos de cambio después de agregar fechas solicitadas:", exchangeRates);
+        }
+        */
+      }
+      
+      // Update Table Dates
+      function updateTableDates(isoDatesArray) {
+        const tbodyVentas = document.getElementById('tabla-ventas')?.querySelector('tbody');
+        const tbodyResumen = document.getElementById('tabla-resumen-ventas')?.querySelector('tbody');
+        
+        if (!tbodyVentas || !tbodyResumen) {
+          console.error("updateTableDates: No se encontró tbody de tabla-ventas o tabla-resumen-ventas");
+          return;
+        }
+
+        const rowsVentas = tbodyVentas.querySelectorAll('tr[data-date]');
+        const maxDataRows = 7; 
+
+        // 1. Limpiar y preparar tabla de Ventas (placeholders)
+        rowsVentas.forEach((row, index) => {
+          row.dataset.date = `placeholder-${index + 1}`; 
+          const cell = row.querySelector('.column-fecha');
+          if (cell) cell.textContent = '--/--/----';
+          row.querySelectorAll('td').forEach(td => td.textContent = '--'); // Placeholder para celdas de datos
+        });
+        tbodyVentas.querySelectorAll('.fila-total td').forEach(td => td.textContent = '--');
+
+        // 2. Limpiar y preparar tabla de Resumen de Ventas
+        tbodyResumen.innerHTML = ''; // Limpiar
+  
+        // 3. Poblar ambas tablas con las fechas de la semana (o placeholders)
+        for (let index = 0; index < maxDataRows; index++) {
+           let isoDate = null;
+           let formattedDate = '--/--/----';
+           let date = null;
+
+           if (index < isoDatesArray.length) {
+                   const potentialIsoDate = isoDatesArray[index];
+                   if (/^\d{4}-\d{2}-\d{2}$/.test(potentialIsoDate)) {
+                       isoDate = potentialIsoDate;
+                       const parts = isoDate.split('-');
+                       date = new Date(Date.UTC(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2])));
+                       if (!isNaN(date.getTime())) {
+                           formattedDate = formatDate(date);
+                       } else {
+                           isoDate = null; date = null;
+                       }
+                   } else {
+                       // Fecha inválida
+                   }
+               }
+
+               // 3a. Actualizar tabla de Ventas (fecha y data-date)
+               if (index < rowsVentas.length) {
+                 const rowVentas = rowsVentas[index];
+                 rowVentas.dataset.date = isoDate ? isoDate : `placeholder-${index + 1}`;
+                 const cellVentas = rowVentas.querySelector('th.column-fecha'); // Asegurarse que es th
+                 if (cellVentas) cellVentas.textContent = formattedDate;
+               }
+
+               // 3b. Crear fila en tabla de Resumen de Ventas
+               const newResumenRow = tbodyResumen.insertRow();
+               newResumenRow.dataset.date = isoDate ? isoDate : `placeholder-resumen-${index + 1}`; 
+          
+               // Fecha
+               const cellFecha = newResumenRow.insertCell();
+               cellFecha.textContent = formattedDate;
+               cellFecha.style.textAlign = 'left';
+               
+               // Total PEN
+               const cellTotalPen = newResumenRow.insertCell();
+               cellTotalPen.textContent = "0";
+               cellTotalPen.style.textAlign = 'right';
+               
+               // PEN
+               const cellPen = newResumenRow.insertCell();
+               cellPen.textContent = "0";
+               cellPen.style.textAlign = 'right';
+               
+               // USD en PEN
+               const cellUsdPen = newResumenRow.insertCell();
+               cellUsdPen.textContent = "0";
+               cellUsdPen.style.textAlign = 'right';
+               
+               // USD
+               const cellUsd = newResumenRow.insertCell();
+               cellUsd.textContent = "0";
+               cellUsd.style.textAlign = 'right';
+               
+               // TC
+               const cellTc = newResumenRow.insertCell();
+               cellTc.textContent = "0";
+               cellTc.style.textAlign = 'right';
+        }
+
+        // 4. Repoblar tabla de ventas si hay datos cargados
+        if (extractedReportData.length > 0) {
+            console.log("Llamando a mapExtractedDataToHtmlTable después de actualizar fechas.");
+            mapExtractedDataToHtmlTable();
+        }
+
+        // 5. Repoblar tabla de resumen de ventas si hay datos
+        if (Object.keys(exchangeRates).length > 0) {
+            console.log("Actualizando la tabla de resumen de ventas con las fechas seleccionadas.");
+            updateResumenVentasTable();
+        }
+      }
+
+      // Handle File Select
+      function handleFileSelect(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        // Limpiar datos anteriores
+        extractedReportData = [];
+        tiendaVentaTotal = 0;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, {type: 'array'});
+          const sheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[sheetName];
+          const jsonData = XLSX.utils.sheet_to_json(worksheet, {header: 1, defval: '', raw: true }); // Usar raw:true para consistencia
+          
+          // Buscar la *última* fila que contiene "Secc." en la primera columna
+          let seccIndex = -1;
+          for (let i = 0; i < jsonData.length; i++) {
+              if (jsonData[i].length > 0) {
+                  const firstCell = String(jsonData[i][0] || '').trim();
+                  // Usar includes para ser más flexible ('Secc.', 'Secc', etc.) y case-insensitive
+                  if (firstCell.toUpperCase().includes('SECC')) { 
+                      seccIndex = i; // Guardar el índice, continuar buscando por si hay más abajo
+                  }
+              }
+          }
+
+          if (seccIndex === -1) {
+              alert("No se pudo encontrar la fila que contiene 'Secc.' en la primera columna del Excel.");
+              return;
+          }
+
+          console.log(`Última fila "Secc." encontrada en el índice: ${seccIndex}`);
+          
+          // Extraer 9x17 y procesar fechas
+          extractedReportData = [];
+          const rowLimit = Math.min(seccIndex + 8, jsonData.length - 1);
+          for (let i = seccIndex; i <= rowLimit; i++) {
+            const excelRow = jsonData[i] || [];
+            const newRow = [];
+            for (let j = 0; j < 17; j++) {
+              let rawValue = (j < excelRow.length ? excelRow[j] : '');
+              let processedValue = rawValue;
+              // Procesar la primera columna (fecha) después de la fila de encabezado
+              if (i > seccIndex && j === 0) {
+                if (rawValue !== '' && rawValue !== null) {
+                  const dateAttempt = convertToDate(rawValue);
+                  if (dateAttempt) {
+                    processedValue = dateAttempt;
+                  } else {
+                    console.warn(`No se pudo convertir a fecha el valor crudo: ${rawValue} en fila ${i}`);
+                    processedValue = null;
+                  }
+                } else {
+                  processedValue = null;
+                }
+              }
+              newRow.push(processedValue); // Guardar el valor procesado (Date o crudo)
+            }
+            extractedReportData.push(newRow);
+          }
+          
+          console.log("Datos Procesados Extraídos (9x17, con fechas como Date):", extractedReportData);
+
+          // Extraer datos de venta por tipo
+          extractVentasPorTipo(jsonData);
+
+          // Llamar a la función de mapeo para poblar la tabla existente
+          mapExtractedDataToHtmlTable();
+          
+          // Marcar paso 2 como completado
+          const paso2 = document.querySelector('.config-step:nth-child(2)');
+          if (paso2) {
+            paso2.classList.remove('active');
+            paso2.classList.add('completed');
+            const statusIcon = paso2.querySelector('.step-status i');
+            if (statusIcon) {
+              statusIcon.className = 'fas fa-check-circle';
+            }
+          }
+          
+          // Actualizar estado de pasos
+          actualizarEstadoPasos();
+        };
+        reader.readAsArrayBuffer(file);
+      }
+
+      // Mapear datos Excel a tabla HTML
+      function mapExtractedDataToHtmlTable() {
+          console.log("--- mapExtractedDataToHtmlTable INICIO ---");
+          const tbody = document.getElementById('tabla-ventas')?.querySelector('tbody');
+          if (!tbody) {
+              console.error("mapExtractedDataToHtmlTable: No se encontró tbody de #tabla-ventas.");
+              return;
+          }
+          if (extractedReportData.length < 2) { // Necesita encabezados + datos
+              console.warn("mapExtractedDataToHtmlTable: No hay suficientes datos extraídos del Excel.");
+              // Opcional: Limpiar tabla HTML aquí si se desea
+              return;
+          }
+
+          // Obtener encabezados del HTML y del Excel (fila 0 de datos extraídos)
+          const htmlHeaders = Array.from(document.querySelectorAll('#tabla-ventas thead th')).map(th => th.textContent.trim());
+          const excelHeaders = extractedReportData[0].map(h => String(h || '').trim());
+          console.log("Encabezados HTML:", htmlHeaders);
+          console.log("Encabezados Excel:", excelHeaders);
+
+          // Crear mapa de datos Excel por fecha ISO
+          const reportDataMap = new Map();
+          // Iterar datos extraídos (desde fila 1, saltar encabezado Excel)
+          for (let i = 1; i < extractedReportData.length; i++) {
+              const row = extractedReportData[i];
+              const dateValue = row[0]; // Debería ser un objeto Date
+              if (dateValue instanceof Date && !isNaN(dateValue.getTime())) {
+                  const dateKeyISO = formatDateISO(dateValue);
+                  reportDataMap.set(dateKeyISO, row); // Clave: ISO, Valor: array fila procesada
+              } else {
+                  // Podría ser la fila TOTAL PEN u otra fila sin fecha válida
+                  // console.log(`Fila ${i} de datos extraídos no tiene fecha válida:`, row);
+              }
+          }
+          console.log("Mapa de datos Excel construido:", reportDataMap);
+
+          // Referencias a las filas HTML
+          const htmlRows = tbody.querySelectorAll('tr[data-date]'); // Filas de datos diarios
+          const totalPenRowHtml = tbody.querySelector('.fila-total');
+          const totalUsdRowHtml = tbody.querySelector('.fila-total-usd');
+
+          // Limpiar celdas de datos numéricos en HTML antes de poblar
+          htmlRows.forEach(row => {
+              row.querySelectorAll('td').forEach(td => td.textContent = formatNumber(0, 2, true)); // Poner 0 sin decimales
+          });
+          if (totalPenRowHtml) {
+              totalPenRowHtml.querySelectorAll('td').forEach(td => td.textContent = formatNumber(0, 2, true));
+          }
+          if (totalUsdRowHtml) {
+              totalUsdRowHtml.querySelectorAll('td').forEach(td => td.textContent = formatNumber(0, 2, true));
+          }
+
+          // Objetos para acumular datos para TOTAL USD
+          const valoresUsdPorDia = {}; // Para almacenar {dateISO: {headerName: value}}
+          let totalGeneralPen = 0;
+
+          // Poblar filas de datos diarios en HTML
+          htmlRows.forEach(htmlRow => {
+              const htmlDateISO = htmlRow.dataset.date;
+              let dailyRowTotalPen = 0; // Inicializar suma horizontal para esta fila
+
+              if (!htmlDateISO || htmlDateISO.startsWith("placeholder")) {
+                  return; // Saltar placeholders
+              } else {
+                  const excelDayData = reportDataMap.get(htmlDateISO);
+                  const exchangeRate = exchangeRates[htmlDateISO] || 0;
+
+                  if (excelDayData) {
+                      // Inicializar acumulador para este día
+                      valoresUsdPorDia[htmlDateISO] = {};
+
+                      // Iterar celdas de datos HTML (td)
+                      htmlRow.querySelectorAll('td').forEach((htmlCell, htmlCellIndex) => {
+                          const htmlHeaderIndex = htmlCellIndex + 1; // Índice del encabezado HTML (fecha es 0)
+                          const htmlHeader = htmlHeaders[htmlHeaderIndex];
+                          if (!htmlHeader || htmlHeader === 'Total') return; // Saltar si no hay header o es Total general
+
+                          // Buscar índice de este encabezado en los encabezados del Excel
+                          const excelHeaderIndex = excelHeaders.indexOf(htmlHeader);
+
+                          if (excelHeaderIndex !== -1 && excelHeaderIndex < excelDayData.length) {
+                              // Encabezado encontrado en Excel
+                              const excelRawValue = excelDayData[excelHeaderIndex];
+                              const numericValue = convertToNumber(excelRawValue);
+                              htmlCell.textContent = formatNumber(numericValue, 2, true);
+
+                              // Acumular para el total horizontal de la fila 
+                              // No discriminamos por tipo de columna, todos los valores contribuyen al total
+                              dailyRowTotalPen += numericValue;
+                              
+                              // Guardar valores de columnas USD para calcular TOTAL USD
+                              if (usdColumns.includes(htmlHeader) && exchangeRate > 0) {
+                                  valoresUsdPorDia[htmlDateISO][htmlHeader] = numericValue;
+                              }
+                          } else {
+                              // Encabezado NO encontrado en Excel o fuera de rango, mantener 0.00
+                              htmlCell.textContent = formatNumber(0, 2, true);
+                          }
+                      });
+
+                      // Poblar la celda Total de la fila diaria
+                      const totalCellDaily = htmlRow.querySelector("td:last-child"); // Asumiendo que Total es siempre la última
+                      if (totalCellDaily) {
+                          totalCellDaily.textContent = formatNumber(dailyRowTotalPen, 2, true);
+                      }
+                      
+                      // Acumular para el total general en PEN
+                      totalGeneralPen += dailyRowTotalPen;
+                  } else {
+                      // No se encontró data Excel para esta fecha, mantener 0.00 (ya limpiado)
+                      // Asegurar que el total de la fila también sea 0.00
+                  }
+              }
+          });
+
+          // Calcular y llenar fila TOTAL PEN (basado SIEMPRE en suma de días)
+          if (totalPenRowHtml) {
+              console.log("Poblando TOTAL PEN directamente desde la última fila del Excel...");
+              const excelTotalRowIndex = extractedReportData.length - 1;
+              const excelTotalRowData = extractedReportData[excelTotalRowIndex];
+  
+              // Llenar la fila TOTAL PEN HTML
+              totalPenRowHtml.querySelectorAll('td').forEach((htmlCell, htmlCellIndex) => {
+                  const htmlHeaderIndex = htmlCellIndex + 1;
+                  const htmlHeader = htmlHeaders[htmlHeaderIndex];
+                  if (!htmlHeader) return; // Si no hay encabezado HTML para esta celda, saltar
+  
+                  const excelHeaderIndex = excelHeaders.indexOf(htmlHeader);
+                  let rawValueFromExcelTotal = '';
+    
+                  if (excelHeaderIndex !== -1 && excelHeaderIndex < excelTotalRowData.length) {
+                      // Tomar valor directamente de la fila total del Excel
+                      rawValueFromExcelTotal = excelTotalRowData[excelHeaderIndex];
+                  }
+    
+                  // Convertir y formatear el valor obtenido
+                  const numericValue = convertToNumber(rawValueFromExcelTotal);
+                  htmlCell.textContent = formatNumber(numericValue, 2, true);
+                  
+                  // Si es la última celda (Total), formateamos con S/ delante
+                  if (htmlHeader === 'Total') {
+                      htmlCell.textContent = "S/ " + htmlCell.textContent;
+                      // Guardar el total general en PEN para la tabla de venta por tipo
+                      ventaTotalGeneral = numericValue;
+                  }
+              });
+          } else {
+              console.error("mapExtractedDataToHtmlTable: No se encontró la fila TOTAL PEN HTML.");
+          }
+          
+          // Calcular y poblar la fila TOTAL USD con conversión de tipo de cambio
+          if (totalUsdRowHtml) {
+              console.log("Calculando TOTAL USD con conversión de tipo de cambio...");
+              
+              // Inicializar valores para el total USD por columna
+              const totalUsdPorColumna = {};
+              usdColumns.forEach(col => { totalUsdPorColumna[col] = 0; });
+              
+              // Procesar cada día y aplicar tipo de cambio
+              Object.keys(valoresUsdPorDia).forEach(fechaISO => {
+                  const datosUsdDia = valoresUsdPorDia[fechaISO];
+                  const exchangeRate = exchangeRates[fechaISO] || 0;
+                  
+                  if (exchangeRate > 0) {
+                      // Sumar valores aplicando conversión de tipo de cambio
+                      usdColumns.forEach(colUsd => {
+                          const valorUsdEnSoles = datosUsdDia[colUsd] || 0;
+                          // Convertir de soles a dólares dividiendo por el tipo de cambio
+                          const valorEnUsd = valorUsdEnSoles / exchangeRate;
+                          totalUsdPorColumna[colUsd] += valorEnUsd;
+                      });
+                  }
+              });
+              
+              // Mostrar los totales USD acumulados en cada columna
+              totalUsdRowHtml.querySelectorAll('td').forEach((htmlCell, htmlCellIndex) => {
+                  const htmlHeaderIndex = htmlCellIndex + 1;
+                  const htmlHeader = htmlHeaders[htmlHeaderIndex];
+                  
+                  if (htmlHeader === 'Total') {
+                      // Calcular suma total de columnas USD (ya en dólares)
+                      let totalUsd = 0;
+                      Object.values(totalUsdPorColumna).forEach(valor => {
+                          totalUsd += valor;
+                      });
+                      htmlCell.textContent = "$ " + formatNumber(totalUsd, 2, true);
+                  } else if (usdColumns.includes(htmlHeader)) {
+                      // Mostrar el valor en dólares para esta columna
+                      htmlCell.textContent = formatNumber(totalUsdPorColumna[htmlHeader] || 0, 2, true);
+                  } else {
+                      // Para columnas que no son USD, mostrar --
+                      htmlCell.textContent = '--';
+                  }
+              });
+              
+              console.log("Total en USD calculado");
+          } else {
+              console.error("mapExtractedDataToHtmlTable: No se encontró la fila TOTAL USD HTML.");
+          }
+
+          console.log("--- mapExtractedDataToHtmlTable FIN ---");
+          
+          // Actualizar la tabla de resumen de ventas
+          updateResumenVentasTable();
+          
+          // Actualizar la tabla de venta por tipo
+          updateVentasPorTipoTable();
+      }
+
+      // Actualizar tabla de resumen de ventas
+      function updateResumenVentasTable() {
+        const tbody = document.getElementById('tabla-resumen-ventas')?.querySelector('tbody');
+        const tfoot = document.getElementById('tabla-resumen-ventas')?.querySelector('tfoot');
+        if (!tbody || !tfoot) {
+          console.error("updateResumenVentasTable: No se encontró tbody/tfoot de #tabla-resumen-ventas");
+          return;
+        }
+        
+        // Columnas en soles y dólares
+        const penColumns = [
+          "CREDITO",
+          "DEPOSITO SOLES",
+          "EFECTIVO SOLES",
+          "TARJETA SOLES AMEX-SOL",
+          "TARJETA SOLES DC-SOL",
+          "TARJETA SOLES MC-SOL",
+          "TARJETA SOLES VISA-SOL",
+          "TRANSFER. SOLES"
+        ];
+        
+        // Necesitamos la tabla principal para obtener los datos de ventas
+        const tbodyVentas = document.getElementById('tabla-ventas')?.querySelector('tbody');
+        if (!tbodyVentas) {
+          console.error("updateResumenVentasTable: No se encontró tbody de #tabla-ventas");
+          return;
+        }
+        
+        // Obtener los headers de la tabla de ventas
+        const ventasHeaders = Array.from(document.querySelectorAll('#tabla-ventas thead th')).map(th => th.textContent.trim());
+        
+        let totalGenPEN = 0;
+        let totalGenOnlyPEN = 0;
+        let totalGenUSDenPEN = 0;
+        let totalGenUSD = 0;
+        
+        // Función para recalcular fila al cambiar TC
+        function recalcularFila(input) {
+          const fila = input.closest('tr');
+          const dateISO = fila.dataset.date;
+          if (!dateISO || dateISO.startsWith('placeholder')) return;
+          
+          // Obtener el nuevo valor de tipo de cambio
+          const nuevoTC = parseFloat(input.value);
+          if (isNaN(nuevoTC) || nuevoTC <= 0) return;
+          
+          // Actualizar el valor en exchangeRates
+          exchangeRates[dateISO] = nuevoTC;
+          
+          // Obtener la fila de ventas correspondiente
+          const rowVenta = tbodyVentas.querySelector(`tr[data-date="${dateISO}"]`);
+          if (!rowVenta) return;
+          
+          // Calcular USD en PEN sumando columnas correspondientes
+          let totalUSDenPEN = 0;
+          
+          rowVenta.querySelectorAll('td').forEach((cell, cellIndex) => {
+            const headerIndex = cellIndex + 1; // La primera columna es th, no td
+            const headerName = ventasHeaders[headerIndex];
+            if (!headerName || headerName === 'Total') return;
+            
+            const value = convertToNumber(cell.textContent);
+            
+            // Si es una columna USD, sumar a totalUSDenPEN
+            if (usdColumns.some(col => headerName.includes(col)) || 
+                (headerName.includes("DOL") || headerName.includes("DOLARES"))) {
+              totalUSDenPEN += value;
+            }
+          });
+          
+          // 4. USD - Convertir USD en PEN a USD usando el nuevo tipo de cambio
+          const totalUSD = totalUSDenPEN / nuevoTC;
+          fila.cells[4].textContent = formatNumber(totalUSD, 2, true);
+          
+          // Actualizar también la fila TOTAL USD en la tabla principal
+          actualizarFilaTotalUSD();
+          
+          // Recalcular totales
+          updateResumenVentasTable();
+        }
+        
+        // Procesar cada fila de la tabla de ventas y trasladar los datos a la tabla de resumen
+        const rowsVentas = tbodyVentas.querySelectorAll('tr[data-date]:not(.fila-total):not(.fila-total-usd)');
+        rowsVentas.forEach(rowVenta => {
+          const dateISO = rowVenta.dataset.date;
+          if (!dateISO || dateISO.startsWith('placeholder')) return; // Saltar placeholders
+          
+          // Buscar la fila correspondiente en la tabla de resumen
+          const rowResumen = tbody.querySelector(`tr[data-date="${dateISO}"]`);
+          if (!rowResumen) return;
+          
+          const exchangeRate = exchangeRates[dateISO] || 0;
+          if (exchangeRate <= 0) return; // Si no hay tipo de cambio, no procesamos esta fila
+          
+          // 1. Total PEN - Obtener de la última celda de la fila de ventas
+          const totalPENCell = rowVenta.querySelector('td:last-child');
+          const totalPENValue = totalPENCell ? convertToNumber(totalPENCell.textContent) : 0;
+          if (rowResumen.cells[1]) {
+            rowResumen.cells[1].textContent = formatNumber(totalPENValue, 2, true);
+          }
+          totalGenPEN += totalPENValue;
+          
+          // 2 y 3. PEN y USD en PEN - Calcular sumando las columnas correspondientes
+          let totalPEN = 0;
+          let totalUSDenPEN = 0;
+          
+          rowVenta.querySelectorAll('td').forEach((cell, cellIndex) => {
+            const headerIndex = cellIndex + 1; // La primera columna es th, no td
+            const headerName = ventasHeaders[headerIndex];
+            if (!headerName || headerName === 'Total') return;
+            
+            const value = convertToNumber(cell.textContent);
+            
+            // Si es una columna PEN, sumar a totalPEN (solo columnas en soles)
+            if (penColumns.some(col => headerName.includes(col)) || 
+                (headerName.includes("SOL") && !headerName.includes("DOLARES"))) {
+              totalPEN += value;
+            }
+            // Si es una columna USD, sumar a totalUSDenPEN
+            else if (usdColumns.some(col => headerName.includes(col)) || 
+                    (headerName.includes("DOL") || headerName.includes("DOLARES"))) {
+              totalUSDenPEN += value;
+            }
+          });
+          
+          // PEN (solo columnas en soles)
+          if (rowResumen.cells[2]) {
+            rowResumen.cells[2].textContent = formatNumber(totalPEN, 2, true);
+          }
+          totalGenOnlyPEN += totalPEN;
+          
+          // USD en PEN
+          if (rowResumen.cells[3]) {
+            rowResumen.cells[3].textContent = formatNumber(totalUSDenPEN, 2, true);
+          }
+          totalGenUSDenPEN += totalUSDenPEN;
+          
+          // 4. USD - Convertir USD en PEN a USD usando el tipo de cambio
+          const totalUSD = totalUSDenPEN / exchangeRate;
+          if (rowResumen.cells[4]) {
+            rowResumen.cells[4].textContent = formatNumber(totalUSD, 2, true);
+          }
+          totalGenUSD += totalUSD;
+          
+          // 5. TC - Mostrar input con el tipo de cambio
+          if (rowResumen.cells[5]) {
+            if (!rowResumen.cells[5].querySelector('input')) {
+              const tcInput = document.createElement('input');
+              tcInput.type = 'number';
+              tcInput.min = '0.001';
+              tcInput.step = '0.001';
+              tcInput.className = 'tc-input';
+              tcInput.value = formatNumber(exchangeRate, 3, false);
+              
+              // Agregar evento para recalcular la fila al cambiar el TC
+              tcInput.addEventListener('change', function() {
+                recalcularFila(this);
+              });
+              
+              // Limpiar la celda y agregar el input
+              rowResumen.cells[5].textContent = '';
+              rowResumen.cells[5].appendChild(tcInput);
+            } else {
+              rowResumen.cells[5].querySelector('input').value = formatNumber(exchangeRate, 3, false);
+            }
+          }
+        });
+        
+        // Actualizar las filas de totales y porcentajes
+        const filaTotal = tfoot.querySelector('.fila-total');
+        const filaPorcentaje = tfoot.querySelector('.fila-porcentaje');
+        
+        if (filaTotal) {
+          // Actualizar cada celda de totales
+          if (filaTotal.cells[1]) filaTotal.cells[1].textContent = formatNumber(totalGenPEN, 2, true);
+          if (filaTotal.cells[2]) filaTotal.cells[2].textContent = formatNumber(totalGenOnlyPEN, 2, true);
+          if (filaTotal.cells[3]) filaTotal.cells[3].textContent = formatNumber(totalGenUSDenPEN, 2, true);
+          if (filaTotal.cells[4]) filaTotal.cells[4].textContent = formatNumber(totalGenUSD, 2, true);
+          // La celda de TC queda sin total (vacía en lugar de --)
+          if (filaTotal.cells[5]) filaTotal.cells[5].textContent = "";
+        }
+        
+        if (filaPorcentaje) {
+          // Calcular porcentajes solo si hay un total > 0
+          const pctPEN = totalGenPEN > 0 ? (totalGenOnlyPEN / totalGenPEN) * 100 : 0;
+          const pctUSDenPEN = totalGenPEN > 0 ? (totalGenUSDenPEN / totalGenPEN) * 100 : 0;
+          
+          // Actualizar celdas de porcentajes
+          if (filaPorcentaje.cells[1]) filaPorcentaje.cells[1].textContent = ""; // Sin porcentaje para Total
+          if (filaPorcentaje.cells[2]) filaPorcentaje.cells[2].textContent = formatNumber(pctPEN, 2, false) + "%";
+          if (filaPorcentaje.cells[3]) filaPorcentaje.cells[3].textContent = formatNumber(pctUSDenPEN, 2, false) + "%";
+          // Las celdas de USD y TC quedan sin porcentaje (vacías en lugar de --)
+          if (filaPorcentaje.cells[4]) filaPorcentaje.cells[4].textContent = "";
+          if (filaPorcentaje.cells[5]) filaPorcentaje.cells[5].textContent = "%";
+        }
+        
+        // Llamar a actualizar la fila TOTAL USD después de actualizar la tabla resumen
+        actualizarFilaTotalUSD(); // <--- Añadir esta llamada aquí
+      }
+
+      // Método mejorado para obtener el total de ventas de tienda desde el array de datos
+      function obtenerTotalDesdeTabla(arrayDeFilas) {
+        let encontradoTienda = false;
+        for (let fila of arrayDeFilas) {
+          const primeraCelda = fila[0] ? String(fila[0]).trim().toUpperCase() : '';
+          
+          // Primero buscar una fila que comience con "TIENDA" en la columna A (índice 0)
+          if (!encontradoTienda && primeraCelda === 'TIENDA') {
+            encontradoTienda = true;
+            console.log("Encontrada fila TIENDA:", fila);
+          } 
+          // Luego buscar "TOTAL" en la columna B (índice 1), no en columna A
+          else if (encontradoTienda && fila.length > 1) {
+            const segundaCelda = fila[1] ? String(fila[1]).trim().toUpperCase() : '';
+            if (segundaCelda === 'TOTAL') {
+              console.log("Encontrada fila con TOTAL en columna B después de TIENDA:", fila);
+              // Buscar la última celda con valor
+              for (let i = fila.length - 1; i >= 0; i--) {
+                if (fila[i] !== undefined && fila[i] !== null && fila[i] !== '') {
+                  const ultimoValor = String(fila[i]).replace(/,/g, '');
+                  console.log("Valor encontrado:", ultimoValor);
+                  return parseFloat(ultimoValor);
+                }
+              }
+            }
+          }
+        }
+        console.warn("No se encontró TOTAL en columna B después de TIENDA");
+        return null;
+      }
+
+      // Extraer datos de venta por tipo desde Excel
+      function extractVentasPorTipo(jsonData) {
+        console.log("Buscando datos de venta por tipo...");
+        
+        // Método principal: usar la función de búsqueda dinámica
+        console.log("Buscando total de tienda usando obtenerTotalDesdeTabla...");
+        const totalTienda = obtenerTotalDesdeTabla(jsonData);
+        
+        if (totalTienda !== null) {
+          tiendaVentaTotal = totalTienda;
+          console.log("Total de venta de tienda encontrado:", tiendaVentaTotal);
+        } else {
+          console.warn("No se pudo encontrar el total de venta de tienda con el método dinámico");
+          
+          // Intentar obtener el valor como respaldo desde la celda Q40
+          if (jsonData.length >= 40 && jsonData[39] && jsonData[39].length >= 17) {
+              // La celda Q40 corresponde al índice [39][16] (filas y columnas comienzan en 0)
+              const valorQ40 = jsonData[39][16];
+              console.log("Intentando obtener valor de respaldo en Q40:", valorQ40);
+              
+              if (valorQ40 !== undefined && valorQ40 !== null && valorQ40 !== '') {
+                  tiendaVentaTotal = convertToNumber(valorQ40);
+                  console.log("Total de venta de tienda desde Q40:", tiendaVentaTotal);
+              } else {
+                  console.warn("La celda Q40 está vacía o no tiene valor");
+                  tiendaVentaTotal = 0; // Valor por defecto
+              }
+          } else {
+              console.warn("No se pudo acceder a la celda Q40, el Excel tiene menos filas o columnas");
+              tiendaVentaTotal = 0; // Valor por defecto
+          }
+        }
+        
+        // Actualizar tabla de venta por tipo
+        updateVentasPorTipoTable();
+      }
+
+      // Actualizar tabla de venta por tipo
+      function updateVentasPorTipoTable() {
+        const tablaVentaTipo = document.getElementById('tabla-venta-tipo');
+        if (!tablaVentaTipo) {
+            console.error("No se encontró la tabla de venta por tipo");
+            return;
+        }
+        
+        // Obtener el total general PEN desde la tabla de resumen
+        const totalGeneralCell = document.querySelector('#tabla-resumen-ventas .fila-total td:first-of-type');
+        if (totalGeneralCell) {
+            ventaTotalGeneral = convertToNumber(totalGeneralCell.textContent);
+            console.log("Total general PEN obtenido para cálculos:", ventaTotalGeneral);
+        }
+        
+        // Obtener filas de la tabla
+        const filaTienda = tablaVentaTipo.querySelector('tbody tr:nth-child(1)');
+        const filaPropinas = tablaVentaTipo.querySelector('tbody tr:nth-child(2)');
+        
+        if (!filaTienda || !filaPropinas) {
+            console.error("No se encontraron todas las filas necesarias en la tabla de venta por tipo");
+            return;
+        }
+        
+        // Actualizar venta y subtotal de TIENDA DE VINOS
+        const ventaTiendaCell = filaTienda.querySelector('td:first-of-type');
+        const subtotalTiendaCell = filaTienda.querySelector('td:last-of-type');
+        if (ventaTiendaCell && subtotalTiendaCell) {
+            ventaTiendaCell.textContent = "S/ " + formatNumber(tiendaVentaTotal, 2, false);
+            const subtotalTienda = ventaTotalGeneral - tiendaVentaTotal;
+            subtotalTiendaCell.textContent = "S/ " + formatNumber(subtotalTienda, 2, false);
+            console.log("Actualizada fila TIENDA DE VINOS:", tiendaVentaTotal, subtotalTienda);
+        }
+        
+        // Actualizar venta y subtotal de PROPINAS
+        const ventaPropinasCell = filaPropinas.querySelector('td:first-of-type');
+        const subtotalPropinasCell = filaPropinas.querySelector('td:last-of-type');
+        if (ventaPropinasCell && subtotalPropinasCell) {
+            ventaPropinasCell.textContent = "S/ " + formatNumber(propinasTotal, 2, false);
+            const subtotalPropinas = ventaTotalGeneral - propinasTotal;
+            subtotalPropinasCell.textContent = "S/ " + formatNumber(subtotalPropinas, 2, false);
+            console.log("Actualizada fila PROPINAS:", propinasTotal, subtotalPropinas);
+        }
+      }
+
+      // == Inicialización y Event Listeners ==
+      
+      const accordionToggle = document.getElementById('accordion-toggle');
+      const configContent = document.getElementById('config-content');
+      const accordionIcon = document.getElementById('accordion-icon');
+      const yearSelector = document.getElementById('year-selector');
+      const monthSelector = document.getElementById('month-selector');
+      const weekSelector = document.getElementById('week-selector');
+      const uploadButton = document.getElementById('btn-cargar-archivo');
+      const fileInput = document.getElementById('file-input');
+      
+      if (!accordionToggle || !configContent || !accordionIcon ||
+          !yearSelector || !monthSelector || !weekSelector || 
+          !uploadButton || !fileInput) {
+        console.error("Error crítico: No se encontraron elementos esenciales de la interfaz.");
+        return;
+      }
+
+      // Abrir acordeón por defecto
+      if (!configContent.classList.contains('active')) {
+        toggleAccordion(); 
+      }
+      
+      accordionToggle.addEventListener('click', toggleAccordion);
+      
+      yearSelector.addEventListener('change', function() {
+        populateMonths();
+        actualizarEstadoPasos();
+      });
+      
+      monthSelector.addEventListener('change', function() {
+        populateWeeksOfMonth();
+        actualizarEstadoPasos();
+      });
+      
+      weekSelector.addEventListener('change', function() {
+        updateWeekTitle();
+        actualizarEstadoPasos();
+      });
+      
+      uploadButton.addEventListener('click', () => fileInput.click());
+      fileInput.addEventListener('change', function(event) {
+        handleFileSelect(event);
+        actualizarEstadoPasos();
+      });
+      
+      fileInput.value = null;
+      
+      // Configurar paso 3
+      configurarPaso3();
+      
+      // Configurar paso 4
+      configurarPaso4();
+      
+      // Inicializar estado de los pasos
+      actualizarEstadoPasos();
+      
+      updateWeekTitle(); // Llamada inicial para configurar fechas y tablas vacías
+      console.log("Interfaz de Reporte de Ventas inicializada (con carga automática de T.C.).");
+
+      // Función para procesar los datos del paso 3 (propinas)
+      function procesarPropinas(file) {
+        if (!file) {
+          console.error("No se proporcionó archivo para procesar propinas");
+          return;
+        }
+        
+        console.log("Procesando archivo de propinas:", file.name);
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, {type: 'array'});
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+            const jsonData = XLSX.utils.sheet_to_json(worksheet, {header: 1, defval: '', raw: true});
+            
+            console.log("Datos del archivo de propinas cargados. Buscando último valor de columna F...");
+            
+            // Buscar el último valor no vacío en la columna F (índice 5)
+            let ultimoValor = null;
+            
+            for (let i = jsonData.length - 1; i >= 0; i--) {
+              if (jsonData[i] && jsonData[i].length > 5 && 
+                  jsonData[i][5] !== null && jsonData[i][5] !== undefined && jsonData[i][5] !== '') {
+                ultimoValor = jsonData[i][5];
+                break;
+              }
+            }
+            
+            if (ultimoValor !== null) {
+              propinasTotal = convertToNumber(ultimoValor);
+              console.log("Valor de propinas encontrado en columna F:", ultimoValor, "convertido a:", propinasTotal);
+              
+              // Marcar paso como completado
+              const paso3 = document.querySelector('.config-step:nth-child(3)');
+              if (paso3) {
+                paso3.classList.remove('active');
+                paso3.classList.add('completed');
+                const statusIcon = paso3.querySelector('.step-status i');
+                if (statusIcon) {
+                  statusIcon.className = 'fas fa-check-circle';
+                }
+              }
+              
+              // Actualizar la tabla de venta por tipo con el nuevo valor de propinas
+              updateVentasPorTipoTable();
+            } else {
+              console.error("No se encontró ningún valor en la columna F del archivo");
+              alert("No se encontró ningún valor en la columna F del archivo");
+            }
+          } catch (error) {
+            console.error("Error al procesar archivo de propinas:", error);
+            alert("Error al procesar el archivo: " + error.message);
+          }
+        };
+        
+        reader.onerror = function() {
+          console.error("Error al leer el archivo");
+          alert("Error al leer el archivo");
+        };
+        
+        reader.readAsArrayBuffer(file);
+      }
+      
+      // Configurar paso 3 para extraer propinas de archivo
+      function configurarPaso3() {
+        // Encontrar el elemento del paso 3
+        const paso3 = document.querySelector('.config-step:nth-child(3)');
+        if (!paso3) return;
+        
+        // Quitar clase future y agregar active
+        paso3.classList.remove('future');
+        paso3.classList.add('active');
+        
+        // Actualizar icono de estado
+        const statusIcon = paso3.querySelector('.step-status i');
+        if (statusIcon) {
+          statusIcon.className = 'fas fa-sync';
+        }
+        
+        // Limpiar contenido existente
+        const stepContent = paso3.querySelector('.step-content');
+        if (stepContent) {
+          stepContent.innerHTML = '';
+          
+          // Añadir input para archivo de propinas
+          const propinasControl = document.createElement('div');
+          propinasControl.className = 'config-controls';
+          propinasControl.innerHTML = `
+            <button id="btn-cargar-propinas" class="btn">
+              <i class="fas fa-file-excel"></i> Seleccionar Excel
+            </button>
+            <input type="file" id="propinas-input" accept=".xls,.xlsx" style="display: none;">
+          `;
+          stepContent.appendChild(propinasControl);
+          
+          // Añadir event listener
+          const btnPropinas = stepContent.querySelector('#btn-cargar-propinas');
+          const propinasInput = stepContent.querySelector('#propinas-input');
+          
+          if (btnPropinas && propinasInput) {
+            btnPropinas.addEventListener('click', () => {
+              propinasInput.click();
+            });
+            
+            propinasInput.addEventListener('change', (event) => {
+              const file = event.target.files[0];
+              if (file) {
+                procesarPropinas(file);
+              }
+            });
+          }
+        }
+      }
+      
+      // Función para actualizar el estado visual de los pasos
+      function actualizarEstadoPasos() {
+        // Paso 1: Seleccionar periodo
+        const paso1 = document.querySelector('.config-step:nth-child(1)');
+        const weekSelector = document.getElementById('week-selector');
+        if (paso1 && weekSelector && weekSelector.value) {
+          paso1.classList.add('completed');
+          paso1.classList.remove('active');
+          const statusIcon = paso1.querySelector('.step-status i');
+          if (statusIcon) statusIcon.className = 'fas fa-check-circle';
+        } else if (paso1) {
+          paso1.classList.add('active');
+          const statusIcon = paso1.querySelector('.step-status i');
+          if (statusIcon) statusIcon.className = 'fas fa-sync';
+        }
+        
+        // Paso 2: Cargar datos de ventas
+        const paso2 = document.querySelector('.config-step:nth-child(2)');
+        if (paso2 && extractedReportData.length > 0) {
+          paso2.classList.add('completed');
+          paso2.classList.remove('active');
+          const statusIcon = paso2.querySelector('.step-status i');
+          if (statusIcon) statusIcon.className = 'fas fa-check-circle';
+        } else if (paso2) {
+          paso2.classList.add('active');
+          const statusIcon = paso2.querySelector('.step-status i');
+          if (statusIcon) statusIcon.className = 'fas fa-sync';
+        }
+      }
+
+      // Función para procesar el archivo de Producción con Impuesto
+      function procesarProduccionConImp(file) {
+        if (!file) {
+          console.error("No se proporcionó archivo para producción con impuesto");
+          return;
+        }
+        
+        console.log("Procesando archivo de producción con impuesto:", file.name);
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, {type: 'array'});
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+            const jsonData = XLSX.utils.sheet_to_json(worksheet, {header: 1, defval: '', raw: true});
+            
+            console.log("Datos del archivo de producción con impuesto cargados. Buscando primer valor en H y segundo en G...");
+
+            let valorHEncontrado = null;
+            let valorGEncontrado = null;
+            let contadorG = 0;
+
+            // Buscar primer valor no vacío en Columna H (índice 7)
+            for (let i = 0; i < jsonData.length; i++) {
+              const row = jsonData[i];
+              if (row && row.length > 7 && row[7] !== undefined && row[7] !== null && String(row[7]).trim() !== '') {
+                valorHEncontrado = row[7];
+                console.log(`Primer valor encontrado en columna H (fila ${i+1}):`, valorHEncontrado);
+                break; // Detenerse al encontrar el primero
+              }
+            }
+
+            // Buscar segundo valor no vacío en Columna G (índice 6)
+            for (let i = 0; i < jsonData.length; i++) {
+              const row = jsonData[i];
+              if (row && row.length > 6 && row[6] !== undefined && row[6] !== null && String(row[6]).trim() !== '') {
+                contadorG++;
+                if (contadorG === 2) {
+                  valorGEncontrado = row[6];
+                  console.log(`Segundo valor encontrado en columna G (fila ${i+1}):`, valorGEncontrado);
+                  break; // Detenerse al encontrar el segundo
+                }
+              }
+            }
+            
+            // Procesar valor de Producción con Impuesto (Columna H)
+            if (valorHEncontrado !== null) {
+              let valorProduccion = valorHEncontrado;
+              if (typeof valorHEncontrado === 'string') {
+                valorProduccion = valorHEncontrado.replace(/[S/$/₹£€¥]/g, '').trim();
+              }
+              produccionConImp = convertToNumber(valorProduccion);
+              console.log("Producción c/ imp. (primer valor H) convertido a:", produccionConImp);
+              const celda = document.getElementById('produccion-con-imp-2');
+              if (celda) {
+                celda.textContent = "S/ " + formatNumber(produccionConImp, 2, false);
+              }
+            } else {
+              console.warn("No se encontró ningún valor en la columna H");
+              alert("No se encontró valor para Producción c/ Impuesto (Columna H)");
+            }
+            
+            // Procesar valor de Ocupabilidad (Columna G)
+            if (valorGEncontrado !== null) {
+              let valorOcupabilidad = valorGEncontrado;
+              if (typeof valorGEncontrado === 'string' && valorGEncontrado.includes('%')) {
+                valorOcupabilidad = valorGEncontrado.replace('%', '').trim();
+              } else if (typeof valorGEncontrado === 'number' && valorGEncontrado <= 1) {
+                valorOcupabilidad = valorGEncontrado * 100;
+              }
+              ocupabilidad = convertToNumber(valorOcupabilidad);
+              console.log("% Ocupabilidad (segundo valor G) convertido a:", ocupabilidad);
+              const celda = document.getElementById('ocupabilidad-2');
+              if (celda) {
+                celda.textContent = formatNumber(ocupabilidad, 2, false) + "%";
+              }
+            } else {
+              console.warn("No se encontró el segundo valor en la columna G");
+              alert("No se encontró valor para % Ocupabilidad (Columna G)");
+            }
+
+            // Verificar si ambos archivos han sido procesados
+            verificarPaso4Completado();
+            
+          } catch (error) {
+            console.error("Error al procesar archivo de producción con impuesto:", error);
+            alert("Error al procesar el archivo: " + error.message);
+          }
+        };
+        
+        reader.onerror = function() {
+          console.error("Error al leer el archivo");
+          alert("Error al leer el archivo");
+        };
+        
+        reader.readAsArrayBuffer(file);
+      }
+      
+      // Función para verificar si el paso 4 se ha completado
+      function verificarPaso4Completado() {
+        // Verificar si ambos valores de producción tienen datos
+        if (produccionConImp > 0 && produccionSinImp > 0) {
+          // Marcar paso como completado
+          const paso4 = document.querySelector('.config-step:nth-child(4)');
+          if (paso4) {
+            paso4.classList.remove('active');
+            paso4.classList.add('completed');
+            const statusIcon = paso4.querySelector('.step-status i');
+            if (statusIcon) {
+              statusIcon.className = 'fas fa-check-circle';
+            }
+          }
+          
+          // Actualizar la tabla con los datos procesados
+          actualizarTablaProduccion();
+          
+          // Activar el paso 5 después de completar el paso 4
+          manejarFinPaso4();
+        }
+      }
+      
+      // Función para actualizar la tabla de producción
+      function actualizarTablaProduccion() {
+        // Actualizar los valores en la tabla
+        const celdaConImp = document.getElementById('produccion-con-imp');
+        const celdaSinImp = document.getElementById('produccion-sin-imp');
+        const celdaOcupabilidad = document.getElementById('ocupabilidad');
+        
+        if (celdaConImp) {
+          celdaConImp.textContent = "S/ " + formatNumber(produccionConImp, 2, false);
+        }
+        
+        if (celdaSinImp) {
+          celdaSinImp.textContent = "S/ " + formatNumber(produccionSinImp, 2, false);
+        }
+        
+        if (celdaOcupabilidad) {
+          celdaOcupabilidad.textContent = formatNumber(ocupabilidad, 2, false) + "%";
+        }
+        
+        // Actualizar también en la nueva ubicación
+        const celdaConImp2 = document.getElementById('produccion-con-imp-2');
+        const celdaSinImp2 = document.getElementById('produccion-sin-imp-2');
+        const celdaOcupabilidad2 = document.getElementById('ocupabilidad-2');
+        
+        if (celdaConImp2) {
+          celdaConImp2.textContent = "S/ " + formatNumber(produccionConImp, 2, false);
+        }
+        
+        if (celdaSinImp2) {
+          celdaSinImp2.textContent = "S/ " + formatNumber(produccionSinImp, 2, false);
+        }
+        
+        if (celdaOcupabilidad2) {
+          celdaOcupabilidad2.textContent = formatNumber(ocupabilidad, 2, false) + "%";
+        }
+      }
+      
+      // Configurar paso 4 para cargar archivos de producción
+      function configurarPaso4() {
+        // Encontrar el elemento del paso 4
+        const paso4 = document.querySelector('.config-step:nth-child(4)');
+        if (!paso4) return;
+        
+        // Quitar clase future y agregar active
+        paso4.classList.remove('future');
+        paso4.classList.add('active');
+        
+        // Actualizar icono de estado
+        const statusIcon = paso4.querySelector('.step-status i');
+        if (statusIcon) {
+          statusIcon.className = 'fas fa-sync';
+        }
+        
+        // Limpiar contenido existente
+        const stepContent = paso4.querySelector('.step-content');
+        if (stepContent) {
+          stepContent.innerHTML = '';
+          
+          // Añadir inputs para archivos de producción
+          const produccionControl = document.createElement('div');
+          produccionControl.className = 'config-controls';
+          produccionControl.innerHTML = `
+            <div style="display: flex; flex-direction: column; gap: 10px; width: 100%;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <button id="btn-produccion-con-imp" class="btn">
+                  <i class="fas fa-file-excel"></i> Producción c/ imp
+                </button>
+                <input type="file" id="produccion-con-imp-input" accept=".xls,.xlsx" style="display: none;">
+                <span id="produccion-con-imp-nombre" style="font-size: 12px; color: var(--color-texto-secundario);"></span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <button id="btn-produccion-sin-imp" class="btn">
+                  <i class="fas fa-file-excel"></i> Producción s/ imp
+                </button>
+                <input type="file" id="produccion-sin-imp-input" accept=".xls,.xlsx" style="display: none;">
+                <span id="produccion-sin-imp-nombre" style="font-size: 12px; color: var(--color-texto-secundario);"></span>
+              </div>
+            </div>
+          `;
+          stepContent.appendChild(produccionControl);
+          
+          // Añadir event listeners
+          const btnConImp = stepContent.querySelector('#btn-produccion-con-imp');
+          const inputConImp = stepContent.querySelector('#produccion-con-imp-input');
+          const nombreConImp = stepContent.querySelector('#produccion-con-imp-nombre');
+          
+          const btnSinImp = stepContent.querySelector('#btn-produccion-sin-imp');
+          const inputSinImp = stepContent.querySelector('#produccion-sin-imp-input');
+          const nombreSinImp = stepContent.querySelector('#produccion-sin-imp-nombre');
+          
+          if (btnConImp && inputConImp) {
+            btnConImp.addEventListener('click', () => {
+              inputConImp.click();
+            });
+            
+            inputConImp.addEventListener('change', (event) => {
+              const file = event.target.files[0];
+              if (file) {
+                nombreConImp.textContent = file.name;
+                procesarProduccionConImp(file);
+              }
+            });
+          }
+          
+          if (btnSinImp && inputSinImp) {
+            btnSinImp.addEventListener('click', () => {
+              inputSinImp.click();
+            });
+            
+            inputSinImp.addEventListener('change', (event) => {
+              const file = event.target.files[0];
+              if (file) {
+                nombreSinImp.textContent = file.name;
+                procesarProduccionSinImp(file);
+              }
+            });
+          }
+        }
+      }
+
+      // Variables globales
+      // Estas variables ya están declaradas anteriormente en el código
+      // var tipoCambio = 0;
+      // var ventaTotal = 0;
+      // var propinas = 0;
+      // var ventaGeneral = 0;
+      // var produccionConImp = 0; // Producción con impuesto
+      // var produccionSinImp = 0; // Producción sin impuesto
+      // var ocupabilidad = 0;     // Porcentaje de ocupabilidad
+
+      // Función para inicializar la configuración
+      function inicializarConfiguracion() {
+        actualizarEstadoPasos();
+        
+        // Inicializar evento de botón para configuración
+        const btnConfiguracion = document.getElementById('toggle-config');
+        if (btnConfiguracion) {
+          btnConfiguracion.addEventListener('click', toggleConfigPanel);
+        }
+        
+        // Inicializar el paso 1
+        configurarPaso1();
+      }
+
+      // Función para configurar el flujo entre pasos
+      function manejarFinPaso1() {
+        configurarPaso2();
+      }
+
+      function manejarFinPaso2() {
+        configurarPaso3();
+      }
+
+      function manejarFinPaso3() {
+        configurarPaso4();
+      }
+
+      function manejarFinPaso4() {
+        configurarPaso5();
+      }
+
+      // Función para procesar el archivo de Producción sin Impuesto
+      function procesarProduccionSinImp(file) {
+        if (!file) {
+          console.error("No se proporcionó archivo para producción sin impuesto");
+          return;
+        }
+        
+        console.log("Procesando archivo de producción sin impuesto:", file.name);
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, {type: 'array'});
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+            const jsonData = XLSX.utils.sheet_to_json(worksheet, {header: 1, defval: '', raw: true});
+            
+            console.log("Datos del archivo de producción sin impuesto cargados. Buscando primer valor en H...");
+
+            let valorHEncontrado = null;
+
+            // Buscar primer valor no vacío en Columna H (índice 7)
+            for (let i = 0; i < jsonData.length; i++) {
+              const row = jsonData[i];
+              if (row && row.length > 7 && row[7] !== undefined && row[7] !== null && String(row[7]).trim() !== '') {
+                valorHEncontrado = row[7];
+                console.log(`Primer valor encontrado en columna H (fila ${i+1}):`, valorHEncontrado);
+                break; // Detenerse al encontrar el primero
+              }
+            }
+            
+            // Procesar valor de Producción sin Impuesto (Columna H)
+            if (valorHEncontrado !== null) {
+              let valorProduccion = valorHEncontrado;
+              if (typeof valorHEncontrado === 'string') {
+                valorProduccion = valorHEncontrado.replace(/[S/$/₹£€¥]/g, '').trim();
+              }
+              produccionSinImp = convertToNumber(valorProduccion);
+              console.log("Producción s/ imp. (primer valor H) convertido a:", produccionSinImp);
+              const celda = document.getElementById('produccion-sin-imp-2');
+              if (celda) {
+                celda.textContent = "S/ " + formatNumber(produccionSinImp, 2, false);
+              }
+            } else {
+              console.warn("No se encontró ningún valor en la columna H");
+              alert("No se encontró valor para Producción s/ Impuesto (Columna H)");
+            }
+            
+            // Verificar si ambos archivos han sido procesados
+            verificarPaso4Completado();
+            
+          } catch (error) {
+            console.error("Error al procesar archivo de producción sin impuesto:", error);
+            alert("Error al procesar el archivo: " + error.message);
+          }
+        };
+        
+        reader.onerror = function() {
+          console.error("Error al leer el archivo");
+          alert("Error al leer el archivo");
+        };
+        
+        reader.readAsArrayBuffer(file);
+      }
+
+      // Variables para datos de clientes
+      let quieiroloTotal = 0;
+      let variosTotal = 0;
+
+      // Función para actualizar la tabla de ventas por cliente
+      function actualizarTablaVentaCliente() {
+        const queroloTotalCell = document.getElementById('queirolo-total');
+        const variosTotalCell = document.getElementById('varios-total');
+        const clienteTotalCell = document.getElementById('cliente-total');
+        const variosPorcentajeCell = document.getElementById('varios-porcentaje');
+        const queroloPorcentajeCell = document.getElementById('queirolo-porcentaje');
+        
+        // Obtener el subtotal de propinas desde la tabla venta por tipo
+        const subtotalPropinasCell = document.querySelector('#tabla-venta-tipo tbody tr:nth-child(2) td:last-child');
+        let totalGeneral = 0;
+        
+        if (subtotalPropinasCell) {
+          totalGeneral = convertToNumber(subtotalPropinasCell.textContent);
+          console.log("Total obtenido del subtotal de propinas:", totalGeneral);
+        } else {
+          // Fallback: si no se encuentra el subtotal de propinas, usar el total general
+          const totalGeneralCell = document.querySelector('#tabla-resumen-ventas .fila-total td:first-of-type');
+          if (totalGeneralCell) {
+            totalGeneral = convertToNumber(totalGeneralCell.textContent);
+            console.log("Fallback - Total general PEN de resumen:", totalGeneral);
+          }
+        }
+        
+        // Calcular el valor de VARIOS
+        variosTotal = totalGeneral - quieiroloTotal;
+        
+        // Mostrar los valores
+        if (queroloTotalCell) {
+          queroloTotalCell.textContent = "S/ " + formatNumber(quieiroloTotal, 2, false);
+        }
+        
+        if (variosTotalCell) {
+          variosTotalCell.textContent = "S/ " + formatNumber(variosTotal, 2, false);
+        }
+        
+        if (clienteTotalCell) {
+          clienteTotalCell.textContent = "S/ " + formatNumber(totalGeneral, 2, false);
+        }
+        
+        // Calcular y mostrar porcentajes
+        if (totalGeneral > 0) {
+          const queiroloPorcentaje = (quieiroloTotal / totalGeneral) * 100;
+          const variosPorcentaje = (variosTotal / totalGeneral) * 100;
+          
+          if (queroloPorcentajeCell) {
+            queroloPorcentajeCell.textContent = formatNumber(queiroloPorcentaje, 2, false) + "%";
+          }
+          
+          if (variosPorcentajeCell) {
+            variosPorcentajeCell.textContent = formatNumber(variosPorcentaje, 2, false) + "%";
+          }
+        } else {
+          if (queroloPorcentajeCell) queroloPorcentajeCell.textContent = "0%";
+          if (variosPorcentajeCell) variosPorcentajeCell.textContent = "0%";
+        }
+      }
+
+      // Función para procesar el archivo de clientes
+      function procesarArchivoClientes(file) {
+        if (!file) {
+          console.error("No se proporcionó archivo para procesar clientes");
+          return;
+        }
+        
+        console.log("Procesando archivo de clientes:", file.name);
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, {type: 'array'});
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+            const jsonData = XLSX.utils.sheet_to_json(worksheet, {header: 1, defval: '', raw: true});
+            
+            console.log("Datos del archivo de clientes cargados. Buscando 'SANTIAGO QUEIROLO S.A.C.'");
+            
+            // Reiniciar el total de Queirolo
+            quieiroloTotal = 0;
+            
+            // Buscar "SANTIAGO QUEIROLO S.A.C." en la primera columna y sumar valores de columna J (índice 9)
+            for (let i = 0; i < jsonData.length; i++) {
+              const row = jsonData[i];
+              if (row && row.length > 0) {
+                // Verificar si la primera columna contiene el texto exacto "SANTIAGO QUEIROLO S.A.C."
+                const primeraColumna = row[0];
+                if (primeraColumna && typeof primeraColumna === 'string' && 
+                    primeraColumna.trim().toUpperCase() === 'SANTIAGO QUEIROLO S.A.C.') {
+                  
+                  // Sumar el valor de la columna J (índice 9)
+                  if (row.length > 9) {
+                    const valorJ = row[9];
+                    if (valorJ !== undefined && valorJ !== null && valorJ !== '') {
+                      const valor = convertToNumber(valorJ);
+                      quieiroloTotal += valor;
+                      console.log(`Encontrado 'SANTIAGO QUEIROLO S.A.C.' en fila ${i+1}, valor en J: ${valor}`);
+                    }
+                  }
+                }
+              }
+            }
+            
+            console.log("Total de SANTIAGO QUEIROLO S.A.C.:", quieiroloTotal);
+            
+            // Actualizar la tabla con los valores encontrados
+            actualizarTablaVentaCliente();
+            
+            // Marcar paso 5 como completado
+            const paso5 = document.querySelector('.config-step:nth-child(5)');
+            if (paso5) {
+              paso5.classList.remove('active', 'future');
+              paso5.classList.add('completed');
+              const statusIcon = paso5.querySelector('.step-status i');
+              if (statusIcon) {
+                statusIcon.className = 'fas fa-check-circle';
+              }
+            }
+            
+            // Activar el paso 6 después de completar el paso 5
+            activarPaso6(); // <--- Restaurar esta llamada
+            
+          } catch (error) {
+            console.error("Error al procesar archivo de clientes:", error);
+            alert("Error al procesar el archivo: " + error.message);
+          }
+        };
+        
+        reader.onerror = function() {
+          console.error("Error al leer el archivo de clientes");
+          alert("Error al leer el archivo");
+        };
+        
+        reader.readAsArrayBuffer(file);
+      }
+
+      // Configurar paso 5 para cargar archivo de clientes
+      function configurarPaso5() {
+        // Encontrar el elemento del paso 5
+        const paso5 = document.querySelector('.config-step:nth-child(5)');
+        if (!paso5) {
+          console.error("No se pudo encontrar el paso 5");
+          return;
+        }
+        
+        // Quitar clase future y agregar active
+        paso5.classList.remove('future');
+        paso5.classList.add('active');
+        
+        // Actualizar icono de estado
+        const statusIcon = paso5.querySelector('.step-status i');
+        if (statusIcon) {
+          statusIcon.className = 'fas fa-sync';
+        }
+        
+        // Limpiar contenido existente
+        const stepContent = paso5.querySelector('.step-content');
+        if (stepContent) {
+          stepContent.innerHTML = '';
+          
+          // Añadir input para archivo de clientes
+          const clientesControl = document.createElement('div');
+          clientesControl.className = 'config-controls';
+          clientesControl.innerHTML = `
+            <button id="btn-cargar-clientes" class="btn">
+              <i class="fas fa-file-excel"></i> Seleccionar Excel
+            </button>
+            <input type="file" id="clientes-input" accept=".xls,.xlsx" style="display: none;">
+            <span id="clientes-nombre" style="font-size: 12px; color: var(--color-texto-secundario); margin-left: 8px;"></span>
+          `;
+          stepContent.appendChild(clientesControl);
+          
+          // Añadir event listener
+          const btnClientes = stepContent.querySelector('#btn-cargar-clientes');
+          const clientesInput = stepContent.querySelector('#clientes-input');
+          const clientesNombre = stepContent.querySelector('#clientes-nombre');
+          
+          if (btnClientes && clientesInput) {
+            btnClientes.addEventListener('click', () => {
+              clientesInput.click();
+            });
+            
+            clientesInput.addEventListener('change', (event) => {
+              const file = event.target.files[0];
+              if (file) {
+                clientesNombre.textContent = file.name;
+                procesarArchivoClientes(file);
+              }
+            });
+          } else {
+            console.error("No se pudieron encontrar los elementos del formulario del paso 5");
+          }
+        } else {
+          console.error("No se pudo encontrar el contenido del paso 5");
+        }
+      }
+
+      // Inicializar estado de los pasos, incluyendo paso 5
+      actualizarEstadoPasos();
+
+      // Configurar todos los pasos (ESTAS SON LAS LLAMADAS CORRECTAS DENTRO DE DOMContentLoaded)
+      configurarPaso1();
+      configurarPaso2();
+      configurarPaso3();
+      configurarPaso4();
+      configurarPaso5();
+      // configurarPaso6(); // Ya eliminado
+
+      // Permitir activar el paso 5 directamente cuando se carga la página
+      paso5Directo = document.querySelector('.config-step:nth-child(5)');
+      if (paso5Directo) {
+        paso5Directo.classList.remove('future');
+        paso5Directo.classList.add('active');
+      }
+      // paso6Directo ya eliminado
+      
+      // Inicializar efecto hover de columnas
+      setupTableColumnHover(); // <-- LLAMADA A LA NUEVA FUNCIÓN
+
+      // Nueva función para activar el paso 6
+      function activarPaso6() {
+        console.log("--- Intentando activar Paso 6 --- ");
+        const paso6 = document.querySelector('.config-step:nth-child(6)');
+
+        if (!paso6) {
+            console.error("activarPaso6: No se encontró el elemento del paso 6.");
+            return;
+        }
+        // Buscar el botón *actual* en el DOM
+        const currentBtnPdf = document.getElementById('btn-exportar-pdf');
+        if (!currentBtnPdf) {
+            console.error("activarPaso6: No se encontró el botón #btn-exportar-pdf en el DOM.");
+            return;
+        }
+
+        console.log("activarPaso6: Elementos encontrados. Modificando clases y habilitando botón...");
+        paso6.classList.remove('future');
+        paso6.classList.add('active');
+        const statusIcon = paso6.querySelector('.step-status i');
+        if (statusIcon) {
+          statusIcon.className = 'fas fa-sync'; // Ícono de activo
+        }
+
+        // Habilitar el botón encontrado en el DOM
+        currentBtnPdf.disabled = false;
+
+        // Verificar si el botón está realmente habilitado después de la línea anterior
+        if (currentBtnPdf.disabled) {
+            console.error("activarPaso6: ¡ERROR! El botón PDF sigue deshabilitado después de intentar habilitarlo.");
+        } else {
+            console.log("activarPaso6: Botón PDF habilitado correctamente (disabled=false).");
+        }
+
+        console.log("--- Paso 6 activado visualmente y botón habilitado --- ");
+      }
+
+      // Configurar paso 6 para generar PDF
+      function configurarPaso6() {
+        console.log("--- Ejecutando configurarPaso6 --- ");
+        
+        // Verificar las librerías necesarias
+        console.log("Verificando dependencias en configurarPaso6:", {
+          "jsPDF disponible": typeof window.jspdf !== 'undefined',
+          "jsPDF.jsPDF disponible": typeof window.jspdf?.jsPDF !== 'undefined'
+        });
+        
+        // Encontrar el elemento del paso 6
+        const paso6 = document.querySelector('.config-step:nth-child(6)');
+        if (!paso6) {
+            console.error("Error Crítico: No se pudo encontrar el elemento HTML del paso 6.");
+            return;
+        }
+
+        // Encontrar el contenedor del contenido
+        const stepContent = paso6.querySelector('.step-content');
+        if (stepContent) {
+          // Buscar el botón PDF existente
+          const btnPdf = stepContent.querySelector('#btn-exportar-pdf');
+
+          if (btnPdf) {
+            console.log("Botón #btn-exportar-pdf encontrado. Añadiendo event listener...");
+            
+            // Asignar manejador de eventos al botón (método corregido)
+            btnPdf.addEventListener('click', function() {
+              console.log("Botón PDF clickeado!");
+              generarPDF(); // Llamar directamente a la función global
+            });
+            
+            console.log("Event listener añadido al botón PDF: ", {
+              "botón ID": btnPdf.id,
+              "botón está deshabilitado": btnPdf.disabled,
+              "onclick asignado": btnPdf.onclick !== null
+            });
+          } else {
+            console.error("Error Crítico: Botón #btn-exportar-pdf NO encontrado dentro del paso 6.");
+          }
+        } else {
+          console.error("Error Crítico: Contenido del paso 6 (.step-content) NO encontrado.");
+        }
+      }
+
+      // Inicializar efecto hover de columnas
+      setupTableColumnHover();
+
+      console.log("--- Fin de la inicialización DOMContentLoaded --- ");
+    }); // Fin de DOMContentLoaded
+
+    // Función para actualizar la fila TOTAL USD en la tabla principal
+    function actualizarFilaTotalUSD() {
+      const tbodyVentas = document.getElementById('tabla-ventas')?.querySelector('tbody');
+      const filaTotalUSD = tbodyVentas?.querySelector('.fila-total-usd');
+      const ventasHeaders = Array.from(document.querySelectorAll('#tabla-ventas thead th')).map(th => th.textContent.trim());
+      
+      if (!filaTotalUSD || !tbodyVentas) {
+        console.error("No se pudo encontrar la fila TOTAL USD o tbody en la tabla principal");
+        return;
+      }
+      
+      // Inicializar valores para el total USD por columna
+      const totalUsdPorColumna = {};
+      usdColumns.forEach(col => { totalUsdPorColumna[col] = 0; });
+      
+      // Procesar cada día y aplicar tipo de cambio
+      const rowsVentas = tbodyVentas.querySelectorAll('tr[data-date]:not(.fila-total):not(.fila-total-usd)');
+      rowsVentas.forEach(rowVenta => {
+        const dateISO = rowVenta.dataset.date;
+        if (!dateISO || dateISO.startsWith('placeholder')) return;
+        
+        const exchangeRate = exchangeRates[dateISO] || 0;
+        if (exchangeRate <= 0) return;
+        
+        // Recorrer las columnas USD
+        rowVenta.querySelectorAll('td').forEach((cell, cellIndex) => {
+          const headerIndex = cellIndex + 1; // La primera columna es th, no td
+          const headerName = ventasHeaders[headerIndex];
+          if (!headerName || headerName === 'Total') return;
+          
+          // Solo procesar columnas USD
+          if (usdColumns.some(col => headerName.includes(col)) || 
+              (headerName.includes("DOL") || headerName.includes("DOLARES"))) {
+            const valorUsdEnSoles = convertToNumber(cell.textContent);
+            // Convertir de soles a dólares dividiendo por el tipo de cambio
+            const valorEnUsd = valorUsdEnSoles / exchangeRate;
+            totalUsdPorColumna[headerName] = (totalUsdPorColumna[headerName] || 0) + valorEnUsd;
+          }
+        });
+      });
+      
+      // Mostrar los totales USD acumulados en cada columna
+      filaTotalUSD.querySelectorAll('td').forEach((htmlCell, htmlCellIndex) => {
+        const htmlHeaderIndex = htmlCellIndex + 1;
+        const htmlHeader = ventasHeaders[htmlHeaderIndex];
+        
+        if (htmlHeader === 'Total') {
+          // Calcular suma total de columnas USD (ya en dólares)
+          let totalUsd = 0;
+          Object.values(totalUsdPorColumna).forEach(valor => {
+            totalUsd += valor;
+          });
+          htmlCell.textContent = "$ " + formatNumber(totalUsd, 2, true);
+        } else if (usdColumns.includes(htmlHeader) || 
+                  (htmlHeader && (htmlHeader.includes("DOL") || htmlHeader.includes("DOLARES")))) {
+          // Mostrar el valor en dólares para esta columna
+          htmlCell.textContent = formatNumber(totalUsdPorColumna[htmlHeader] || 0, 2, true);
+        } else {
+          // Para columnas que no son USD, mostrar --
+          htmlCell.textContent = '--';
+        }
+      });
+      
+      console.log("Fila TOTAL USD actualizada con los nuevos tipos de cambio");
+    }
+
+    // Nueva función para recalcular solo los totales de la tabla resumen
+    function recalcularTotalesResumen() {
+        const tbody = document.getElementById('tabla-resumen-ventas')?.querySelector('tbody');
+        const tfoot = document.getElementById('tabla-resumen-ventas')?.querySelector('tfoot');
+        if (!tbody || !tfoot) return;
+
+        let totalGenPEN = 0;
+        let totalGenOnlyPEN = 0;
+        let totalGenUSDenPEN = 0;
+        let totalGenUSD = 0;
+
+        // Recalcular totales sumando las filas del tbody
+        tbody.querySelectorAll('tr[data-date]').forEach(rowResumen => {
+            if (!rowResumen.dataset.date || rowResumen.dataset.date.startsWith('placeholder')) return;
+            totalGenPEN += convertToNumber(rowResumen.cells[1]?.textContent || 0);
+            totalGenOnlyPEN += convertToNumber(rowResumen.cells[2]?.textContent || 0);
+            totalGenUSDenPEN += convertToNumber(rowResumen.cells[3]?.textContent || 0);
+            totalGenUSD += convertToNumber(rowResumen.cells[4]?.textContent || 0);
+        });
+
+        // Actualizar las filas de totales y porcentajes en tfoot
+        const filaTotal = tfoot.querySelector('.fila-total');
+        const filaPorcentaje = tfoot.querySelector('.fila-porcentaje');
+        
+        if (filaTotal) {
+          if (filaTotal.cells[1]) filaTotal.cells[1].textContent = formatNumber(totalGenPEN, 2, true);
+          if (filaTotal.cells[2]) filaTotal.cells[2].textContent = formatNumber(totalGenOnlyPEN, 2, true);
+          if (filaTotal.cells[3]) filaTotal.cells[3].textContent = formatNumber(totalGenUSDenPEN, 2, true);
+          if (filaTotal.cells[4]) filaTotal.cells[4].textContent = formatNumber(totalGenUSD, 2, true);
+          if (filaTotal.cells[5]) filaTotal.cells[5].textContent = "";
+        }
+        
+        if (filaPorcentaje) {
+          const pctPEN = totalGenPEN > 0 ? (totalGenOnlyPEN / totalGenPEN) * 100 : 0;
+          const pctUSDenPEN = totalGenPEN > 0 ? (totalGenUSDenPEN / totalGenPEN) * 100 : 0;
+          
+          if (filaPorcentaje.cells[1]) filaPorcentaje.cells[1].textContent = ""; 
+          if (filaPorcentaje.cells[2]) filaPorcentaje.cells[2].textContent = formatNumber(pctPEN, 2, false) + "%";
+          if (filaPorcentaje.cells[3]) filaPorcentaje.cells[3].textContent = formatNumber(pctUSDenPEN, 2, false) + "%";
+          if (filaPorcentaje.cells[4]) filaPorcentaje.cells[4].textContent = "";
+          if (filaPorcentaje.cells[5]) filaPorcentaje.cells[5].textContent = "%";
+        }
+        
+        // Llamar a actualizar la fila TOTAL USD después de actualizar la tabla resumen
+        actualizarFilaTotalUSD(); // <--- Añadir esta llamada aquí
+    }
+  </script>
+  <!-- NO AÑADIR MÁS SCRIPTS AQUÍ -->
+</body>
+</html>

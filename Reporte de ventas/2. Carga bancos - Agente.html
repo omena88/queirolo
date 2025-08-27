@@ -1,0 +1,1294 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Asistente de Carga Bancaria - Santiago Queirolo</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  
+  <style>
+    /* ESTILOS ESPECÍFICOS PARA EL AGENTE BANCARIO */
+    .banco-app {
+      font-family: 'Inter', sans-serif;
+      width: 1200px;
+      height: 800px;
+      margin: 0 auto;
+      padding: 10px;
+      display: flex;
+      gap: 20px;
+    }
+    
+    .chat-section {
+      width: 40%;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .actions-section {
+      width: 60%;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+    }
+    
+    .chat-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px 0;
+      margin-bottom: 10px;
+    }
+    
+    .chat-area::-webkit-scrollbar {
+      width: 6px;
+    }
+    
+    .chat-area::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 3px;
+    }
+    
+    .chat-area::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 3px;
+    }
+    
+    .chat-area p,
+    .chat-area div,
+    .chat-area span {
+      margin-bottom: 0 !important;
+      line-height: 1.3 !important;
+    }
+    
+    .typing-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    
+    .typing-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: #9CA3AF;
+      animation: typing 1.4s infinite ease-in-out;
+    }
+    
+    .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+    .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+    
+    @keyframes typing {
+      0%, 80%, 100% { transform: scale(0); opacity: 0.5; }
+      40% { transform: scale(1); opacity: 1; }
+    }
+    
+    .fade-in {
+      animation: fadeIn 0.5s ease-in;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* ESTILOS PARA INPUTS Y SELECTORES */
+    .banco-app input.styled-input {
+      color: #111827 !important;
+      background-color: #ffffff !important;
+      border: 2px solid #e5e7eb !important;
+      border-radius: 0.5rem !important;
+      padding: 0.75rem 1rem !important;
+      font-size: 0.875rem !important;
+      line-height: 1.25rem !important;
+      height: auto !important;
+      min-height: 44px !important;
+      width: 100% !important;
+      font-weight: 500 !important;
+      -webkit-appearance: none !important;
+      appearance: none !important;
+    }
+
+    .banco-app input.styled-input:focus {
+      border-color: #3b82f6 !important;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, .25) !important;
+      outline: none !important;
+    }
+    
+    .hidden {
+      display: none;
+    }
+    
+    /* RESPONSIVE */
+    @media (max-width: 1200px) {
+      .banco-app {
+        width: 100%;
+        max-width: 1200px;
+        flex-direction: column;
+        height: auto;
+      }
+      
+      .chat-section {
+        width: 100%;
+        height: 300px;
+      }
+      
+      .actions-section {
+        width: 100%;
+      }
+    }
+    
+    @media (max-width: 768px) {
+      .banco-app {
+        width: 100%;
+        max-width: 100%;
+        flex-direction: column;
+        height: auto;
+      }
+      
+      .chat-section {
+        width: 100%;
+        height: 300px;
+      }
+      
+      .actions-section {
+        width: 100%;
+      }
+    }
+
+    /* Estilos para la tabla de movimientos */
+    .movements-table {
+      font-size: 10px !important;
+    }
+    .movements-table th,
+    .movements-table td {
+      padding: 4px 6px !important;
+      font-size: 9px !important;
+    }
+    
+    #edit-table td {
+      font-size: 11px !important;
+    }
+    
+    /* Estilos para drag and drop */
+    .drop-zone {
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+    
+    .drop-zone.drag-over {
+      border-color: #3b82f6 !important;
+      background-color: #eff6ff !important;
+      transform: scale(1.02);
+    }
+    
+    .drop-zone.drag-over i {
+      color: #3b82f6 !important;
+      transform: scale(1.1);
+    }
+    
+    .drop-zone.drag-over p {
+      color: #3b82f6 !important;
+      font-weight: 600;
+    }
+    
+    .celda-editable:focus {
+      outline: 2px solid #3b82f6;
+      background-color: #eff6ff;
+    }
+
+    /* Estilos para el modal de split */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.6);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+    }
+    
+    .modal-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+    
+    .modal-content {
+      background-color: #fff;
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+      max-width: 600px;
+      width: 90%;
+      box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      transform: scale(0.95);
+      transition: transform 0.3s ease;
+    }
+
+    .modal-overlay.active .modal-content {
+      transform: scale(1);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .modal-header h3 {
+      font-size: 1.125rem;
+      font-weight: 600;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: #9ca3af;
+    }
+    .modal-close:hover {
+      color: #111827;
+    }
+
+    .edit-modal-content {
+      width: 90%;
+      max-width: 1400px;
+      font-family: 'Inter', sans-serif;
+    }
+    
+    /* Variables de color corporativo */
+    :root {
+      --color-principal: #1b8943;
+      --color-principal-hover: #157235;
+      --color-secundario: #a98f43;
+      --color-success: #2ecc71;
+      --color-warning: #e67e22;
+      --color-danger: #e74c3c;
+    }
+  </style>
+</head>
+<body>
+  <div class="banco-app">
+    <!-- Sección del Chat (40%) -->
+    <div class="chat-section">
+      <div id="chat-messages" class="chat-area space-y-4">
+        <!-- Los mensajes aparecerán aquí -->
+      </div>
+    </div>
+
+    <!-- Sección de Acciones (60%) -->
+    <div class="actions-section">
+      <div id="input-area" class="hidden">
+        <!-- Paso 1: Carga de archivo -->
+        <div id="step-1" class="p-5 bg-white rounded-xl shadow-lg border border-gray-200">
+          <div class="mb-6">
+            <div id="drop-zone" class="drop-zone border-2 border-dashed border-gray-300 rounded-xl p-6 text-center bg-gray-50 hover:bg-gray-100 transition-colors duration-200">
+              <i class="fas fa-upload text-5xl text-gray-400 mb-4"></i>
+              <p class="text-lg font-semibold text-gray-700">Cargar documentos</p>
+              <input type="file" id="bancos-file-input" accept=".xls,.xlsx,.csv" class="hidden">
+              <button id="btn-cargar-bancos" onclick="document.getElementById('bancos-file-input').click()" class="mt-4 py-3 px-6 inline-flex items-center gap-x-2 text-sm font-semibold rounded-lg border border-transparent text-white bg-blue-600 hover:bg-blue-700 transition-all duration-200">
+                <i class="fas fa-folder-open"></i>
+                Seleccionar archivos
+              </button>
+              <p id="bancos-nombre-archivo" class="text-sm text-gray-500 mt-2"></p>
+            </div>
+          </div>
+          
+          <!-- Información de la cuenta -->
+          <div id="info-cuenta-container" class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 hidden">
+            <h4 class="font-semibold text-blue-800 mb-2">Información de la cuenta:</h4>
+            <div class="grid grid-cols-3 gap-4 text-sm">
+              <div>
+                <span class="text-gray-600">Número:</span>
+                <p id="info-cuenta-numero" class="font-medium">---</p>
+              </div>
+              <div>
+                <span class="text-gray-600">Moneda:</span>
+                <p id="info-cuenta-moneda" class="font-medium">---</p>
+              </div>
+              <div>
+                <span class="text-gray-600">Tipo:</span>
+                <p id="info-cuenta-tipo" class="font-medium">---</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="flex justify-end">
+            <button id="continue-step-1" class="py-3 px-6 inline-flex items-center gap-x-2 text-sm font-semibold rounded-lg border border-transparent text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none transition-all duration-200" disabled>
+              Procesar movimientos
+            </button>
+          </div>
+        </div>
+
+        <!-- Paso 2: Validación y procesamiento -->
+        <div id="step-2" class="p-5 bg-white rounded-xl shadow-lg border border-gray-200 hidden">
+          <div class="text-center mb-6">
+            <div class="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <i class="fas fa-cog text-white text-2xl animate-spin"></i>
+            </div>
+            <h3 class="text-xl font-semibold text-gray-900 mb-4">Procesando movimientos...</h3>
+            <p class="text-gray-600 mb-6">Validando datos y preparando transacciones</p>
+            <div class="w-full bg-gray-200 rounded-full h-2 mb-4">
+              <div id="progress-bar" class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+            <p id="progress-text" class="text-sm text-gray-500">Iniciando procesamiento...</p>
+          </div>
+        </div>
+
+        <!-- Paso 3: Revisión de movimientos -->
+        <div id="step-3" class="p-5 bg-white rounded-xl shadow-lg border border-gray-200 hidden">
+          
+          <div class="bg-gray-50 rounded-lg p-4 mb-6 max-h-96 overflow-y-auto">
+            <table id="tabla-movimientos-bancos" class="movements-table w-full text-xs">
+              <thead>
+                <tr class="bg-blue-100">
+                  <th class="text-left p-2">Fecha</th>
+                  <th class="text-left p-2">Concepto</th>
+                  <th class="text-left p-2">Proveedor</th>
+                  <th class="text-right p-2">Monto</th>
+                  <th class="text-right p-2">Saldo</th>
+                  <th class="text-left p-2"># Op.</th>
+                  <th class="text-left p-2">Hora</th>
+                  <th class="text-left p-2">Referencia</th>
+                  <th class="text-center p-2">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td colspan="9" class="text-center p-4 text-gray-500">Cargue un archivo para ver los movimientos.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          
+          <div class="flex justify-between items-center">
+            <div>
+              <p id="resumen-movimientos" class="text-sm text-gray-600">0 movimientos procesados</p>
+            </div>
+            <div class="flex items-center gap-x-2">
+              <button id="edit-transactions-btn" class="py-3 px-6 inline-flex items-center gap-x-2 text-sm font-semibold rounded-lg border border-gray-300 text-gray-800 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:pointer-events-none transition-all duration-200" disabled>
+                <i class="fas fa-edit"></i>
+                Editar
+              </button>
+            <button id="continue-step-3" class="py-3 px-6 inline-flex items-center gap-x-2 text-sm font-semibold rounded-lg border border-transparent text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none transition-all duration-200" disabled>
+              Enviar transacciones
+            </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Paso 4: Envío exitoso -->
+        <div id="step-4" class="p-6 bg-white rounded-xl shadow-lg border border-gray-200 hidden">
+          <div class="text-center">
+            <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <i class="fas fa-check text-blue-600 text-2xl"></i>
+            </div>
+            <h3 class="text-xl font-semibold text-gray-900 mb-4">¡Transacciones enviadas!</h3>
+            <p class="text-gray-600 mb-6">Los movimientos bancarios han sido procesados exitosamente</p>
+            <div id="resultado-final" class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <p id="mensaje-resultado" class="text-blue-800"></p>
+            </div>
+            <button id="nuevo-proceso" class="py-4 px-8 inline-flex items-center gap-x-2 text-base font-semibold rounded-lg border border-transparent text-white bg-blue-600 hover:bg-blue-700 transition-all duration-200">
+              <i class="fas fa-plus"></i>
+              Procesar nuevo archivo
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Edición -->
+  <div id="edit-modal" class="modal-overlay">
+    <div class="modal-content edit-modal-content bg-white rounded-lg shadow-xl p-6">
+      <div class="modal-header flex justify-between items-center pb-4 border-b">
+        <h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2"><i class="fas fa-edit text-blue-600"></i> Editar Transacciones</h3>
+        <button class="modal-close text-gray-500 hover:text-gray-800 text-2xl" id="edit-modal-close">&times;</button>
+      </div>
+      <div class="mt-4 max-h-[70vh] overflow-y-auto">
+        <table id="edit-table" class="movements-table w-full text-xs">
+          <thead>
+            <tr class="bg-blue-100">
+              <th class="text-left p-2">Fecha</th>
+              <th class="text-left p-2">Concepto</th>
+              <th class="text-left p-2">Proveedor</th>
+              <th class="text-right p-2">Monto</th>
+              <th class="text-right p-2">Saldo</th>
+              <th class="text-left p-2"># Op.</th>
+              <th class="text-left p-2">Hora</th>
+              <th class="text-left p-2">Referencia</th>
+              <th class="text-center p-2">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="edit-table-body">
+            <!-- Contenido se generará dinámicamente -->
+          </tbody>
+        </table>
+      </div>
+      <div class="modal-actions flex justify-end items-center mt-6">
+          <button id="btn-save-edits" class="py-2 px-4 inline-flex items-center gap-x-2 text-sm font-semibold rounded-lg border border-transparent text-white bg-blue-600 hover:bg-blue-700">Guardar Cambios</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Split -->
+  <div id="split-modal" class="modal-overlay">
+    <div class="modal-content bg-white rounded-lg shadow-xl p-6">
+      <div class="modal-header flex justify-between items-center pb-4 border-b">
+        <h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2"><i class="fas fa-cut text-blue-600"></i> Dividir Transacción</h3>
+        <button class="modal-close text-gray-500 hover:text-gray-800 text-2xl" id="modal-close">&times;</button>
+      </div>
+      
+      <div class="split-info bg-blue-50 border border-blue-200 rounded-lg p-4 my-4">
+        <p class="text-sm"><strong class="font-semibold text-blue-800">Monto Original:</strong> <span id="split-original-amount" class="font-mono">0.00</span></p>
+        <p class="text-sm"><strong class="font-semibold text-blue-800">Concepto:</strong> <span id="split-original-concept">---</span></p>
+      </div>
+      
+      <div class="split-lines space-y-3 mb-4" id="split-lines-container">
+        <!-- Las líneas de split se generarán dinámicamente -->
+      </div>
+      
+      <div class="split-totals bg-gray-50 rounded-lg p-4 mb-4 text-sm">
+        <div class="flex justify-between items-center mb-2">
+          <span>Total Asignado:</span>
+          <span id="split-total-assigned" class="font-mono font-semibold">0.00</span>
+        </div>
+        <div class="flex justify-between items-center font-bold">
+          <span>Diferencia:</span>
+          <span id="split-difference" class="font-mono">0.00</span>
+        </div>
+      </div>
+      
+      <div class="modal-actions flex justify-between items-center">
+        <button id="btn-add-split-line" class="py-2 px-4 inline-flex items-center gap-x-2 text-sm font-semibold rounded-lg border border-transparent text-white bg-blue-600 hover:bg-blue-700">
+          <i class="fas fa-plus"></i> Agregar Línea
+        </button>
+        <div class="flex gap-4">
+          <button id="btn-cancel-split" class="py-2 px-4 inline-flex items-center gap-x-2 text-sm font-semibold rounded-lg border border-gray-300 text-gray-800 bg-white hover:bg-gray-50">Cancelar</button>
+          <button id="btn-confirm-split" class="py-2 px-4 inline-flex items-center gap-x-2 text-sm font-semibold rounded-lg border border-transparent text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50" disabled>Confirmar Split</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <script>
+    // Variables globales
+    let currentStep = 1;
+    let movimientosProcesados = [];
+    let infoCuenta = {};
+    let csvData = []; // Para almacenar datos del CSV externo
+    let currentSplitRow = null;
+    let originalAmount = 0;
+    let splitLines = [];
+    
+    // Elementos del DOM
+    const chatMessages = document.getElementById('chat-messages');
+    const inputArea = document.getElementById('input-area');
+    const bancosFileInput = document.getElementById('bancos-file-input');
+    const bancosNombreArchivo = document.getElementById('bancos-nombre-archivo');
+    const infoCuentaContainer = document.getElementById('info-cuenta-container');
+    const infoCuentaNumero = document.getElementById('info-cuenta-numero');
+    const infoCuentaMoneda = document.getElementById('info-cuenta-moneda');
+    const infoCuentaTipo = document.getElementById('info-cuenta-tipo');
+    const tablaMovimientosBancos = document.getElementById('tabla-movimientos-bancos');
+    const continueStep1 = document.getElementById('continue-step-1');
+    const continueStep3 = document.getElementById('continue-step-3');
+    const editTransactionsBtn = document.getElementById('edit-transactions-btn');
+    const progressBar = document.getElementById('progress-bar');
+    const progressText = document.getElementById('progress-text');
+    const resumenMovimientos = document.getElementById('resumen-movimientos');
+    const mensajeResultado = document.getElementById('mensaje-resultado');
+    const nuevoProcesoBtn = document.getElementById('nuevo-proceso');
+
+    // Funciones de chat
+    function addBotMessage(message) {
+      const messageDiv = document.createElement('div');
+      messageDiv.className = 'flex items-start space-x-3 fade-in';
+      messageDiv.innerHTML = `
+        <div class="flex-shrink-0">
+          <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+            <i class="fas fa-university text-white text-sm"></i>
+          </div>
+        </div>
+        <div class="flex-1 bg-gray-100 rounded-lg px-4 py-3">
+          <p class="text-sm text-gray-800">${message}</p>
+        </div>
+      `;
+      chatMessages.appendChild(messageDiv);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function addUserMessage(message) {
+      /*
+      const messageDiv = document.createElement('div');
+      messageDiv.className = 'flex items-start space-x-3 justify-end fade-in';
+      messageDiv.innerHTML = `
+        <div class="flex-1 bg-blue-600 rounded-lg px-4 py-3 text-right">
+          <p class="text-sm text-white">${message}</p>
+        </div>
+        <div class="flex-shrink-0">
+          <div class="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center">
+            <i class="fas fa-user text-white text-sm"></i>
+          </div>
+        </div>
+      `;
+      chatMessages.appendChild(messageDiv);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+      */
+    }
+
+    function showTypingIndicator() {
+      const typingDiv = document.createElement('div');
+      typingDiv.id = 'typing-indicator';
+      typingDiv.className = 'flex items-start space-x-3 fade-in';
+      typingDiv.innerHTML = `
+        <div class="flex-shrink-0">
+          <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+            <i class="fas fa-university text-white text-sm"></i>
+          </div>
+        </div>
+        <div class="flex-1 bg-gray-100 rounded-lg px-4 py-3">
+          <div class="typing-indicator">
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+          </div>
+        </div>
+      `;
+      chatMessages.appendChild(typingDiv);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function hideTypingIndicator() {
+      const typingIndicator = document.getElementById('typing-indicator');
+      if (typingIndicator) {
+        typingIndicator.remove();
+      }
+    }
+
+    // --- Funciones para el Modal de Split ---
+
+    function abrirModalSplit(button) {
+      const row = button.closest('tr');
+      currentSplitRow = row;
+      
+      const cells = row.querySelectorAll('td');
+      const concepto = cells[1].textContent.trim();
+      const montoTexto = cells[3].textContent.trim();
+      originalAmount = montoTexto === '---' ? 0 : parseFloat(montoTexto.replace(/[,\s]/g, '')) || 0;
+      
+      document.getElementById('split-original-concept').textContent = concepto;
+      document.getElementById('split-original-amount').textContent = formatNumber(originalAmount);
+      
+      splitLines = [
+        { concepto: concepto, monto: originalAmount / 2 },
+        { concepto: '', monto: originalAmount / 2 }
+      ];
+      
+      renderSplitLines();
+      updateSplitTotals();
+      
+      document.getElementById('split-modal').classList.add('active');
+    }
+
+    function cerrarModalSplit() {
+      document.getElementById('split-modal').classList.remove('active');
+      currentSplitRow = null;
+      splitLines = [];
+    }
+
+    function renderSplitLines() {
+      const container = document.getElementById('split-lines-container');
+      container.innerHTML = '';
+      
+      splitLines.forEach((line, index) => {
+        const lineDiv = document.createElement('div');
+        lineDiv.className = 'grid grid-cols-[1fr_120px_40px] gap-2 items-center';
+        lineDiv.innerHTML = `
+          <input type="text" placeholder="Concepto" value="${line.concepto}" 
+                 oninput="updateSplitLine(${index}, 'concepto', this.value)"
+                 class="styled-input py-2 px-3 text-sm">
+          <input type="number" step="0.01" placeholder="Monto" value="${line.monto.toFixed(2)}" 
+                 oninput="updateSplitLine(${index}, 'monto', parseFloat(this.value) || 0)"
+                 class="styled-input py-2 px-3 text-sm text-right">
+          <button class="text-red-500 hover:text-red-700 text-lg" onclick="removeSplitLine(${index})" 
+                  ${splitLines.length <= 2 ? 'style="visibility: hidden;"' : ''}>
+            <i class="fas fa-times-circle"></i>
+          </button>
+        `;
+        container.appendChild(lineDiv);
+      });
+    }
+
+    function updateSplitLine(index, field, value) {
+      if (splitLines[index]) {
+        splitLines[index][field] = value;
+        updateSplitTotals();
+      }
+    }
+
+    function removeSplitLine(index) {
+      if (splitLines.length > 2) {
+        splitLines.splice(index, 1);
+        renderSplitLines();
+        updateSplitTotals();
+      }
+    }
+
+    function addSplitLine() {
+      splitLines.push({ concepto: '', monto: 0 });
+      renderSplitLines();
+      updateSplitTotals();
+    }
+
+    function updateSplitTotals() {
+      const totalAssigned = splitLines.reduce((sum, line) => sum + (line.monto || 0), 0);
+      const difference = originalAmount - totalAssigned;
+      
+      document.getElementById('split-total-assigned').textContent = formatNumber(totalAssigned);
+      const diffElement = document.getElementById('split-difference');
+      diffElement.textContent = formatNumber(difference);
+      
+      const confirmButton = document.getElementById('btn-confirm-split');
+      
+      if (Math.abs(difference) < 0.01) {
+        diffElement.classList.remove('text-red-600');
+        diffElement.classList.add('text-green-600');
+        confirmButton.disabled = false;
+      } else {
+        diffElement.classList.remove('text-green-600');
+        diffElement.classList.add('text-red-600');
+        confirmButton.disabled = true;
+      }
+    }
+
+    function confirmarSplit() {
+      if (!currentSplitRow || Math.abs(originalAmount - splitLines.reduce((sum, line) => sum + (line.monto || 0), 0)) >= 0.01) {
+        return;
+      }
+      
+      const originalCells = currentSplitRow.querySelectorAll('td');
+      const newRowsData = splitLines.map(line => {
+        return {
+          fecha: originalCells[0].textContent,
+          concepto: line.concepto,
+          proveedor: originalCells[2].textContent,
+          monto: line.monto,
+          saldo: originalCells[4].textContent,
+          numOperacion: originalCells[5].textContent,
+          hora: originalCells[6].textContent,
+          referencia: originalCells[7].textContent,
+        };
+      });
+
+      const tbody = currentSplitRow.parentNode;
+      const originalIndex = Array.from(tbody.children).indexOf(currentSplitRow);
+      
+      // Update movimientosProcesados array
+      const processedRows = newRowsData.filter(d => d.concepto.trim() !== '' && d.monto !== 0).map(d => ({...d}));
+      movimientosProcesados.splice(originalIndex, 1, ...processedRows);
+
+      // Re-render the table
+      displayMovimientos();
+      cerrarModalSplit();
+      
+      addBotMessage(`✅ Transacción dividida exitosamente. La tabla ha sido actualizada.`);
+    }
+
+
+    function setupDragAndDrop() {
+      const dropZone = document.getElementById('drop-zone');
+      const fileInput = document.getElementById('bancos-file-input');
+
+      // Allow clicking on the drop zone to open file dialog
+      // The button inside already does this, so this is an enhancement
+      dropZone.addEventListener('click', (e) => {
+        if (e.target.id === 'drop-zone' || e.target.tagName === 'P' || e.target.tagName === 'I') {
+          fileInput.click();
+        }
+      });
+
+      dropZone.addEventListener('dragenter', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropZone.classList.add('drag-over');
+      });
+
+      dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropZone.classList.add('drag-over');
+      });
+
+      dropZone.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropZone.classList.remove('drag-over');
+      });
+
+      dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropZone.classList.remove('drag-over');
+
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+          fileInput.files = files;
+          // Dispatch change event to trigger handleFileSelectBancos
+          const event = new Event('change', { bubbles: true });
+          fileInput.dispatchEvent(event);
+        }
+      });
+    }
+
+    function showStep(stepNumber) {
+      // Ocultar todos los pasos
+      for (let i = 1; i <= 4; i++) {
+        document.getElementById(`step-${i}`).classList.add('hidden');
+      }
+      // Mostrar el paso actual
+      document.getElementById(`step-${stepNumber}`).classList.remove('hidden');
+      currentStep = stepNumber;
+    }
+
+    // Funciones de procesamiento de archivos (adaptadas del original)
+    function formatNumber(num, decimals = 2) {
+      if (num === undefined || num === null || String(num).trim() === '') {
+          return '0.00'; 
+      }
+      const numericValue = Number(num);
+      if (isNaN(numericValue)) {
+          return '0.00'; 
+      }
+      return numericValue.toLocaleString('es-PE', { 
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals
+      });
+    }
+
+    function formatDateFromExcel(excelValue) {
+      if (typeof excelValue === 'number') {
+        const date = XLSX.SSF.parse_date_code(excelValue);
+        if (date) {
+          return `${String(date.d).padStart(2, '0')}/${String(date.m).padStart(2, '0')}/${date.y}`;
+        }
+      } else if (typeof excelValue === 'string') {
+        return excelValue.trim() !== '' ? excelValue : '---';
+      }
+      return '---';
+    }
+
+    function formatTimeFromExcel(excelValue) {
+      if (typeof excelValue === 'number') {
+        let hours = Math.floor(excelValue * 24);
+        let minutes = Math.floor(((excelValue * 24) - hours) * 60);
+        let seconds = Math.floor(((((excelValue * 24) - hours) * 60) - minutes) * 60);
+        
+        return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+      } else if (typeof excelValue === 'string'){
+        if (/^\d{2}:\d{2}:\d{2}$/.test(excelValue.trim())) {
+            return excelValue.trim();
+        }
+      }
+      return '---';
+    }
+
+    function transformarNumeroOperacion(descripcionOp, numeroOp) {
+      if (!numeroOp || numeroOp === '---') return numeroOp;
+      
+      const descripcion = String(descripcionOp || '').toUpperCase().trim();
+      
+      if (descripcion.includes('TRANFERENCIA CCE')) {
+        // Reemplazar el primer '4' por '2'
+        const numeroStr = String(numeroOp).trim();
+        const primerCuatroIndex = numeroStr.indexOf('4');
+        if (primerCuatroIndex !== -1) {
+          return numeroStr.substring(0, primerCuatroIndex) + '2' + numeroStr.substring(primerCuatroIndex + 1);
+        }
+      }
+      return numeroOp;
+    }
+
+    function parseCSVLine(line) {
+      const result = [];
+      let current = '';
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+          result.push(current);
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      result.push(current);
+      return result;
+    }
+
+    async function cargarCSVExterno() {
+      try {
+        const googleSheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRKeFI1f8VGIlLuN_yPSctoqlyrAUiSU7TwYIXiUs1X83gIWSnwprTN50AZ_hKSzmcigHxOXiQGoUTl/pub?gid=0&single=true&output=csv';
+        const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(googleSheetUrl)}`;
+        const response = await fetch(proxyUrl);
+        const csvText = await response.text();
+
+        // Usar la lógica de RV est carga bancos.html que es más simple y probada
+        const lines = csvText.split(/\r\n|\n/);
+        const headers = lines[0].split(',').map(h => h.trim().replace(/\r$/, ''));
+        
+        csvData = [];
+        for (let i = 1; i < lines.length; i++) {
+          if (lines[i].trim() === '') continue;
+          
+          // Usar el parseador de líneas que maneja comillas
+          const values = parseCSVLine(lines[i]);
+          if (values.length >= headers.length) {
+            const record = {};
+            headers.forEach((header, index) => {
+              record[header] = values[index] ? values[index].trim() : '';
+            });
+            csvData.push(record);
+          }
+        }
+        
+        if (csvData.length === 0) {
+            console.error("CSV parsing failed, not enough records found after processing.", {lines: lines.length});
+        }
+
+        console.log(`CSV cargado exitosamente: ${csvData.length} registros`);
+        addBotMessage('Base de datos de proveedores cargada correctamente.');
+
+      } catch (error) {
+        console.error('Error al cargar CSV:', error);
+        addBotMessage('⚠️ No se pudo cargar la base de datos de proveedores. El cruce de datos puede ser impreciso.');
+      }
+    }
+
+    function buscarEnCSV(numeroOperacion) {
+      if (!numeroOperacion || numeroOperacion === '---') return null;
+      
+      for (let record of csvData) {
+        const csvNumero = String(record['número_operación'] || '').trim();
+        if (csvNumero && numeroOperacion.endsWith(csvNumero)) {
+          return record;
+        }
+      }
+      return null;
+    }
+
+    function handleFileSelectBancos(event) {
+      const file = event.target.files[0];
+      if (!file) {
+        bancosNombreArchivo.textContent = '';
+        return;
+      }
+      bancosNombreArchivo.textContent = file.name;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' }); 
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: true, defval: "" });
+
+        if (jsonData.length < 6) {
+          alert("El archivo no tiene suficientes filas para procesar. Se esperan datos de cuenta y movimientos.");
+          return;
+        }
+
+        infoCuentaNumero.textContent = jsonData[0] && jsonData[0][1] !== undefined ? String(jsonData[0][1]) : '---';
+        infoCuentaMoneda.textContent = jsonData[1] && jsonData[1][1] !== undefined ? String(jsonData[1][1]) : '---';
+        infoCuentaTipo.textContent = jsonData[2] && jsonData[2][1] !== undefined ? String(jsonData[2][1]) : '---';
+        
+        // Corregir el guardado de la información de la cuenta
+        infoCuenta = {
+          numero: infoCuentaNumero.textContent,
+          moneda: infoCuentaMoneda.textContent,
+          tipo: infoCuentaTipo.textContent
+        };
+        
+        const movimientos = [];
+        for (let i = 5; i < jsonData.length; i++) {
+          const row = jsonData[i];
+          if (!row || row.length === 0 || (String(row[0]).trim() === '' && String(row[3]).trim() === '')) continue; 
+
+          const fecha = row[0]; 
+          const descripcionOperacion = String(row[2] || '');
+          const monto = row[3];
+          let operacionNumero = String(row[6] || '');
+          const horaOperacion = row[7];
+          const referencia2 = String(row[10] || '');
+
+          operacionNumero = transformarNumeroOperacion(descripcionOperacion, operacionNumero);
+          const csvMatch = buscarEnCSV(operacionNumero);
+
+          let concepto = descripcionOperacion.trim() !== '' ? descripcionOperacion : '---';
+          let proveedor = '---';
+          let referencia = referencia2.trim() !== '' ? referencia2 : '---';
+          const descripcionUpper = descripcionOperacion.toUpperCase().trim();
+          
+          if (descripcionUpper.includes('TRANSF.EXT')) {
+            if (csvMatch) {
+              concepto = csvMatch['referencia'] || concepto;
+              proveedor = csvMatch['empresa_destino'] || proveedor;
+              referencia = csvMatch['mensaje'] || referencia;
+            }
+          }
+          else if (descripcionUpper.startsWith('IMPUESTO') || 
+              descripcionUpper.startsWith('COM.MANTENIM') || 
+              descripcionUpper.startsWith('ENVIO.EST.CTA') || 
+              descripcionUpper.startsWith('COM.OP')) {
+            referencia = descripcionOperacion;
+            concepto = 'COMISION BANCARIA';
+          }
+          else if (descripcionUpper.startsWith('HABER')) {
+            concepto = 'PLANILLA';
+          }
+          else if (descripcionUpper.startsWith('BACK')) {
+            concepto = 'BACKUS';
+            proveedor = 'BACKUS';
+          }
+          else if (descripcionUpper.startsWith('PAGO IMPUES')) {
+            proveedor = 'SUNAT';
+          }
+          else if (csvMatch) {
+            concepto = csvMatch['referencia'] || concepto;
+            proveedor = csvMatch['empresa_destino'] || proveedor;
+            referencia = csvMatch['mensaje'] || referencia;
+          }
+
+          let montoFila = monto;
+          if ((descripcionUpper.includes('TRANFERENCIA CCE') || descripcionUpper.includes('TRANSF.EXT')) && csvMatch) {
+            montoFila = Number(csvMatch['monto_neto']) || monto;
+          }
+
+          const movimientoOriginal = {
+            fecha: formatDateFromExcel(fecha),
+            concepto: concepto,
+            proveedor: proveedor,
+            monto: montoFila,
+            saldo: '---', 
+            numOperacion: operacionNumero.trim() !== '' ? operacionNumero : '---',
+            hora: formatTimeFromExcel(horaOperacion),
+            referencia: referencia
+          };
+
+          movimientos.push(movimientoOriginal);
+
+          if ((descripcionUpper.includes('TRANSF.EXT') || descripcionUpper.includes('TRANFERENCIA CCE')) && csvMatch) {
+            const montoExcel = Number(monto) || 0;
+            const montoCSV = Number(csvMatch['monto_neto']) || 0;
+            const comision = montoExcel - montoCSV;
+
+            if (Math.abs(comision) > 0.01) { 
+                const movimientoComision = {
+                    fecha: formatDateFromExcel(fecha),
+                    concepto: 'COMISION BANCARIA',
+                    proveedor: proveedor,
+                    monto: comision,
+                    saldo: '---',
+                    numOperacion: operacionNumero.trim() !== '' ? operacionNumero : '---',
+                    hora: formatTimeFromExcel(horaOperacion),
+                    referencia: formatNumber(montoExcel)
+                };
+                movimientos.push(movimientoComision);
+            }
+          }
+        }
+        movimientosProcesados = movimientos;
+        hideTypingIndicator();
+        addBotMessage(`✅ Archivo procesado exitosamente. He encontrado ${movimientos.length} movimientos bancarios.`);
+        addBotMessage(`📊 **Información de cuenta:**\n- Número: ${infoCuentaNumero.textContent}\n- Moneda: ${infoCuentaMoneda.textContent}\n- Tipo: ${infoCuentaTipo.textContent}`);
+        continueStep1.disabled = false;
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function displayMovimientos() {
+      const tbody = tablaMovimientosBancos.querySelector('tbody');
+      tbody.innerHTML = '';
+      
+      if (movimientosProcesados.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" class="text-center p-4 text-gray-500">No hay movimientos para mostrar.</td></tr>';
+        return;
+      }
+      
+      movimientosProcesados.forEach((mov, index) => {
+        const fila = document.createElement('tr');
+        fila.className = 'border-b hover:bg-gray-50';
+        fila.innerHTML = `
+          <td class="p-2">${mov.fecha}</td>
+          <td class="p-2">${mov.concepto}</td>
+          <td class="p-2">${mov.proveedor}</td>
+          <td class="p-2 text-right">${formatNumber(mov.monto)}</td>
+          <td class="p-2 text-right">${formatNumber(mov.saldo)}</td>
+          <td class="p-2">${mov.numOperacion}</td>
+          <td class="p-2">${mov.hora}</td>
+          <td class="p-2">${mov.referencia}</td>
+          <td class="p-2 text-center">
+            <button class="text-blue-600 hover:text-blue-800" onclick="abrirModalSplit(this)">
+              <i class="fas fa-cut"></i>
+            </button>
+            <button class="text-red-600 hover:text-red-800 ml-2" onclick="eliminarMovimiento(${index})">
+              <i class="fas fa-trash"></i>
+            </button>
+          </td>
+        `;
+        tbody.appendChild(fila);
+      });
+      
+      resumenMovimientos.textContent = `${movimientosProcesados.length} movimientos procesados`;
+      const hasMovimientos = movimientosProcesados.length > 0;
+      continueStep3.disabled = !hasMovimientos;
+      editTransactionsBtn.disabled = !hasMovimientos;
+    }
+
+    function abrirModalEdicion() {
+      const editTableBody = document.getElementById('edit-table-body');
+      editTableBody.innerHTML = '';
+
+      movimientosProcesados.forEach((mov, index) => {
+        const fila = document.createElement('tr');
+        fila.dataset.index = index;
+        fila.innerHTML = `
+          <td class="p-2">${mov.fecha}</td>
+          <td class="p-2" contenteditable="true">${mov.concepto}</td>
+          <td class="p-2" contenteditable="true">${mov.proveedor}</td>
+          <td class="p-2 text-right">${formatNumber(mov.monto)}</td>
+          <td class="p-2 text-right">${formatNumber(mov.saldo)}</td>
+          <td class="p-2">${mov.numOperacion}</td>
+          <td class="p-2">${mov.hora}</td>
+          <td class="p-2" contenteditable="true">${mov.referencia}</td>
+          <td class="p-2 text-center">
+            <button class="text-blue-600 hover:text-blue-800" onclick="abrirModalSplit(this)">
+              <i class="fas fa-cut"></i>
+            </button>
+            <button class="text-red-600 hover:text-red-800 ml-2" onclick="eliminarMovimiento(${index})">
+              <i class="fas fa-trash"></i>
+            </button>
+          </td>
+        `;
+        editTableBody.appendChild(fila);
+      });
+
+      document.getElementById('edit-modal').classList.add('active');
+    }
+
+    function cerrarModalEdicion() {
+      document.getElementById('edit-modal').classList.remove('active');
+    }
+
+    function guardarCambiosEdicion() {
+      const editTableBody = document.getElementById('edit-table-body');
+      const filas = editTableBody.querySelectorAll('tr');
+
+      filas.forEach(fila => {
+        const index = parseInt(fila.dataset.index, 10);
+        const celdas = fila.querySelectorAll('td');
+        
+        movimientosProcesados[index].concepto = celdas[1].textContent.trim();
+        movimientosProcesados[index].proveedor = celdas[2].textContent.trim();
+        movimientosProcesados[index].referencia = celdas[7].textContent.trim();
+      });
+
+      displayMovimientos();
+      cerrarModalEdicion();
+      addBotMessage('✅ ¡Perfecto! Los cambios han sido guardados y la tabla principal ha sido actualizada.');
+    }
+
+    function actualizarMovimiento(index, campo, valor) {
+        if (movimientosProcesados[index]) {
+            movimientosProcesados[index][campo] = valor.trim();
+            console.log(`Movimiento ${index} actualizado: ${campo} = ${valor}`);
+            addBotMessage(`📝 Campo '${campo}' actualizado para la transacción #${index + 1}.`);
+        }
+    }
+
+    function eliminarMovimiento(index) {
+        if (confirm('¿Está seguro de que desea eliminar esta transacción?')) {
+            movimientosProcesados.splice(index, 1);
+            displayMovimientos();
+            addBotMessage(`🗑️ Transacción #${index + 1} eliminada.`);
+        }
+    }
+
+    async function enviarTransacciones() {
+      if (movimientosProcesados.length === 0) {
+        addBotMessage('❌ No hay transacciones para enviar');
+        return;
+      }
+
+      addUserMessage('Enviar transacciones al sistema');
+      showTypingIndicator();
+      
+      try {
+        const datosParaEnviar = {
+          cuenta_info: `${infoCuenta.numero},${infoCuenta.tipo}`,
+          moneda: infoCuenta.moneda,
+          fechas: movimientosProcesados.map(m => m.fecha).join(','),
+          conceptos: movimientosProcesados.map(m => m.concepto).join(','),
+          proveedores: movimientosProcesados.map(m => m.proveedor).join(','),
+          montos: movimientosProcesados.map(m => m.monto).join(','),
+          saldos: movimientosProcesados.map(m => m.saldo).join(','),
+          numOperaciones: movimientosProcesados.map(m => m.numOperacion).join(','),
+          horas: movimientosProcesados.map(m => m.hora).join(','),
+          referencias: movimientosProcesados.map(m => m.referencia).join(','),
+          timestamp: new Date().toISOString(),
+          total_transacciones: movimientosProcesados.length
+        };
+
+        console.log("--- INICIO ENVÍO WEBHOOK ---");
+        console.log("URL:", 'https://connect.pabbly.com/workflow/sendwebhookdata/IjU3NjYwNTY4MDYzZTA0MzQ1MjZmNTUzNTUxMzMi_pc');
+        console.log("Payload a enviar:", JSON.stringify(datosParaEnviar, null, 2));
+
+        const response = await fetch('https://connect.pabbly.com/workflow/sendwebhookdata/IjU3NjYwNTY4MDYzZTA0MzQ1MjZmNTUzNTUxMzMi_pc', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(datosParaEnviar)
+        });
+
+        const responseText = await response.text();
+        console.log("Respuesta del Webhook (crudo):", responseText);
+        console.log("Estado de la respuesta:", response.status, response.statusText);
+        console.log("--- FIN ENVÍO WEBHOOK ---");
+
+        hideTypingIndicator();
+
+        if (response.ok) {
+          try {
+            const resultado = JSON.parse(responseText);
+            console.log("Respuesta del Webhook (JSON):", resultado);
+          } catch(e) {
+            console.warn("La respuesta del webhook no es un JSON válido.");
+          }
+          addBotMessage(`✅ ¡Perfecto! He enviado ${movimientosProcesados.length} transacciones al sistema exitosamente.`);
+          mensajeResultado.textContent = `${movimientosProcesados.length} transacciones procesadas correctamente`;
+          showStep(4);
+        } else {
+          throw new Error(`Error HTTP: ${response.status} - ${responseText}`);
+        }
+
+      } catch (error) {
+        hideTypingIndicator();
+        console.error('Error al enviar transacciones:', error);
+        addBotMessage(`❌ Error al enviar transacciones: ${error.message}`);
+      }
+    }
+
+      // Event listeners
+      document.addEventListener('DOMContentLoaded', function() {
+        setupDragAndDrop(); // Inicializar drag and drop
+        
+        setTimeout(() => {
+          showTypingIndicator();
+          
+          setTimeout(() => {
+            hideTypingIndicator();
+            addBotMessage('¡Hola! 👋 Soy tu Asistente Bancario. Para comenzar, arrastra o selecciona tu archivo Excel para procesar los movimientos de forma rápida y segura. 📊');
+                inputArea.classList.remove('hidden');
+            // Cargar el CSV de proveedores en segundo plano
+            cargarCSVExterno();
+              }, 1500);
+        }, 500);
+
+      bancosFileInput.addEventListener('change', handleFileSelectBancos);
+      
+      continueStep1.addEventListener('click', function() {
+        addUserMessage('Procesar movimientos bancarios');
+        showStep(2);
+        
+        // Simular procesamiento
+        let progress = 0;
+        const interval = setInterval(() => {
+          progress += 20;
+          progressBar.style.width = progress + '%';
+          
+          if (progress === 20) progressText.textContent = 'Validando formato del archivo...';
+          else if (progress === 40) progressText.textContent = 'Extrayendo información de cuenta...';
+          else if (progress === 60) progressText.textContent = 'Procesando y cruzando datos...';
+          else if (progress === 80) progressText.textContent = 'Validando datos finales...';
+          else if (progress === 100) {
+            progressText.textContent = 'Procesamiento completado';
+            clearInterval(interval);
+            
+            setTimeout(() => {
+              showTypingIndicator();
+              setTimeout(() => {
+                hideTypingIndicator();
+                addBotMessage(`🎉 ¡Excelente! He procesado todos los movimientos. Aquí tienes un resumen de las ${movimientosProcesados.length} transacciones encontradas.`);
+                displayMovimientos();
+                showStep(3);
+              }, 1000);
+            }, 500);
+          }
+        }, 800);
+      });
+      
+      continueStep3.addEventListener('click', enviarTransacciones);
+
+      editTransactionsBtn.addEventListener('click', abrirModalEdicion);
+      
+      nuevoProcesoBtn.addEventListener('click', function() {
+        // Reiniciar aplicación
+        movimientosProcesados = [];
+        infoCuenta = {};
+        bancosFileInput.value = '';
+        bancosNombreArchivo.textContent = '';
+        infoCuentaContainer.classList.add('hidden');
+        continueStep1.disabled = true;
+        continueStep3.disabled = true;
+        editTransactionsBtn.disabled = true;
+        
+        addUserMessage('Iniciar nuevo proceso de carga');
+        showTypingIndicator();
+        
+        setTimeout(() => {
+          hideTypingIndicator();
+          addBotMessage('¡Perfecto! Estoy listo para procesar un nuevo archivo de movimientos bancarios. 📁');
+          showStep(1);
+        }, 1000);
+      });
+
+      // Event listeners para el modal de edición
+      document.getElementById('edit-modal-close').addEventListener('click', cerrarModalEdicion);
+      document.getElementById('btn-save-edits').addEventListener('click', guardarCambiosEdicion);
+      document.getElementById('edit-modal').addEventListener('click', function(e) {
+          if (e.target === this) {
+              cerrarModalEdicion();
+          }
+      });
+
+      // Event listeners para el modal
+      document.getElementById('modal-close').addEventListener('click', cerrarModalSplit);
+      document.getElementById('btn-cancel-split').addEventListener('click', cerrarModalSplit);
+      document.getElementById('btn-confirm-split').addEventListener('click', confirmarSplit);
+      document.getElementById('btn-add-split-line').addEventListener('click', addSplitLine);
+      document.getElementById('split-modal').addEventListener('click', function(e) {
+        if (e.target === this) {
+          cerrarModalSplit();
+        }
+      });
+    });
+  </script>
+</body>
+</html>

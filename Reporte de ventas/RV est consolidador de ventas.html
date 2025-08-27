@@ -1,0 +1,1218 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Consolidador de ventas</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Librerías externas CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  
+  <!-- Estilos -->
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
+    :root {
+      /* Paleta basada en los colores corporativos proporcionados */
+      --color-principal: #1b8943;      /* Verde corporativo */
+      --color-principal-hover: #157235; /* Verde más oscuro */
+      --color-secundario: #a98f43;     /* Dorado/Marrón corporativo */
+      --color-secundario-hover: #8f7a39; /* Dorado más oscuro */
+      
+      /* Colores complementarios */
+      --color-success: #2ecc71;        /* Verde éxito */
+      --color-warning: #e67e22;        /* Naranja advertencia */
+      --color-danger: #e74c3c;         /* Rojo peligro */
+      
+      /* Fondos y superficies - más oscuros para un tema más elegante */
+      --color-fondo: #f5f5f5;          /* Fondo general más oscuro */
+      --color-superficie: #ffffff;     /* Blanco para tarjetas */
+      --color-superficie-alt: #edf2ed; /* Fondo alternativo con tono verde suave */
+      --color-superficie-sec: #f5f2e6; /* Fondo alternativo con tono dorado suave */
+      
+      /* Textos */
+      --color-texto: #333333;          /* Texto principal casi negro */
+      --color-texto-secundario: #666666; /* Texto secundario gris oscuro */
+      --color-texto-claro: #ffffff;    /* Texto claro/blanco */
+      
+      /* Bordes y separadores */
+      --color-borde: #e0e0e0;          /* Borde claro */
+      --color-borde-enfasis: #cccccc;  /* Borde con énfasis */
+      
+      /* Sombras */
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.1);
+      --shadow-md: 0 2px 4px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+      --shadow-lg: 0 4px 6px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.06);
+      
+      /* Bordes redondeados */
+      --border-radius-sm: 4px;
+      --border-radius: 6px;
+      --border-radius-lg: 8px;
+      
+      /* Espaciado */
+      --spacing-xs: 4px;
+      --spacing-sm: 8px;
+      --spacing-md: 12px;
+      --spacing-lg: 16px;
+      --spacing-xl: 24px;
+      --spacing-xxl: 32px;
+      
+      font-size: 16px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--color-fondo);
+      color: var(--color-texto);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      min-height: 100vh;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* Contenedor principal */
+    .reporte-container {
+      max-width: 100%;
+      width: 1380px;
+      margin: 0 auto;
+      padding: var(--spacing-lg);
+      box-sizing: border-box;
+    }
+
+    /* Cabecera con estilo dashboard moderno */
+    .titulo-reporte {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--spacing-xl);
+    }
+    
+    .titulo-reporte h1 {
+      color: var(--color-texto);
+      font-size: 22px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+    }
+    
+    .titulo-reporte h1 i {
+      color: var(--color-principal);
+    }
+    
+    #fecha-seleccionada {
+      display: inline-block;
+      background-color: var(--color-superficie-alt);
+      color: var(--color-texto-secundario);
+      padding: 6px var(--spacing-md);
+      border-radius: 30px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    /* Card para acordeón de configuración */
+    .config-accordion {
+      background-color: var(--color-superficie);
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow-sm);
+      margin-bottom: var(--spacing-xl);
+      overflow: hidden;
+      border: 1px solid var(--color-borde);
+      transition: box-shadow 0.3s ease;
+    }
+    
+    .config-accordion:hover {
+      box-shadow: var(--shadow-md);
+    }
+    
+    .accordion-header {
+      background-color: var(--color-superficie);
+      padding: var(--spacing-md) var(--spacing-lg);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+      transition: background-color 0.2s ease;
+    }
+    
+    .accordion-header:hover {
+      background-color: var(--color-superficie-alt);
+    }
+    
+    .accordion-header h3 {
+      color: var(--color-texto);
+      font-size: 15px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+    }
+    
+    .accordion-header h3 i {
+      color: var(--color-principal);
+    }
+    
+    .accordion-header i.fas.fa-chevron-down {
+      color: var(--color-texto-secundario);
+      transition: transform 0.3s ease;
+      font-size: 13px;
+    }
+    
+    .accordion-header.active i.fas.fa-chevron-down {
+      transform: rotate(180deg);
+    }
+    
+    .accordion-content {
+      padding: 0;
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease, padding 0.3s ease;
+    }
+    
+    .accordion-content.active {
+      padding: var(--spacing-lg);
+      max-height: 500px;
+    }
+
+    /* Grid para configuración */
+    .config-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: var(--spacing-lg);
+    }
+    
+    .config-item {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-sm);
+    }
+    
+    .config-label {
+      color: var(--color-texto);
+      font-weight: 500;
+      font-size: 13px;
+      margin-bottom: var(--spacing-xs);
+    }
+    
+    .config-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--spacing-sm);
+      width: 100%;
+    }
+
+    /* Inputs y selects estilizados */
+    .styled-selector,
+    input[type="text"],
+    input[type="number"],
+    input[type="date"] {
+      background-color: var(--color-superficie);
+      border: 1px solid var(--color-borde);
+      color: var(--color-texto);
+      padding: 8px var(--spacing-md);
+      border-radius: var(--border-radius-sm);
+      font-family: inherit;
+      font-size: 13px;
+      flex-grow: 1;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      min-width: 80px;
+      outline: none;
+    }
+    
+    .styled-selector:focus,
+    input[type="text"]:focus,
+    input[type="number"]:focus,
+    input[type="date"]:focus {
+      border-color: var(--color-principal);
+      box-shadow: 0 0 0 3px rgba(27, 137, 67, 0.15);
+    }
+
+    /* Botones modernos */
+    .btn {
+      background-color: var(--color-principal);
+      color: white;
+      border: none;
+      padding: 8px var(--spacing-md);
+      border-radius: var(--border-radius-sm);
+      cursor: pointer;
+      font-size: 13px;
+      font-family: inherit;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+      transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+      white-space: nowrap;
+      box-shadow: var(--shadow-sm);
+    }
+    
+    .btn:hover:not(:disabled) {
+      background-color: var(--color-principal-hover);
+      box-shadow: var(--shadow-md);
+      transform: translateY(-1px);
+    }
+    
+    .btn:active:not(:disabled) {
+      transform: translateY(0);
+      box-shadow: var(--shadow-sm);
+    }
+    
+    .btn:disabled {
+      background-color: var(--color-texto-secundario);
+      cursor: not-allowed;
+      opacity: 0.7;
+      box-shadow: none;
+    }
+    
+    .btn i {
+      font-size: 13px;
+    }
+
+    /* Secciones y cards */
+    .seccion {
+      margin-bottom: var(--spacing-xl);
+    }
+    
+    .seccion-title {
+      color: var(--color-texto);
+      margin-bottom: var(--spacing-md);
+      font-size: 16px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+    }
+    
+    .reporte-compras-container, 
+    .reporte-inferior-grid > div {
+      background-color: var(--color-superficie);
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow-sm);
+      transition: box-shadow 0.3s ease;
+      overflow: hidden;
+      border: 1px solid var(--color-borde);
+      max-width: 100%;
+    }
+    
+    .reporte-compras-container:hover,
+    .reporte-inferior-grid > div:hover {
+      box-shadow: var(--shadow-md);
+    }
+
+    /* Contenedor de tabla con cabecera y padding */
+    .reporte-tabla-container {
+      width: 100%;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .tabla-header {
+      padding: var(--spacing-md) var(--spacing-lg);
+      border-bottom: 1px solid var(--color-borde);
+      background-color: var(--color-superficie);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .tabla-header h3 {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--color-texto);
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+    }
+    
+    .tabla-header h3 i {
+      color: var(--color-principal);
+    }
+    
+    .tabla-body {
+      padding: 0;
+      overflow: hidden;
+    }
+
+    /* Tablas modernas */
+    .reporte-tabla {
+      width: 100% !important;
+      max-width: none !important;
+      border-collapse: separate;
+      border-spacing: 0;
+      margin: 0;
+      table-layout: auto;
+      position: relative;
+      border-radius: var(--border-radius);
+      overflow: hidden;
+    }
+    
+    .reporte-tabla th {
+      background-color: var(--color-superficie-alt);
+      color: var(--color-texto);
+      font-weight: 600;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      font-size: 12px;
+      white-space: normal;
+      word-wrap: break-word;
+      hyphens: auto;
+      vertical-align: middle;
+      height: auto;
+      min-height: 50px;
+      text-align: center;
+      padding: 10px 8px;
+    }
+    
+    .reporte-tabla th, 
+    .reporte-tabla td {
+      position: relative;
+      border-bottom: 1px solid var(--color-borde);
+    }
+    
+    .reporte-tabla td {
+      white-space: nowrap;
+      text-align: right;
+      padding: 10px 8px;
+      font-size: 12px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Sistema de sombreado de filas */
+    .reporte-tabla tr:hover td,
+    .reporte-tabla tr:hover th {
+      background-color: rgba(27, 137, 67, 0.15);
+    }
+    
+    .reporte-tabla tbody tr {
+      border-bottom: 1px solid var(--color-borde);
+      transition: background-color 0.2s ease;
+    }
+    
+    .reporte-tabla tbody tr:last-child {
+      border-bottom: none;
+    }
+    
+    .reporte-tabla .column-concepto {
+      font-weight: 600;
+      text-align: left;
+      position: sticky;
+      left: 0;
+      background-color: var(--color-superficie);
+      z-index: 5;
+      border-right: 1px solid var(--color-borde);
+    }
+    
+    .reporte-tabla tbody tr:hover .column-concepto {
+      background-color: rgba(27, 137, 67, 0.15);
+    }
+    
+    .reporte-tabla .fila-total {
+      font-weight: 700;
+      background-color: var(--color-superficie-alt);
+      color: var(--color-principal);
+    }
+    
+    .reporte-tabla .fila-total .column-concepto {
+      background-color: var(--color-superficie-alt);
+    }
+
+    /* Estilos para los pasos de configuración */
+    .config-steps-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--spacing-lg);
+      margin-top: var(--spacing-sm);
+    }
+    
+    .config-step {
+      background-color: var(--color-superficie);
+      border: 1px solid var(--color-borde);
+      border-radius: var(--border-radius);
+      padding: var(--spacing-md);
+      transition: all 0.2s ease;
+    }
+    
+    .config-step:hover {
+      box-shadow: var(--shadow-sm);
+      border-color: var(--color-borde-enfasis);
+    }
+    
+    .step-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: var(--spacing-md);
+      gap: var(--spacing-sm);
+    }
+    
+    .step-number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      background-color: var(--color-principal);
+      color: white;
+      border-radius: 50%;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    
+    .step-header h4 {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--color-texto);
+    }
+    
+    .step-content {
+      padding-left: 0;
+    }
+    
+    .step-placeholder {
+      color: var(--color-texto-secundario);
+      font-style: italic;
+      font-size: 13px;
+      margin: 0;
+      text-align: center;
+    }
+    
+    .config-step.future {
+      background-color: var(--color-superficie-alt);
+      opacity: 0.75;
+    }
+    
+    .config-step.future .step-number {
+      background-color: var(--color-texto-secundario);
+    }
+    
+    .config-step.active {
+      border-color: var(--color-principal);
+      box-shadow: 0 0 0 1px var(--color-principal);
+    }
+
+    .config-step.completed {
+      border-color: var(--color-success);
+      background-color: rgba(46, 204, 113, 0.05);
+    }
+
+    .config-step.completed .step-number {
+      background-color: var(--color-success);
+    }
+
+    /* Mensaje de estado */
+    .estado-mensaje {
+      background-color: var(--color-superficie-alt);
+      border: 1px solid var(--color-borde);
+      border-radius: var(--border-radius);
+      padding: var(--spacing-md);
+      margin-bottom: var(--spacing-lg);
+      text-align: center;
+      color: var(--color-texto-secundario);
+      font-style: italic;
+    }
+
+    /* Estilos para filas clickeables */
+    .reporte-tabla tbody tr.clickeable {
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+
+    .reporte-tabla tbody tr.clickeable:hover {
+      background-color: rgba(27, 137, 67, 0.1) !important;
+    }
+
+    .reporte-tabla tbody tr.clickeable .column-concepto::after {
+      content: '\f107';
+      font-family: 'Font Awesome 6 Free';
+      font-weight: 900;
+      float: right;
+      color: var(--color-texto-secundario);
+      transition: transform 0.3s ease;
+    }
+
+    .reporte-tabla tbody tr.clickeable.expanded .column-concepto::after {
+      transform: rotate(180deg);
+    }
+
+    /* Estilos para el desplegable de transacciones */
+    .detalle-transacciones {
+      display: none;
+      background-color: var(--color-superficie-alt);
+      border-top: 1px solid var(--color-borde);
+    }
+
+    .detalle-transacciones.show {
+      display: table-row;
+    }
+
+    .detalle-transacciones td {
+      padding: 0 !important;
+      border-bottom: none !important;
+    }
+
+    .detalle-content {
+      padding: var(--spacing-md) var(--spacing-lg);
+      background-color: var(--color-superficie-alt);
+    }
+
+    .detalle-content h5 {
+      color: var(--color-texto);
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: var(--spacing-sm);
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+    }
+
+    .detalle-content h5 i {
+      color: var(--color-principal);
+    }
+
+    .transacciones-lista {
+      background-color: var(--color-superficie);
+      border-radius: var(--border-radius-sm);
+      border: 1px solid var(--color-borde);
+      overflow: hidden;
+    }
+
+    .transaccion-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: var(--spacing-sm) var(--spacing-md);
+      border-bottom: 1px solid var(--color-borde);
+      font-size: 12px;
+    }
+
+    .transaccion-item:last-child {
+      border-bottom: none;
+    }
+
+    .transaccion-item:hover {
+      background-color: var(--color-superficie-alt);
+    }
+
+    .transaccion-concepto {
+      flex: 1;
+      font-weight: 500;
+      color: var(--color-texto);
+    }
+
+    .transaccion-proveedor {
+      flex: 1;
+      color: var(--color-texto-secundario);
+      margin-left: var(--spacing-md);
+    }
+
+    .transaccion-monto {
+      font-weight: 600;
+      color: var(--color-principal);
+      text-align: right;
+      min-width: 80px;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .reporte-container {
+        padding: var(--spacing-md);
+      }
+      
+      .titulo-reporte {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-md);
+      }
+      
+      .config-steps-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .reporte-tabla th, 
+      .reporte-tabla td {
+        padding: 6px 4px;
+        font-size: 11px;
+      }
+      
+      .seccion-title {
+        font-size: 15px;
+      }
+    }
+
+    /* Responsive para pasos */
+    @media (max-width: 1200px) {
+      .config-steps-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Contenido del Body -->
+  <div class="reporte-container">
+    <!-- Título del reporte -->
+    <div class="titulo-reporte">
+      <h1><i class="fas fa-search-dollar"></i> Consolidador de ventas</h1>
+      <span id="fecha-seleccionada">-- Seleccionar fecha --</span>
+    </div>
+    
+    <!-- Acordeón de configuración -->
+    <div class="config-accordion">
+      <div class="accordion-header" id="accordion-toggle">
+        <h3><i class="fas fa-sliders-h"></i> Configuración</h3>
+        <i class="fas fa-chevron-down" id="accordion-icon"></i>
+      </div>
+      <div class="accordion-content active" id="config-content">
+         <!-- Pasos en grid de 2 columnas -->
+         <div class="config-steps-grid" style="grid-template-columns: repeat(2, 1fr);">
+           <!-- Paso 01 -->
+           <div class="config-step active">
+             <div class="step-header">
+               <div class="step-number">01</div>
+               <h4>Seleccionar fecha</h4>
+             </div>
+             <div class="step-content">
+               <div class="config-controls">
+                 <input type="date" id="date-selector" class="styled-selector">
+               </div>
+             </div>
+           </div>
+           
+           <!-- Paso 02 -->
+           <div class="config-step future">
+             <div class="step-header">
+               <div class="step-number">02</div>
+               <h4>Seleccionar moneda y buscar ventas</h4>
+             </div>
+             <div class="step-content">
+               <div class="config-controls" style="flex-direction: column; gap: var(--spacing-md);">
+                 <select id="currency-selector" class="styled-selector" disabled>
+                   <option value="">Seleccionar moneda</option>
+                   <option value="PEN" data-url="https://docs.google.com/spreadsheets/d/e/2PACX-1vRRhWBlTXTz5h_v8OIH-3LrKdc6tjqLR15ZG1LlxsFRbZ6867Rn0L3jnWYOUtH6Cv-LQ7QRpULms8ah/pub?gid=0&single=true&output=csv">PEN</option>
+                   <option value="USD" data-url="https://docs.google.com/spreadsheets/d/e/2PACX-1vS9bRPb-3jZj8mBz7Al-4p39nG2ua3WWgva9ieg46GvH9jAg2AYk5oSXpEW1H0lWXEJCFZgSnhCv3z3/pub?gid=0&single=true&output=csv">USD</option>
+                 </select>
+                 <button id="btn-buscar-ventas" class="btn" disabled>
+                   <i class="fas fa-search"></i> Buscar ventas
+                 </button>
+               </div>
+             </div>
+           </div>
+         </div>
+      </div>
+    </div>
+    
+    <!-- Mensaje de estado -->
+    <div class="estado-mensaje" id="estado-mensaje">
+      Seleccione una fecha para comenzar
+    </div>
+    
+    <!-- SECCIÓN PRINCIPAL: Tabla de Ventas Consolidadas -->
+    <div class="seccion reporte-compras-container" id="tabla-ventas-container" style="display: none;">
+      <div class="tabla-header">
+        <h3><i class="fas fa-credit-card"></i> Ventas consolidadas por medio de pago</h3>
+      </div>
+      <div class="tabla-body">
+        <div class="reporte-tabla-container">
+          <table class="reporte-tabla" id="tabla-ventas">
+            <thead>
+              <tr>
+                <th>Medio de pago</th>
+                <th>Cantidad de transacciones</th>
+                <th>Monto total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Las filas se generarán dinámicamente -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Variables globales
+      let csvData = []; // Datos del CSV cargado
+      let selectedCurrency = ''; // Moneda seleccionada
+      let selectedCsvUrl = ''; // URL del CSV seleccionado
+      let selectedDate = ''; // Fecha seleccionada
+      let ventasDetalladasGlobal = {}; // Para almacenar el detalle de transacciones
+
+      // Mapeo de conceptos para consolidación
+      const conceptMapping = {
+        'MC Y VISA': ['DE PROCESOS DE MEDIOS', 'MC', 'VISA'],
+        'DINERS CLUB': ['DINERS CLUB'],
+        'AMEX': ['COMPAN', 'CIA DE SERV']
+      };
+
+      // == Funciones auxiliares para fechas ==
+      
+      function parseDateFromCSV(dateStr) {
+        if (!dateStr || dateStr.trim() === '') return null;
+        
+        // Manejar formato DD/MM/YYYY
+        const dateParts = dateStr.trim().split('/');
+        if (dateParts.length === 3) {
+          const day = parseInt(dateParts[0]);
+          const month = parseInt(dateParts[1]) - 1; // Mes es 0-indexado en JS
+          const year = parseInt(dateParts[2]);
+          
+          if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
+            return new Date(Date.UTC(year, month, day));
+          }
+        }
+        
+        return null;
+      }
+      
+      function formatDateISO(date) {
+        if (!(date instanceof Date) || isNaN(date)) return '';
+        const year = date.getUTCFullYear();
+        const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(date.getUTCDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      }
+
+      function formatDate(date) {
+        if (!(date instanceof Date) || isNaN(date)) return '--/--/----';
+        const day = String(date.getUTCDate()).padStart(2, '0');
+        const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+        const year = date.getUTCFullYear();
+        return `${day}/${month}/${year}`;
+      }
+
+      function formatNumber(num) {
+        if (num === 0 || isNaN(num)) return '0.00';
+        return num.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+      }
+
+      // == Funciones para manejo de pasos ==
+      
+      function updateStepState(stepNumber, state) {
+        const step = document.querySelector(`.config-step:nth-child(${stepNumber})`);
+        if (!step) return;
+        
+        // Limpiar estados anteriores
+        step.classList.remove('active', 'completed', 'future');
+        
+        // Aplicar nuevo estado
+        step.classList.add(state);
+        
+        // Actualizar ícono según el estado
+        const stepNumber_elem = step.querySelector('.step-number');
+        if (state === 'completed' && stepNumber_elem) {
+          stepNumber_elem.innerHTML = '<i class="fas fa-check"></i>';
+        } else if (stepNumber_elem) {
+          stepNumber_elem.textContent = String(stepNumber).padStart(2, '0');
+        }
+      }
+
+      function updateEstadoMensaje(mensaje) {
+        const estadoMensaje = document.getElementById('estado-mensaje');
+        if (estadoMensaje) {
+          estadoMensaje.textContent = mensaje;
+        }
+      }
+
+      // Toggle Accordion
+      function toggleAccordion() {
+        const content = document.getElementById('config-content');
+        const header = document.getElementById('accordion-toggle');
+        const icon = document.getElementById('accordion-icon');
+        
+        content.classList.toggle('active');
+        header.classList.toggle('active');
+      }
+
+      // == Funciones para carga de CSV ==
+      
+      function parseCSVLine(line) {
+        const result = [];
+        let current = '';
+        let inQuotes = false;
+        
+        for (let i = 0; i < line.length; i++) {
+          const char = line[i];
+          
+          if (char === '"') {
+            inQuotes = !inQuotes;
+          } else if (char === ',' && !inQuotes) {
+            result.push(current.trim());
+            current = '';
+          } else {
+            current += char;
+          }
+        }
+        
+        result.push(current.trim());
+        return result;
+      }
+
+      // Función para consolidar conceptos
+      function consolidateConcept(concepto) {
+        const conceptoUpper = concepto.toUpperCase();
+        
+        for (const [consolidatedName, keywords] of Object.entries(conceptMapping)) {
+          for (const keyword of keywords) {
+            if (conceptoUpper.includes(keyword)) {
+              return consolidatedName;
+            }
+          }
+        }
+        
+        return null; // No es un concepto de venta que nos interese
+      }
+
+      // Función para buscar ventas del día seleccionado (ahora incluye carga de CSV)
+      async function buscarVentasDelDia() {
+        if (!selectedCsvUrl || !selectedDate) {
+          updateEstadoMensaje('Seleccione fecha y moneda primero');
+          return;
+        }
+
+        const btnBuscarVentas = document.getElementById('btn-buscar-ventas');
+        if (btnBuscarVentas) {
+          btnBuscarVentas.disabled = true;
+          btnBuscarVentas.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Buscando...';
+        }
+
+        try {
+          console.log('Cargando CSV desde:', selectedCsvUrl);
+          updateEstadoMensaje('Cargando datos y buscando ventas...');
+          
+          const response = await fetch(selectedCsvUrl);
+          if (!response.ok) {
+            throw new Error(`Error HTTP: ${response.status}`);
+          }
+          
+          const csvText = await response.text();
+          console.log('CSV cargado exitosamente');
+          
+          // Parsear CSV correctamente
+          const lines = csvText.split('\n').filter(line => line.trim() !== '');
+          csvData = lines.map(line => parseCSVLine(line));
+          
+          console.log('Datos CSV parseados:', csvData.length, 'filas');
+          
+          // Buscar ventas inmediatamente
+          procesarVentasDelDia();
+          
+        } catch (error) {
+          console.error('Error al cargar CSV:', error);
+          alert('Error al cargar los datos: ' + error.message);
+          updateEstadoMensaje('Error al cargar los datos');
+        } finally {
+          if (btnBuscarVentas) {
+            btnBuscarVentas.disabled = false;
+            btnBuscarVentas.innerHTML = '<i class="fas fa-search"></i> Buscar ventas';
+          }
+        }
+      }
+
+      function procesarVentasDelDia() {
+        if (!csvData || csvData.length === 0 || !selectedDate) {
+          updateEstadoMensaje('No hay datos cargados o fecha seleccionada');
+          return;
+        }
+
+        console.log('Buscando ventas para la fecha:', selectedDate);
+        
+        // Convertir fecha seleccionada a objeto Date para comparación
+        const selectedDateObj = new Date(selectedDate + 'T00:00:00.000Z');
+        const selectedDateISO = formatDateISO(selectedDateObj);
+        
+        console.log('Fecha ISO a buscar:', selectedDateISO);
+        
+        // Estructura para acumular ventas por medio de pago
+        const ventasConsolidadas = {};
+        ventasDetalladasGlobal = {}; // Reiniciar detalles globales
+        
+        // Procesar datos del CSV
+        csvData.forEach((row, rowIndex) => {
+          if (rowIndex === 0 || !row || row.length < 4) return; // Saltar header y filas inválidas
+          
+          const fechaStr = row[0]; // Primera columna: Fecha
+          const concepto = row[1] || ''; // Segunda columna: Concepto
+          const proveedor = row[2] || ''; // Tercera columna: Proveedor
+          const montoStr = row[3] || '0'; // Cuarta columna: Monto
+          
+          const fecha = parseDateFromCSV(fechaStr);
+          if (!fecha) return;
+          
+          const fechaISO = formatDateISO(fecha);
+          
+          // Verificar si esta fecha coincide con la fecha seleccionada
+          if (fechaISO === selectedDateISO) {
+            const monto = parseFloat(montoStr.replace(/[^-0-9.]/g, '')) || 0;
+            
+            // Solo procesar montos positivos (ingresos/ventas)
+            if (monto > 0) {
+              const consolidatedConcept = consolidateConcept(concepto);
+              
+              if (consolidatedConcept) {
+                if (!ventasConsolidadas[consolidatedConcept]) {
+                  ventasConsolidadas[consolidatedConcept] = {
+                    cantidad: 0,
+                    montoTotal: 0
+                  };
+                }
+                
+                if (!ventasDetalladasGlobal[consolidatedConcept]) {
+                  ventasDetalladasGlobal[consolidatedConcept] = [];
+                }
+                
+                ventasConsolidadas[consolidatedConcept].cantidad += 1;
+                ventasConsolidadas[consolidatedConcept].montoTotal += monto;
+                
+                // Guardar detalle de la transacción
+                ventasDetalladasGlobal[consolidatedConcept].push({
+                  concepto: concepto,
+                  proveedor: proveedor,
+                  monto: monto
+                });
+                
+                console.log(`Encontrada venta: ${concepto} -> ${consolidatedConcept}, Monto: ${monto}`);
+              }
+            }
+          }
+        });
+        
+        console.log('Ventas consolidadas:', ventasConsolidadas);
+        console.log('Ventas detalladas:', ventasDetalladasGlobal);
+        
+        // Mostrar resultados en la tabla
+        mostrarVentasConsolidadas(ventasConsolidadas);
+      }
+
+      function mostrarVentasConsolidadas(ventasConsolidadas) {
+        const tablaContainer = document.getElementById('tabla-ventas-container');
+        const tbody = document.getElementById('tabla-ventas')?.querySelector('tbody');
+        
+        if (!tbody) return;
+        
+        // Limpiar tabla
+        tbody.innerHTML = '';
+        
+        const mediosDePago = Object.keys(ventasConsolidadas);
+        
+        if (mediosDePago.length === 0) {
+          // No hay ventas para mostrar
+          const row = tbody.insertRow();
+          const cell = row.insertCell(0);
+          cell.colSpan = 3;
+          cell.style.textAlign = 'center';
+          cell.style.color = 'var(--color-texto-secundario)';
+          cell.style.fontStyle = 'italic';
+          cell.textContent = 'No se encontraron ventas para la fecha seleccionada';
+          
+          updateEstadoMensaje('No se encontraron ventas para la fecha seleccionada');
+          tablaContainer.style.display = 'block';
+          return;
+        }
+        
+        let totalTransacciones = 0;
+        let totalMonto = 0;
+        
+        // Agregar filas de datos
+        mediosDePago.forEach((medioPago, index) => {
+          const datos = ventasConsolidadas[medioPago];
+          const row = tbody.insertRow();
+          row.className = 'clickeable';
+          row.dataset.concepto = medioPago;
+          
+          // Medio de pago
+          const cellMedio = row.insertCell(0);
+          cellMedio.className = 'column-concepto';
+          cellMedio.textContent = medioPago;
+          
+          // Cantidad de transacciones
+          const cellCantidad = row.insertCell(1);
+          cellCantidad.textContent = datos.cantidad.toString();
+          cellCantidad.style.textAlign = 'center';
+          
+          // Monto total
+          const cellMonto = row.insertCell(2);
+          cellMonto.textContent = formatNumber(datos.montoTotal);
+          cellMonto.style.textAlign = 'right';
+          
+          // Agregar event listener para el click
+          row.addEventListener('click', function() {
+            toggleDetalleTransacciones(this, medioPago);
+          });
+          
+          totalTransacciones += datos.cantidad;
+          totalMonto += datos.montoTotal;
+        });
+        
+        // Agregar fila de totales
+        const totalRow = tbody.insertRow();
+        totalRow.className = 'fila-total';
+        
+        const totalCellMedio = totalRow.insertCell(0);
+        totalCellMedio.className = 'column-concepto';
+        totalCellMedio.textContent = 'TOTAL';
+        
+        const totalCellCantidad = totalRow.insertCell(1);
+        totalCellCantidad.textContent = totalTransacciones.toString();
+        totalCellCantidad.style.textAlign = 'center';
+        
+        const totalCellMonto = totalRow.insertCell(2);
+        totalCellMonto.textContent = formatNumber(totalMonto);
+        totalCellMonto.style.textAlign = 'right';
+        
+        // Mostrar tabla y actualizar mensaje
+        tablaContainer.style.display = 'block';
+        updateEstadoMensaje(`Se encontraron ${totalTransacciones} transacciones por un total de ${selectedCurrency} ${formatNumber(totalMonto)}`);
+        
+        // Marcar paso 2 como completado
+        updateStepState(2, 'completed');
+      }
+
+      function toggleDetalleTransacciones(row, medioPago) {
+        const isExpanded = row.classList.contains('expanded');
+        
+        // Cerrar todos los detalles abiertos
+        const allRows = document.querySelectorAll('.reporte-tabla tbody tr.clickeable');
+        allRows.forEach(r => {
+          r.classList.remove('expanded');
+          const nextRow = r.nextElementSibling;
+          if (nextRow && nextRow.classList.contains('detalle-transacciones')) {
+            nextRow.remove();
+          }
+        });
+        
+        if (!isExpanded) {
+          // Abrir el detalle de esta fila
+          row.classList.add('expanded');
+          
+          const detalleRow = row.parentNode.insertRow(row.rowIndex);
+          detalleRow.className = 'detalle-transacciones show';
+          
+          const detalleCell = detalleRow.insertCell(0);
+          detalleCell.colSpan = 3;
+          
+          const detalleContent = document.createElement('div');
+          detalleContent.className = 'detalle-content';
+          
+          const titulo = document.createElement('h5');
+          titulo.innerHTML = `<i class="fas fa-list"></i> Transacciones de ${medioPago}`;
+          detalleContent.appendChild(titulo);
+          
+          const transaccionesList = document.createElement('div');
+          transaccionesList.className = 'transacciones-lista';
+          
+          // Agregar cada transacción
+          const transacciones = ventasDetalladasGlobal[medioPago] || [];
+          transacciones.forEach(transaccion => {
+            const item = document.createElement('div');
+            item.className = 'transaccion-item';
+            
+            const concepto = document.createElement('div');
+            concepto.className = 'transaccion-concepto';
+            concepto.textContent = transaccion.concepto;
+            
+            const proveedor = document.createElement('div');
+            proveedor.className = 'transaccion-proveedor';
+            proveedor.textContent = transaccion.proveedor || 'N/A';
+            
+            const monto = document.createElement('div');
+            monto.className = 'transaccion-monto';
+            monto.textContent = formatNumber(transaccion.monto);
+            
+            item.appendChild(concepto);
+            item.appendChild(proveedor);
+            item.appendChild(monto);
+            transaccionesList.appendChild(item);
+          });
+          
+          detalleContent.appendChild(transaccionesList);
+          detalleCell.appendChild(detalleContent);
+        }
+      }
+
+      // Event Listeners
+      const accordionToggle = document.getElementById('accordion-toggle');
+      const dateSelector = document.getElementById('date-selector');
+      const currencySelector = document.getElementById('currency-selector');
+      const btnBuscarVentas = document.getElementById('btn-buscar-ventas');
+      
+      if (accordionToggle) {
+        accordionToggle.addEventListener('click', toggleAccordion);
+      }
+      
+      if (dateSelector) {
+        dateSelector.addEventListener('change', function() {
+          selectedDate = this.value;
+          const fechaSeleccionadaSpan = document.getElementById('fecha-seleccionada');
+          
+          if (selectedDate) {
+            const dateObj = new Date(selectedDate + 'T00:00:00.000Z');
+            fechaSeleccionadaSpan.textContent = formatDate(dateObj);
+            
+            // Marcar paso 1 como completado y habilitar paso 2
+            updateStepState(1, 'completed');
+            updateStepState(2, 'active');
+            
+            // Habilitar selector de moneda
+            if (currencySelector) {
+              currencySelector.disabled = false;
+            }
+            
+            updateEstadoMensaje('Fecha seleccionada. Seleccione una moneda y busque las ventas.');
+          } else {
+            fechaSeleccionadaSpan.textContent = '-- Seleccionar fecha --';
+            updateStepState(1, 'active');
+            updateStepState(2, 'future');
+            
+            if (currencySelector) {
+              currencySelector.disabled = true;
+              currencySelector.value = '';
+            }
+            
+            updateEstadoMensaje('Seleccione una fecha para comenzar');
+          }
+        });
+      }
+      
+      if (currencySelector) {
+        currencySelector.addEventListener('change', function() {
+          const selectedOption = this.options[this.selectedIndex];
+          selectedCurrency = this.value;
+          selectedCsvUrl = selectedOption.dataset.url || '';
+          
+          // Habilitar botón de buscar ventas si hay moneda seleccionada
+          if (selectedCurrency && selectedCsvUrl && btnBuscarVentas) {
+            btnBuscarVentas.disabled = false;
+            updateEstadoMensaje(`Moneda ${selectedCurrency} seleccionada. Busque las ventas.`);
+          } else if (btnBuscarVentas) {
+            btnBuscarVentas.disabled = true;
+          }
+        });
+      }
+
+      if (btnBuscarVentas) {
+        btnBuscarVentas.addEventListener('click', buscarVentasDelDia);
+      }
+
+      // Inicialización
+      console.log("Consolidador de ventas inicializado.");
+    });
+  </script>
+</body>
+</html>

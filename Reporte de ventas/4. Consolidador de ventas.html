@@ -1,0 +1,1777 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Consolidador de ventas</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Librerías externas CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  
+  <!-- Estilos -->
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
+    :root {
+      /* Paleta basada en los colores corporativos proporcionados */
+      --color-principal: #1b8943;      /* Verde corporativo */
+      --color-principal-hover: #157235; /* Verde más oscuro */
+      --color-secundario: #a98f43;     /* Dorado/Marrón corporativo */
+      --color-secundario-hover: #8f7a39; /* Dorado más oscuro */
+      
+      /* Colores complementarios */
+      --color-success: #2ecc71;        /* Verde éxito */
+      --color-warning: #e67e22;        /* Naranja advertencia */
+      --color-danger: #e74c3c;         /* Rojo peligro */
+      
+      /* Fondos y superficies - más oscuros para un tema más elegante */
+      --color-fondo: #f5f5f5;          /* Fondo general más oscuro */
+      --color-superficie: #ffffff;     /* Blanco para tarjetas */
+      --color-superficie-alt: #edf2ed; /* Fondo alternativo con tono verde suave */
+      --color-superficie-sec: #f5f2e6; /* Fondo alternativo con tono dorado suave */
+      
+      /* Textos */
+      --color-texto: #333333;          /* Texto principal casi negro */
+      --color-texto-secundario: #666666; /* Texto secundario gris oscuro */
+      --color-texto-claro: #ffffff;    /* Texto claro/blanco */
+      
+      /* Bordes y separadores */
+      --color-borde: #e0e0e0;          /* Borde claro */
+      --color-borde-enfasis: #cccccc;  /* Borde con énfasis */
+      
+      /* Sombras */
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.1);
+      --shadow-md: 0 2px 4px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+      --shadow-lg: 0 4px 6px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.06);
+      
+      /* Bordes redondeados */
+      --border-radius-sm: 4px;
+      --border-radius: 6px;
+      --border-radius-lg: 8px;
+      
+      /* Espaciado */
+      --spacing-xs: 4px;
+      --spacing-sm: 8px;
+      --spacing-md: 12px;
+      --spacing-lg: 16px;
+      --spacing-xl: 24px;
+      --spacing-xxl: 32px;
+      
+      font-size: 16px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--color-fondo);
+      color: var(--color-texto);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      min-height: 100vh;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* Contenedor principal */
+    .reporte-container {
+      max-width: 100%;
+      width: 1380px;
+      margin: 0 auto;
+      padding: var(--spacing-lg);
+      box-sizing: border-box;
+    }
+
+    /* Cabecera con estilo dashboard moderno */
+    .titulo-reporte {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--spacing-xl);
+    }
+    
+    .titulo-reporte h1 {
+      color: var(--color-texto);
+      font-size: 22px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+    }
+    
+    .titulo-reporte h1 i {
+      color: var(--color-principal);
+    }
+    
+    #fecha-seleccionada {
+      display: inline-block;
+      background-color: var(--color-superficie-alt);
+      color: var(--color-texto-secundario);
+      padding: 6px var(--spacing-md);
+      border-radius: 30px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    /* Card para acordeón de configuración */
+    .config-accordion {
+      background-color: var(--color-superficie);
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow-sm);
+      margin-bottom: var(--spacing-xl);
+      overflow: hidden;
+      border: 1px solid var(--color-borde);
+      transition: box-shadow 0.3s ease;
+    }
+    
+    .config-accordion:hover {
+      box-shadow: var(--shadow-md);
+    }
+    
+    .accordion-header {
+      background-color: var(--color-superficie);
+      padding: var(--spacing-md) var(--spacing-lg);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+      transition: background-color 0.2s ease;
+    }
+    
+    .accordion-header:hover {
+      background-color: var(--color-superficie-alt);
+    }
+    
+    .accordion-header h3 {
+      color: var(--color-texto);
+      font-size: 15px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+    }
+    
+    .accordion-header h3 i {
+      color: var(--color-principal);
+    }
+    
+    .accordion-header i.fas.fa-chevron-down {
+      color: var(--color-texto-secundario);
+      transition: transform 0.3s ease;
+      font-size: 13px;
+    }
+    
+    .accordion-header.active i.fas.fa-chevron-down {
+      transform: rotate(180deg);
+    }
+    
+    .accordion-content {
+      padding: 0;
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease, padding 0.3s ease;
+    }
+    
+    .accordion-content.active {
+      padding: var(--spacing-lg);
+      max-height: 500px;
+    }
+
+    /* Grid para configuración */
+    .config-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: var(--spacing-lg);
+    }
+    
+    .config-item {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-sm);
+    }
+    
+    .config-label {
+      color: var(--color-texto);
+      font-weight: 500;
+      font-size: 13px;
+      margin-bottom: var(--spacing-xs);
+    }
+    
+    .config-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--spacing-sm);
+      width: 100%;
+    }
+
+    /* Inputs y selects estilizados */
+    .styled-selector,
+    input[type="text"],
+    input[type="number"],
+    input[type="date"] {
+      background-color: var(--color-superficie);
+      border: 1px solid var(--color-borde);
+      color: var(--color-texto);
+      padding: 8px var(--spacing-md);
+      border-radius: var(--border-radius-sm);
+      font-family: inherit;
+      font-size: 13px;
+      flex-grow: 1;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      min-width: 80px;
+      outline: none;
+    }
+    
+    .styled-selector:focus,
+    input[type="text"]:focus,
+    input[type="number"]:focus,
+    input[type="date"]:focus {
+      border-color: var(--color-principal);
+      box-shadow: 0 0 0 3px rgba(27, 137, 67, 0.15);
+    }
+
+    /* Botones modernos */
+    .btn {
+      background-color: var(--color-principal);
+      color: white;
+      border: none;
+      padding: 8px var(--spacing-md);
+      border-radius: var(--border-radius-sm);
+      cursor: pointer;
+      font-size: 13px;
+      font-family: inherit;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+      transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+      white-space: nowrap;
+      box-shadow: var(--shadow-sm);
+    }
+    
+    .btn:hover:not(:disabled) {
+      background-color: var(--color-principal-hover);
+      box-shadow: var(--shadow-md);
+      transform: translateY(-1px);
+    }
+    
+    .btn:active:not(:disabled) {
+      transform: translateY(0);
+      box-shadow: var(--shadow-sm);
+    }
+    
+    .btn:disabled {
+      background-color: var(--color-texto-secundario);
+      cursor: not-allowed;
+      opacity: 0.7;
+      box-shadow: none;
+    }
+    
+    .btn i {
+      font-size: 13px;
+    }
+
+    /* Secciones y cards */
+    .seccion {
+      margin-bottom: var(--spacing-xl);
+    }
+    
+    .seccion-title {
+      color: var(--color-texto);
+      margin-bottom: var(--spacing-md);
+      font-size: 16px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+    }
+    
+    .reporte-compras-container, 
+    .reporte-inferior-grid > div {
+      background-color: var(--color-superficie);
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow-sm);
+      transition: box-shadow 0.3s ease;
+      overflow: hidden;
+      border: 1px solid var(--color-borde);
+      max-width: 100%;
+    }
+    
+    .reporte-compras-container:hover,
+    .reporte-inferior-grid > div:hover {
+      box-shadow: var(--shadow-md);
+    }
+
+    /* Contenedor de tabla con cabecera y padding */
+    .reporte-tabla-container {
+      width: 100%;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .tabla-header {
+      padding: var(--spacing-md) var(--spacing-lg);
+      border-bottom: 1px solid var(--color-borde);
+      background-color: var(--color-superficie);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .tabla-header h3 {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--color-texto);
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+    }
+    
+    .tabla-header h3 i {
+      color: var(--color-principal);
+    }
+    
+    .tabla-body {
+      padding: 0;
+      overflow: hidden;
+    }
+
+    /* Tablas modernas */
+    .reporte-tabla {
+      width: 100% !important;
+      max-width: none !important;
+      border-collapse: separate;
+      border-spacing: 0;
+      margin: 0;
+      table-layout: auto;
+      position: relative;
+      border-radius: var(--border-radius);
+      overflow: hidden;
+    }
+    
+    .reporte-tabla th {
+      background-color: var(--color-superficie-alt);
+      color: var(--color-texto);
+      font-weight: 600;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      font-size: 12px;
+      white-space: normal;
+      word-wrap: break-word;
+      hyphens: auto;
+      vertical-align: middle;
+      height: auto;
+      min-height: 50px;
+      text-align: center;
+      padding: 10px 8px;
+    }
+    
+    .reporte-tabla th, 
+    .reporte-tabla td {
+      position: relative;
+      border-bottom: 1px solid var(--color-borde);
+    }
+    
+    .reporte-tabla td {
+      white-space: nowrap;
+      text-align: right;
+      padding: 10px 8px;
+      font-size: 12px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Sistema de sombreado de filas */
+    .reporte-tabla tr:hover td,
+    .reporte-tabla tr:hover th {
+      background-color: rgba(27, 137, 67, 0.15);
+    }
+    
+    .reporte-tabla tbody tr {
+      border-bottom: 1px solid var(--color-borde);
+      transition: background-color 0.2s ease;
+    }
+    
+    .reporte-tabla tbody tr:last-child {
+      border-bottom: none;
+    }
+    
+    .reporte-tabla .column-concepto {
+      font-weight: 600;
+      text-align: left;
+      position: sticky;
+      left: 0;
+      background-color: var(--color-superficie);
+      z-index: 5;
+      border-right: 1px solid var(--color-borde);
+    }
+    
+    .reporte-tabla tbody tr:hover .column-concepto {
+      background-color: rgba(27, 137, 67, 0.15);
+    }
+    
+    .reporte-tabla .fila-total {
+      font-weight: 700;
+      background-color: var(--color-superficie-alt);
+      color: var(--color-principal);
+    }
+    
+    .reporte-tabla .fila-total .column-concepto {
+      background-color: var(--color-superficie-alt);
+    }
+
+    /* Selector de tipo de reporte */
+    .report-type-selector {
+      margin-bottom: var(--spacing-xl);
+      padding-bottom: var(--spacing-lg);
+      border-bottom: 1px solid var(--color-borde);
+    }
+    
+    .radio-group {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: var(--spacing-md);
+    }
+    
+    .radio-option {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--spacing-md);
+      padding: var(--spacing-md);
+      border: 2px solid var(--color-borde);
+      border-radius: var(--border-radius);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      background-color: var(--color-superficie);
+    }
+    
+    .radio-option:hover {
+      border-color: var(--color-borde-enfasis);
+      box-shadow: var(--shadow-sm);
+    }
+    
+    .radio-option input[type="radio"] {
+      display: none;
+    }
+    
+    .radio-custom {
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--color-borde-enfasis);
+      border-radius: 50%;
+      position: relative;
+      flex-shrink: 0;
+      margin-top: 2px;
+      transition: all 0.2s ease;
+    }
+    
+    .radio-option input[type="radio"]:checked + .radio-custom {
+      border-color: var(--color-principal);
+      background-color: var(--color-principal);
+    }
+    
+    .radio-option input[type="radio"]:checked + .radio-custom::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 8px;
+      height: 8px;
+      background-color: white;
+      border-radius: 50%;
+    }
+    
+    .radio-option input[type="radio"]:checked ~ .radio-content {
+      color: var(--color-principal);
+    }
+    
+    .radio-content {
+      flex: 1;
+    }
+    
+    .radio-content strong {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: var(--spacing-xs);
+      color: var(--color-texto);
+    }
+    
+    .radio-content small {
+      display: block;
+      font-size: 12px;
+      color: var(--color-texto-secundario);
+      line-height: 1.4;
+    }
+    
+    .config-section {
+      margin-top: var(--spacing-lg);
+    }
+
+    /* Estilos para los pasos de configuración */
+    .config-steps-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--spacing-lg);
+      margin-top: var(--spacing-sm);
+    }
+    
+    .config-step {
+      background-color: var(--color-superficie);
+      border: 1px solid var(--color-borde);
+      border-radius: var(--border-radius);
+      padding: var(--spacing-md);
+      transition: all 0.2s ease;
+    }
+    
+    .config-step:hover {
+      box-shadow: var(--shadow-sm);
+      border-color: var(--color-borde-enfasis);
+    }
+    
+    .step-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: var(--spacing-md);
+      gap: var(--spacing-sm);
+    }
+    
+    .step-number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      background-color: var(--color-principal);
+      color: white;
+      border-radius: 50%;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    
+    .step-header h4 {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--color-texto);
+    }
+    
+    .step-content {
+      padding-left: 0;
+    }
+    
+    .step-placeholder {
+      color: var(--color-texto-secundario);
+      font-style: italic;
+      font-size: 13px;
+      margin: 0;
+      text-align: center;
+    }
+    
+    .config-step.future {
+      background-color: var(--color-superficie-alt);
+      opacity: 0.75;
+    }
+    
+    .config-step.future .step-number {
+      background-color: var(--color-texto-secundario);
+    }
+    
+    .config-step.active {
+      border-color: var(--color-principal);
+      box-shadow: 0 0 0 1px var(--color-principal);
+    }
+
+    .config-step.completed {
+      border-color: var(--color-success);
+      background-color: rgba(46, 204, 113, 0.05);
+    }
+
+    .config-step.completed .step-number {
+      background-color: var(--color-success);
+    }
+
+    /* Mensaje de estado */
+    .estado-mensaje {
+      background-color: var(--color-superficie-alt);
+      border: 1px solid var(--color-borde);
+      border-radius: var(--border-radius);
+      padding: var(--spacing-md);
+      margin-bottom: var(--spacing-lg);
+      text-align: center;
+      color: var(--color-texto-secundario);
+      font-style: italic;
+    }
+
+    /* Estilos para filas clickeables */
+    .reporte-tabla tbody tr.clickeable {
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+
+    .reporte-tabla tbody tr.clickeable:hover {
+      background-color: rgba(27, 137, 67, 0.1) !important;
+    }
+
+    .reporte-tabla tbody tr.clickeable .column-concepto::after {
+      content: '\f107';
+      font-family: 'Font Awesome 6 Free';
+      font-weight: 900;
+      float: right;
+      color: var(--color-texto-secundario);
+      transition: transform 0.3s ease;
+    }
+
+    .reporte-tabla tbody tr.clickeable.expanded .column-concepto::after {
+      transform: rotate(180deg);
+    }
+
+    /* Estilos para el desplegable de transacciones */
+    .detalle-transacciones {
+      display: none;
+      background-color: var(--color-superficie-alt);
+      border-top: 1px solid var(--color-borde);
+    }
+
+    .detalle-transacciones.show {
+      display: table-row;
+    }
+
+    .detalle-transacciones td {
+      padding: 0 !important;
+      border-bottom: none !important;
+    }
+
+    .detalle-content {
+      padding: var(--spacing-md) var(--spacing-lg);
+      background-color: var(--color-superficie-alt);
+    }
+
+    .detalle-content h5 {
+      color: var(--color-texto);
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: var(--spacing-sm);
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+    }
+
+    .detalle-content h5 i {
+      color: var(--color-principal);
+    }
+
+    .transacciones-lista {
+      background-color: var(--color-superficie);
+      border-radius: var(--border-radius-sm);
+      border: 1px solid var(--color-borde);
+      overflow: hidden;
+    }
+
+    .transaccion-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: var(--spacing-sm) var(--spacing-md);
+      border-bottom: 1px solid var(--color-borde);
+      font-size: 12px;
+    }
+
+    .transaccion-item:last-child {
+      border-bottom: none;
+    }
+
+    .transaccion-item:hover {
+      background-color: var(--color-superficie-alt);
+    }
+
+    .transaccion-concepto {
+      flex: 1;
+      font-weight: 500;
+      color: var(--color-texto);
+    }
+
+    .transaccion-proveedor {
+      flex: 1;
+      color: var(--color-texto-secundario);
+      margin-left: var(--spacing-md);
+    }
+
+    .transaccion-monto {
+      font-weight: 600;
+      color: var(--color-principal);
+      text-align: right;
+      min-width: 80px;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .reporte-container {
+        padding: var(--spacing-md);
+      }
+      
+      .titulo-reporte {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-md);
+      }
+      
+      .config-steps-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .reporte-tabla th, 
+      .reporte-tabla td {
+        padding: 6px 4px;
+        font-size: 11px;
+      }
+      
+      .seccion-title {
+        font-size: 15px;
+      }
+    }
+
+    /* Responsive para pasos */
+    @media (max-width: 1200px) {
+      .config-steps-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Contenido del Body -->
+  <div class="reporte-container">
+    <!-- Título del reporte -->
+    <div class="titulo-reporte">
+      <h1><i class="fas fa-search-dollar"></i> Consolidador de ventas</h1>
+      <span id="fecha-seleccionada">-- Seleccionar fecha --</span>
+    </div>
+    
+    <!-- Selector de tipo de reporte -->
+    <div class="config-accordion">
+      <div class="accordion-header" id="accordion-toggle">
+        <h3><i class="fas fa-chart-bar"></i> Tipo de reporte</h3>
+        <i class="fas fa-chevron-down" id="accordion-icon"></i>
+      </div>
+      <div class="accordion-content active" id="config-content">
+        <!-- Selector de radio para tipo de reporte -->
+        <div class="report-type-selector">
+          <div class="radio-group">
+            <label class="radio-option">
+              <input type="radio" name="report-type" value="venta-tarjetas" checked>
+              <span class="radio-custom"></span>
+              <div class="radio-content">
+                <strong>Venta tarjetas</strong>
+                <small>Consolidado diario de ventas por medio de pago</small>
+              </div>
+            </label>
+            <label class="radio-option">
+              <input type="radio" name="report-type" value="ventas-semanales">
+              <span class="radio-custom"></span>
+              <div class="radio-content">
+                <strong>Ventas semanales</strong>
+                <small>Genera un excel de venta semanal</small>
+              </div>
+            </label>
+          </div>
+        </div>
+        
+        <!-- Configuración para Venta Tarjetas -->
+        <div id="config-venta-tarjetas" class="config-section">
+          <div class="config-steps-grid" style="grid-template-columns: repeat(2, 1fr);">
+            <!-- Paso 01 -->
+            <div class="config-step active">
+              <div class="step-header">
+                <div class="step-number">01</div>
+                <h4>Seleccionar fecha</h4>
+              </div>
+              <div class="step-content">
+                <div class="config-controls">
+                  <input type="date" id="date-selector" class="styled-selector">
+                </div>
+              </div>
+            </div>
+            
+            <!-- Paso 02 -->
+            <div class="config-step future">
+              <div class="step-header">
+                <div class="step-number">02</div>
+                <h4>Seleccionar moneda y buscar ventas</h4>
+              </div>
+              <div class="step-content">
+                <div class="config-controls" style="flex-direction: column; gap: var(--spacing-md);">
+                  <select id="currency-selector" class="styled-selector" disabled>
+                    <option value="">Seleccionar moneda</option>
+                    <option value="PEN" data-url="https://docs.google.com/spreadsheets/d/e/2PACX-1vRRhWBlTXTz5h_v8OIH-3LrKdc6tjqLR15ZG1LlxsFRbZ6867Rn0L3jnWYOUtH6Cv-LQ7QRpULms8ah/pub?gid=0&single=true&output=csv">PEN</option>
+                    <option value="USD" data-url="https://docs.google.com/spreadsheets/d/e/2PACX-1vS9bRPb-3jZj8mBz7Al-4p39nG2ua3WWgva9ieg46GvH9jAg2AYk5oSXpEW1H0lWXEJCFZgSnhCv3z3/pub?gid=0&single=true&output=csv">USD</option>
+                  </select>
+                  <button id="btn-buscar-ventas" class="btn" disabled>
+                    <i class="fas fa-search"></i> Buscar ventas
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Configuración para Ventas Semanales -->
+        <div id="config-ventas-semanales" class="config-section" style="display: none;">
+          <div class="config-steps-grid" style="grid-template-columns: repeat(2, 1fr);">
+            <!-- Paso 01: Seleccionar periodo -->
+            <div class="config-step active" id="step-periodo-semanal">
+              <div class="step-header">
+                <div class="step-number">01</div>
+                <h4>Seleccionar periodo</h4>
+              </div>
+              <div class="step-content">
+                <div class="config-controls" style="flex-direction: column; gap: var(--spacing-sm);">
+                  <select id="year-selector-semanal" class="styled-selector">
+                    <option value="">Año</option>
+                    <option value="2025">2025</option>
+                    <option value="2026">2026</option>
+                  </select>
+                  <select id="month-selector-semanal" class="styled-selector">
+                    <option value="">Mes</option>
+                  </select>
+                  <select id="week-selector-semanal" class="styled-selector">
+                    <option value="">Semana</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Paso 02: Seleccionar moneda y generar Excel -->
+            <div class="config-step future" id="step-excel-semanal">
+              <div class="step-header">
+                <div class="step-number">02</div>
+                <h4>Moneda y generar Excel</h4>
+              </div>
+              <div class="step-content">
+                <div class="config-controls" style="flex-direction: column; gap: var(--spacing-md);">
+                  <select id="currency-selector-semanal" class="styled-selector" disabled>
+                    <option value="">Seleccionar moneda</option>
+                    <option value="PEN" data-url="https://docs.google.com/spreadsheets/d/e/2PACX-1vRRhWBlTXTz5h_v8OIH-3LrKdc6tjqLR15ZG1LlxsFRbZ6867Rn0L3jnWYOUtH6Cv-LQ7QRpULms8ah/pub?gid=0&single=true&output=csv">PEN</option>
+                    <option value="USD" data-url="https://docs.google.com/spreadsheets/d/e/2PACX-1vS9bRPb-3jZj8mBz7Al-4p39nG2ua3WWgva9ieg46GvH9jAg2AYk5oSXpEW1H0lWXEJCFZgSnhCv3z3/pub?gid=0&single=true&output=csv">USD</option>
+                  </select>
+                  <button id="btn-generar-excel-semanal" class="btn" disabled>
+                    <i class="fas fa-file-excel"></i> Generar Excel
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Mensaje de estado -->
+    <div class="estado-mensaje" id="estado-mensaje">
+      Seleccione una fecha para comenzar
+    </div>
+    
+    <!-- SECCIÓN PRINCIPAL: Tabla de Ventas Consolidadas -->
+    <div class="seccion reporte-compras-container" id="tabla-ventas-container" style="display: none;">
+      <div class="tabla-header">
+        <h3><i class="fas fa-credit-card"></i> Ventas consolidadas por medio de pago</h3>
+      </div>
+      <div class="tabla-body">
+        <div class="reporte-tabla-container">
+          <table class="reporte-tabla" id="tabla-ventas">
+            <thead>
+              <tr>
+                <th>Medio de pago</th>
+                <th>Cantidad de transacciones</th>
+                <th>Monto total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Las filas se generarán dinámicamente -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Variables globales
+      const appState = {
+        reportType: 'venta-tarjetas',
+        csvData: [],
+        selectedCurrency: '',
+        selectedCsvUrl: '',
+        selectedDate: '',
+        ventasDetalladasGlobal: {},
+        // Variables para ventas semanales
+        semanal: {
+          weekIsoDates: [],
+          csvData: [],
+          selectedCurrency: '',
+          selectedCsvUrl: '',
+          processedData: []
+        }
+      };
+
+      // Mapeo de conceptos para consolidación
+      const conceptMapping = {
+        'MC Y VISA': ['DE PROCESOS DE MEDIOS', 'MC', 'VISA'],
+        'DINERS CLUB': ['DINERS CLUB'],
+        'AMEX': ['COMPAN', 'CIA DE SERV']
+      };
+
+      // Referencias DOM
+      const elements = {
+        accordionToggle: document.getElementById('accordion-toggle'),
+        configContent: document.getElementById('config-content'),
+        accordionIcon: document.getElementById('accordion-icon'),
+        dateSelector: document.getElementById('date-selector'),
+        currencySelector: document.getElementById('currency-selector'),
+        btnBuscarVentas: document.getElementById('btn-buscar-ventas'),
+        fechaSeleccionada: document.getElementById('fecha-seleccionada'),
+        estadoMensaje: document.getElementById('estado-mensaje'),
+        tablaVentasContainer: document.getElementById('tabla-ventas-container'),
+        tablaVentas: document.getElementById('tabla-ventas'),
+        configVentaTarjetas: document.getElementById('config-venta-tarjetas'),
+        configVentasSemanales: document.getElementById('config-ventas-semanales'),
+        reportTypeRadios: document.querySelectorAll('input[name="report-type"]'),
+        // Elementos para ventas semanales
+        yearSelectorSemanal: document.getElementById('year-selector-semanal'),
+        monthSelectorSemanal: document.getElementById('month-selector-semanal'),
+        weekSelectorSemanal: document.getElementById('week-selector-semanal'),
+        currencySelectorSemanal: document.getElementById('currency-selector-semanal'),
+        btnGenerarExcelSemanal: document.getElementById('btn-generar-excel-semanal')
+      };
+
+      // == Funciones de utilidad ==
+      const utils = {
+        parseDateFromCSV(dateStr) {
+          if (!dateStr?.trim()) return null;
+          
+          const dateParts = dateStr.trim().split('/');
+          if (dateParts.length === 3) {
+            const [day, month, year] = dateParts.map(Number);
+            if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
+              return new Date(Date.UTC(year, month - 1, day));
+            }
+          }
+          return null;
+        },
+
+        formatDateISO(date) {
+          if (!(date instanceof Date) || isNaN(date)) return '';
+          return date.toISOString().split('T')[0];
+        },
+
+        formatDate(date) {
+          if (!(date instanceof Date) || isNaN(date)) return '--/--/----';
+          return date.toLocaleDateString('es-ES', { 
+            day: '2-digit', 
+            month: '2-digit', 
+            year: 'numeric',
+            timeZone: 'UTC'
+          });
+        },
+
+        formatNumber(num) {
+          if (num === 0 || isNaN(num)) return '0.00';
+          return num.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        },
+
+        parseCSVLine(line) {
+          const result = [];
+          let current = '';
+          let inQuotes = false;
+          
+          for (const char of line) {
+            if (char === '"') {
+              inQuotes = !inQuotes;
+            } else if (char === ',' && !inQuotes) {
+              result.push(current.trim());
+              current = '';
+            } else {
+              current += char;
+            }
+          }
+          result.push(current.trim());
+          return result;
+        }
+      };
+
+      // == Funciones para manejo de fechas semanales ==
+      const weekUtils = {
+        getMonday(date) {
+          const dayOfWeek = date.getUTCDay(); 
+          const diff = date.getUTCDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+          return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), diff));
+        },
+
+        getWeekDays(fromDate) {
+          const weekDays = [];
+          const startOfWeek = this.getMonday(fromDate);
+          for (let i = 0; i < 7; i++) {
+            const day = new Date(Date.UTC(startOfWeek.getUTCFullYear(), startOfWeek.getUTCMonth(), startOfWeek.getUTCDate() + i));
+            weekDays.push(day);
+          }
+          return weekDays;
+        },
+
+        populateMonths() {
+          const yearSelector = elements.yearSelectorSemanal;
+          const monthSelector = elements.monthSelectorSemanal;
+          const weekSelector = elements.weekSelectorSemanal;
+          
+          monthSelector.innerHTML = '<option value="">Mes</option>';
+          weekSelector.innerHTML = '<option value="">Semana</option>';
+          
+          if (!yearSelector.value) return;
+          
+          const months = [
+            { value: '01', name: 'Enero' }, { value: '02', name: 'Febrero' },
+            { value: '03', name: 'Marzo' }, { value: '04', name: 'Abril' },
+            { value: '05', name: 'Mayo' }, { value: '06', name: 'Junio' },
+            { value: '07', name: 'Julio' }, { value: '08', name: 'Agosto' },
+            { value: '09', name: 'Septiembre' }, { value: '10', name: 'Octubre' },
+            { value: '11', name: 'Noviembre' }, { value: '12', name: 'Diciembre' }
+          ];
+          
+          months.forEach(month => {
+            const option = document.createElement('option');
+            option.value = month.value;
+            option.textContent = month.name;
+            monthSelector.appendChild(option);
+          });
+        },
+
+        populateWeeksOfMonth() {
+          const yearSelector = elements.yearSelectorSemanal;
+          const monthSelector = elements.monthSelectorSemanal;
+          const weekSelector = elements.weekSelectorSemanal;
+          
+          weekSelector.innerHTML = '<option value="">Semana</option>';
+          
+          if (!yearSelector.value || !monthSelector.value) return;
+          
+          const year = parseInt(yearSelector.value);
+          const month = parseInt(monthSelector.value);
+          
+          const weeks = [];
+          let currentDate = new Date(Date.UTC(year, month - 1, 1));
+          
+          while (currentDate.getUTCMonth() === month - 1) {
+            const weekDays = this.getWeekDays(currentDate);
+            const firstWeekDay = weekDays[0];
+            const lastWeekDay = weekDays[6];
+
+            const daysInMonth = weekDays.filter(date => date.getUTCMonth() === month - 1).length;
+
+            if (daysInMonth > 0) {
+              const weekOption = {
+                value: utils.formatDateISO(firstWeekDay),
+                text: `${utils.formatDate(firstWeekDay).slice(0, 5)} al ${utils.formatDate(lastWeekDay).slice(0, 5)}`,
+                dates: weekDays.map(d => utils.formatDateISO(d))
+              };
+
+              if (!weeks.some(w => w.value === weekOption.value)) {
+                weeks.push(weekOption);
+              }
+            }
+
+            currentDate = new Date(Date.UTC(lastWeekDay.getUTCFullYear(), lastWeekDay.getUTCMonth(), lastWeekDay.getUTCDate() + 1));
+            currentDate = this.getMonday(currentDate);
+          }
+          
+          weeks.forEach(week => {
+            const option = document.createElement('option');
+            option.value = week.value;
+            option.textContent = week.text;
+            option.dataset.dates = JSON.stringify(week.dates);
+            weekSelector.appendChild(option);
+          });
+        },
+
+        updateWeekSelection() {
+          const weekSelector = elements.weekSelectorSemanal;
+          
+          appState.semanal.weekIsoDates = [];
+          
+          if (weekSelector.value) {
+            const selectedOption = weekSelector.options[weekSelector.selectedIndex];
+            if (selectedOption.dataset.dates) {
+              try {
+                appState.semanal.weekIsoDates = JSON.parse(selectedOption.dataset.dates);
+              } catch (e) {
+                console.error("Error parseando fechas ISO de la semana:", e);
+              }
+            }
+          }
+        }
+      };
+
+      // == Funciones de interfaz ==
+      const ui = {
+        updateStepState(stepNumber, state) {
+          const step = document.querySelector(`#config-venta-tarjetas .config-step:nth-child(${stepNumber})`);
+          if (!step) return;
+          
+          step.classList.remove('active', 'completed', 'future');
+          step.classList.add(state);
+          
+          const stepNumberElem = step.querySelector('.step-number');
+          if (stepNumberElem) {
+            stepNumberElem.innerHTML = state === 'completed' 
+              ? '<i class="fas fa-check"></i>' 
+              : String(stepNumber).padStart(2, '0');
+          }
+        },
+
+        updateEstadoMensaje(mensaje) {
+          if (elements.estadoMensaje) {
+            elements.estadoMensaje.textContent = mensaje;
+          }
+        },
+
+        toggleAccordion() {
+          elements.configContent?.classList.toggle('active');
+          elements.accordionToggle?.classList.toggle('active');
+        },
+
+        switchReportType(reportType) {
+          appState.reportType = reportType;
+          
+          // Ocultar todas las secciones de configuración
+          elements.configVentaTarjetas.style.display = 'none';
+          elements.configVentasSemanales.style.display = 'none';
+          
+          // Mostrar la sección correspondiente
+          if (reportType === 'venta-tarjetas') {
+            elements.configVentaTarjetas.style.display = 'block';
+            this.resetVentaTarjetasForm();
+          } else if (reportType === 'ventas-semanales') {
+            elements.configVentasSemanales.style.display = 'block';
+            this.resetVentasSemanalForm();
+            this.updateEstadoMensaje('Seleccione periodo y moneda para generar Excel semanal');
+          }
+          
+          // Ocultar tabla de resultados
+          if (elements.tablaVentasContainer) {
+            elements.tablaVentasContainer.style.display = 'none';
+          }
+        },
+
+        resetVentaTarjetasForm() {
+          // Reset estados
+          appState.selectedDate = '';
+          appState.selectedCurrency = '';
+          appState.selectedCsvUrl = '';
+          appState.csvData = [];
+          appState.ventasDetalladasGlobal = {};
+          
+          // Reset UI
+          if (elements.dateSelector) elements.dateSelector.value = '';
+          if (elements.currencySelector) {
+            elements.currencySelector.value = '';
+            elements.currencySelector.disabled = true;
+          }
+          if (elements.btnBuscarVentas) elements.btnBuscarVentas.disabled = true;
+          if (elements.fechaSeleccionada) elements.fechaSeleccionada.textContent = '-- Seleccionar fecha --';
+          
+          // Reset pasos
+          this.updateStepState(1, 'active');
+          this.updateStepState(2, 'future');
+          this.updateEstadoMensaje('Seleccione una fecha para comenzar');
+        },
+
+        resetVentasSemanalForm() {
+          // Reset estados
+          appState.semanal.weekIsoDates = [];
+          appState.semanal.csvData = [];
+          appState.semanal.selectedCurrency = '';
+          appState.semanal.selectedCsvUrl = '';
+          appState.semanal.processedData = [];
+          
+          // Reset UI
+          if (elements.yearSelectorSemanal) elements.yearSelectorSemanal.value = '';
+          if (elements.monthSelectorSemanal) elements.monthSelectorSemanal.innerHTML = '<option value="">Mes</option>';
+          if (elements.weekSelectorSemanal) elements.weekSelectorSemanal.innerHTML = '<option value="">Semana</option>';
+          if (elements.currencySelectorSemanal) {
+            elements.currencySelectorSemanal.value = '';
+            elements.currencySelectorSemanal.disabled = true;
+          }
+          if (elements.btnGenerarExcelSemanal) elements.btnGenerarExcelSemanal.disabled = true;
+          
+          // Reset pasos semanales (solo 2 pasos)
+          this.updateStepStateSemanal(1, 'active');
+          this.updateStepStateSemanal(2, 'future');
+        },
+
+        updateStepStateSemanal(stepNumber, state) {
+          const step = document.querySelector(`#config-ventas-semanales .config-step:nth-child(${stepNumber})`);
+          if (!step) return;
+          
+          step.classList.remove('active', 'completed', 'future');
+          step.classList.add(state);
+          
+          const stepNumberElem = step.querySelector('.step-number');
+          if (stepNumberElem) {
+            stepNumberElem.innerHTML = state === 'completed' 
+              ? '<i class="fas fa-check"></i>' 
+              : String(stepNumber).padStart(2, '0');
+          }
+        }
+      };
+
+      // == Funciones de procesamiento de datos ==
+      const dataProcessor = {
+        consolidateConcept(concepto) {
+          const conceptoUpper = concepto.toUpperCase();
+          
+          for (const [consolidatedName, keywords] of Object.entries(conceptMapping)) {
+            if (keywords.some(keyword => conceptoUpper.includes(keyword))) {
+              return consolidatedName;
+            }
+          }
+          
+          return null; // No es un concepto de venta que nos interese
+        },
+
+        async loadCSVData(url) {
+          const response = await fetch(url);
+          if (!response.ok) {
+            throw new Error(`Error HTTP: ${response.status}`);
+          }
+          
+          const csvText = await response.text();
+          const lines = csvText.split('\n').filter(line => line.trim() !== '');
+          return lines.map(line => utils.parseCSVLine(line));
+        },
+
+        processSalesData(csvData, targetDate) {
+          const selectedDateObj = new Date(targetDate + 'T00:00:00.000Z');
+          const selectedDateISO = utils.formatDateISO(selectedDateObj);
+          
+          const ventasConsolidadas = {};
+          const ventasDetalladas = {};
+          
+          csvData.forEach((row, index) => {
+            if (index === 0 || !row || row.length < 4) return; // Saltar header y filas inválidas
+            
+            const [fechaStr, concepto = '', proveedor = '', montoStr = '0'] = row;
+            const fecha = utils.parseDateFromCSV(fechaStr);
+            
+            if (!fecha || utils.formatDateISO(fecha) !== selectedDateISO) return;
+            
+            const monto = parseFloat(montoStr.replace(/[^-0-9.]/g, '')) || 0;
+            
+            // Solo procesar montos positivos (ventas)
+            if (monto > 0) {
+              const consolidatedConcept = this.consolidateConcept(concepto);
+              
+              if (consolidatedConcept) {
+                if (!ventasConsolidadas[consolidatedConcept]) {
+                  ventasConsolidadas[consolidatedConcept] = { cantidad: 0, montoTotal: 0 };
+                  ventasDetalladas[consolidatedConcept] = [];
+                }
+                
+                ventasConsolidadas[consolidatedConcept].cantidad += 1;
+                ventasConsolidadas[consolidatedConcept].montoTotal += monto;
+                
+                ventasDetalladas[consolidatedConcept].push({
+                  concepto,
+                  proveedor,
+                  monto
+                });
+              }
+            }
+          });
+          
+          return { ventasConsolidadas, ventasDetalladas };
+        }
+      };
+
+      // == Funciones para ventas semanales ==
+      const semanalProcessor = {
+        async generarExcel() {
+          if (!appState.semanal.selectedCsvUrl || appState.semanal.weekIsoDates.length === 0) {
+            ui.updateEstadoMensaje('Seleccione periodo y moneda primero');
+            return;
+          }
+
+          const btnGenerar = elements.btnGenerarExcelSemanal;
+          if (btnGenerar) {
+            btnGenerar.disabled = true;
+            btnGenerar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando...';
+          }
+
+          try {
+            ui.updateEstadoMensaje('Cargando datos y generando Excel...');
+            
+            // Cargar datos del CSV
+            appState.semanal.csvData = await dataProcessor.loadCSVData(appState.semanal.selectedCsvUrl);
+            console.log('Datos CSV semanales cargados:', appState.semanal.csvData.length, 'filas');
+            
+            // Procesar y filtrar datos
+            const registrosSemana = this.procesarDatosSemanal();
+            
+            if (registrosSemana.length === 0) {
+              alert('No se encontraron registros para la semana seleccionada');
+              return;
+            }
+
+            // Crear Excel directamente
+            const wb = XLSX.utils.book_new();
+
+            // Preparar datos para Excel (tal como están, sin ordenar)
+            const excelData = registrosSemana.map(registro => ({
+              'Fecha': registro.fecha,
+              'Concepto': registro.concepto,
+              'Proveedor': registro.proveedor,
+              'Monto': registro.monto,
+              '# Operacion': registro.operacion,
+              'Hora': registro.hora,
+              'Referencia': registro.referencia
+            }));
+
+            // Crear worksheet
+            const ws = XLSX.utils.json_to_sheet(excelData);
+
+            // Ajustar ancho de columnas
+            const colWidths = [
+              { wch: 12 }, // Fecha
+              { wch: 30 }, // Concepto
+              { wch: 25 }, // Proveedor
+              { wch: 15 }, // Monto
+              { wch: 15 }, // # Operacion
+              { wch: 10 }, // Hora
+              { wch: 20 }  // Referencia
+            ];
+            ws['!cols'] = colWidths;
+
+            // Agregar worksheet al workbook
+            const weekSelector = elements.weekSelectorSemanal;
+            const sheetName = weekSelector?.value ? 
+              `Semana_${weekSelector.options[weekSelector.selectedIndex].textContent.replace(/[^\w]/g, '_')}` : 
+              'Ventas_Semanales';
+            
+            XLSX.utils.book_append_sheet(wb, ws, sheetName);
+
+            // Generar nombre del archivo
+            const currency = appState.semanal.selectedCurrency;
+            const period = weekSelector?.value ? 
+              weekSelector.options[weekSelector.selectedIndex].textContent.replace(/[^\w\s]/g, '').replace(/\s+/g, '_') : 
+              'Semana';
+            
+            const fileName = `Ventas_Semanales_${currency}_${period}.xlsx`;
+
+            // Descargar archivo
+            XLSX.writeFile(wb, fileName);
+
+            // Marcar paso como completado
+            ui.updateStepStateSemanal(2, 'completed');
+            
+            ui.updateEstadoMensaje(`Excel generado exitosamente: ${fileName} (${registrosSemana.length} registros)`);
+            console.log('Excel generado exitosamente');
+
+          } catch (error) {
+            console.error('Error generando Excel:', error);
+            alert('Error al generar Excel: ' + error.message);
+            ui.updateEstadoMensaje('Error al generar Excel');
+          } finally {
+            if (btnGenerar) {
+              btnGenerar.disabled = false;
+              btnGenerar.innerHTML = '<i class="fas fa-file-excel"></i> Generar Excel';
+            }
+          }
+        },
+
+        procesarDatosSemanal() {
+          if (!appState.semanal.csvData || appState.semanal.csvData.length === 0) {
+            console.log('No hay datos CSV para procesar');
+            return [];
+          }
+
+          console.log('Procesando datos para semana:', appState.semanal.weekIsoDates);
+          console.log('Muestra del CSV:', appState.semanal.csvData.slice(0, 3));
+          
+          const registrosSemana = [];
+          
+          // Procesar datos del CSV
+          appState.semanal.csvData.forEach((row, rowIndex) => {
+            if (rowIndex === 0 || !row || row.length < 7) return; // Saltar header y filas inválidas
+            
+            // Mapeo correcto según la estructura real del CSV:
+            // [Fecha, Concepto, Proveedor, Monto, Saldo, # Operacion, Hora, Referencia]
+            const fechaStr = row[0] || '';
+            const concepto = row[1] || '';
+            const proveedor = row[2] || '';
+            const montoStr = row[3] || '0';
+            // row[4] es Saldo - SE OMITE del Excel final
+            const operacion = row[5] || '';
+            const hora = row[6] || '';
+            const referencia = row[7] || '';
+            
+            const fecha = utils.parseDateFromCSV(fechaStr);
+            if (!fecha) return;
+            
+            const fechaISO = utils.formatDateISO(fecha);
+            
+            // Verificar si esta fecha está en la semana seleccionada
+            if (appState.semanal.weekIsoDates.includes(fechaISO)) {
+              const monto = parseFloat(montoStr.replace(/[^-0-9.]/g, '')) || 0;
+              
+              // Filtrar SALDO INICIAL y SALDO FINAL
+              const conceptoUpper = concepto.toUpperCase();
+              if (conceptoUpper.includes('SALDO INICIAL') || conceptoUpper.includes('SALDO FINAL')) {
+                return; // Saltar estos registros
+              }
+              
+              // Solo incluir registros con monto diferente de 0
+              if (monto !== 0) {
+                registrosSemana.push({
+                  fecha: utils.formatDate(fecha),
+                  concepto: concepto,
+                  proveedor: proveedor,
+                  monto: monto,
+                  operacion: operacion,
+                  hora: hora,
+                  referencia: referencia
+                });
+              }
+            }
+          });
+
+          // NO ordenar - mantener el orden original del CSV
+          console.log('Datos procesados:', registrosSemana.length, 'registros');
+          console.log('Muestra de datos procesados:', registrosSemana.slice(0, 2));
+          return registrosSemana;
+        }
+      };
+
+      // == Función principal de búsqueda de ventas ==
+      async function buscarVentasDelDia() {
+        if (!appState.selectedCsvUrl || !appState.selectedDate) {
+          ui.updateEstadoMensaje('Seleccione fecha y moneda primero');
+          return;
+        }
+
+        const btnBuscarVentas = elements.btnBuscarVentas;
+        if (btnBuscarVentas) {
+          btnBuscarVentas.disabled = true;
+          btnBuscarVentas.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Buscando...';
+        }
+
+        try {
+          console.log('Cargando CSV desde:', appState.selectedCsvUrl);
+          ui.updateEstadoMensaje('Cargando datos y buscando ventas...');
+          
+          appState.csvData = await dataProcessor.loadCSVData(appState.selectedCsvUrl);
+          console.log('Datos CSV parseados:', appState.csvData.length, 'filas');
+          
+          const { ventasConsolidadas, ventasDetalladas } = dataProcessor.processSalesData(
+            appState.csvData, 
+            appState.selectedDate
+          );
+          
+          appState.ventasDetalladasGlobal = ventasDetalladas;
+          mostrarVentasConsolidadas(ventasConsolidadas);
+          
+        } catch (error) {
+          console.error('Error al cargar CSV:', error);
+          alert('Error al cargar los datos: ' + error.message);
+          ui.updateEstadoMensaje('Error al cargar los datos');
+        } finally {
+          if (btnBuscarVentas) {
+            btnBuscarVentas.disabled = false;
+            btnBuscarVentas.innerHTML = '<i class="fas fa-search"></i> Buscar ventas';
+          }
+        }
+      }
+
+
+
+      function mostrarVentasConsolidadas(ventasConsolidadas) {
+        const tbody = elements.tablaVentas?.querySelector('tbody');
+        if (!tbody) return;
+        
+        tbody.innerHTML = '';
+        const mediosDePago = Object.keys(ventasConsolidadas);
+        
+        if (mediosDePago.length === 0) {
+          const row = tbody.insertRow();
+          const cell = row.insertCell(0);
+          cell.colSpan = 3;
+          Object.assign(cell.style, {
+            textAlign: 'center',
+            color: 'var(--color-texto-secundario)',
+            fontStyle: 'italic'
+          });
+          cell.textContent = 'No se encontraron ventas para la fecha seleccionada';
+          
+          ui.updateEstadoMensaje('No se encontraron ventas para la fecha seleccionada');
+          elements.tablaVentasContainer.style.display = 'block';
+          return;
+        }
+        
+        let totalTransacciones = 0;
+        let totalMonto = 0;
+        
+        // Crear filas de datos
+        mediosDePago.forEach(medioPago => {
+          const datos = ventasConsolidadas[medioPago];
+          const row = tbody.insertRow();
+          row.className = 'clickeable';
+          row.dataset.concepto = medioPago;
+          
+          const cellMedio = row.insertCell(0);
+          cellMedio.className = 'column-concepto';
+          cellMedio.textContent = medioPago;
+          
+          const cellCantidad = row.insertCell(1);
+          cellCantidad.textContent = datos.cantidad.toString();
+          cellCantidad.style.textAlign = 'center';
+          
+          const cellMonto = row.insertCell(2);
+          cellMonto.textContent = utils.formatNumber(datos.montoTotal);
+          cellMonto.style.textAlign = 'right';
+          
+          row.addEventListener('click', () => toggleDetalleTransacciones(row, medioPago));
+          
+          totalTransacciones += datos.cantidad;
+          totalMonto += datos.montoTotal;
+        });
+        
+        // Fila de totales
+        const totalRow = tbody.insertRow();
+        totalRow.className = 'fila-total';
+        
+        const cells = [
+          { content: 'TOTAL', className: 'column-concepto' },
+          { content: totalTransacciones.toString(), style: { textAlign: 'center' } },
+          { content: utils.formatNumber(totalMonto), style: { textAlign: 'right' } }
+        ];
+        
+        cells.forEach(({ content, className = '', style = {} }) => {
+          const cell = totalRow.insertCell();
+          if (className) cell.className = className;
+          Object.assign(cell.style, style);
+          cell.textContent = content;
+        });
+        
+        // Mostrar resultados
+        elements.tablaVentasContainer.style.display = 'block';
+        ui.updateEstadoMensaje(`Se encontraron ${totalTransacciones} transacciones por un total de ${appState.selectedCurrency} ${utils.formatNumber(totalMonto)}`);
+        ui.updateStepState(2, 'completed');
+      }
+
+      function toggleDetalleTransacciones(row, medioPago) {
+        const isExpanded = row.classList.contains('expanded');
+        
+        // Cerrar todos los detalles abiertos
+        document.querySelectorAll('.reporte-tabla tbody tr.clickeable').forEach(r => {
+          r.classList.remove('expanded');
+          const nextRow = r.nextElementSibling;
+          if (nextRow?.classList.contains('detalle-transacciones')) {
+            nextRow.remove();
+          }
+        });
+        
+        if (!isExpanded) {
+          row.classList.add('expanded');
+          
+          const detalleRow = row.parentNode.insertRow(row.rowIndex);
+          detalleRow.className = 'detalle-transacciones show';
+          
+          const detalleCell = detalleRow.insertCell(0);
+          detalleCell.colSpan = 3;
+          
+          const detalleContent = document.createElement('div');
+          detalleContent.className = 'detalle-content';
+          
+          const titulo = document.createElement('h5');
+          titulo.innerHTML = `<i class="fas fa-list"></i> Transacciones de ${medioPago}`;
+          detalleContent.appendChild(titulo);
+          
+          const transaccionesList = document.createElement('div');
+          transaccionesList.className = 'transacciones-lista';
+          
+          const transacciones = appState.ventasDetalladasGlobal[medioPago] || [];
+          transacciones.forEach(({ concepto, proveedor, monto }) => {
+            const item = document.createElement('div');
+            item.className = 'transaccion-item';
+            
+            const elements = [
+              { className: 'transaccion-concepto', text: concepto },
+              { className: 'transaccion-proveedor', text: proveedor || 'N/A' },
+              { className: 'transaccion-monto', text: utils.formatNumber(monto) }
+            ];
+            
+            elements.forEach(({ className, text }) => {
+              const div = document.createElement('div');
+              div.className = className;
+              div.textContent = text;
+              item.appendChild(div);
+            });
+            
+            transaccionesList.appendChild(item);
+          });
+          
+          detalleContent.appendChild(transaccionesList);
+          detalleCell.appendChild(detalleContent);
+        }
+      }
+
+      // == Event Listeners ==
+      const eventHandlers = {
+        setupReportTypeSelector() {
+          elements.reportTypeRadios.forEach(radio => {
+            radio.addEventListener('change', (e) => {
+              if (e.target.checked) {
+                ui.switchReportType(e.target.value);
+              }
+            });
+          });
+        },
+
+        setupDateSelector() {
+          elements.dateSelector?.addEventListener('change', function() {
+            appState.selectedDate = this.value;
+            
+            if (appState.selectedDate) {
+              const dateObj = new Date(appState.selectedDate + 'T00:00:00.000Z');
+              elements.fechaSeleccionada.textContent = utils.formatDate(dateObj);
+              
+              ui.updateStepState(1, 'completed');
+              ui.updateStepState(2, 'active');
+              
+              if (elements.currencySelector) {
+                elements.currencySelector.disabled = false;
+              }
+              
+              ui.updateEstadoMensaje('Fecha seleccionada. Seleccione una moneda y busque las ventas.');
+            } else {
+              elements.fechaSeleccionada.textContent = '-- Seleccionar fecha --';
+              ui.updateStepState(1, 'active');
+              ui.updateStepState(2, 'future');
+              
+              if (elements.currencySelector) {
+                elements.currencySelector.disabled = true;
+                elements.currencySelector.value = '';
+              }
+              
+              ui.updateEstadoMensaje('Seleccione una fecha para comenzar');
+            }
+          });
+        },
+
+        setupCurrencySelector() {
+          elements.currencySelector?.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            appState.selectedCurrency = this.value;
+            appState.selectedCsvUrl = selectedOption.dataset.url || '';
+            
+            if (appState.selectedCurrency && appState.selectedCsvUrl) {
+              elements.btnBuscarVentas.disabled = false;
+              ui.updateEstadoMensaje(`Moneda ${appState.selectedCurrency} seleccionada. Busque las ventas.`);
+            } else {
+              elements.btnBuscarVentas.disabled = true;
+            }
+          });
+        },
+
+        setupSemanalEventListeners() {
+          // Event listeners para selección de periodo semanal
+          elements.yearSelectorSemanal?.addEventListener('change', function() {
+            weekUtils.populateMonths();
+            this.checkSemanalStep1Completion();
+          }.bind(this));
+
+          elements.monthSelectorSemanal?.addEventListener('change', function() {
+            weekUtils.populateWeeksOfMonth();
+            this.checkSemanalStep1Completion();
+          }.bind(this));
+
+          elements.weekSelectorSemanal?.addEventListener('change', function() {
+            weekUtils.updateWeekSelection();
+            this.checkSemanalStep1Completion();
+          }.bind(this));
+
+          // Event listener para selector de moneda semanal
+          elements.currencySelectorSemanal?.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            appState.semanal.selectedCurrency = this.value;
+            appState.semanal.selectedCsvUrl = selectedOption.dataset.url || '';
+            
+            if (appState.semanal.selectedCurrency && appState.semanal.selectedCsvUrl) {
+              elements.btnGenerarExcelSemanal.disabled = false;
+              ui.updateEstadoMensaje(`Moneda ${appState.semanal.selectedCurrency} seleccionada. Genere el Excel.`);
+            } else {
+              elements.btnGenerarExcelSemanal.disabled = true;
+            }
+          });
+
+          // Event listener para botón generar Excel
+          elements.btnGenerarExcelSemanal?.addEventListener('click', () => {
+            semanalProcessor.generarExcel();
+          });
+        },
+
+        checkSemanalStep1Completion() {
+          const year = elements.yearSelectorSemanal?.value;
+          const month = elements.monthSelectorSemanal?.value;
+          const week = elements.weekSelectorSemanal?.value;
+          
+          if (year && month && week) {
+            ui.updateStepStateSemanal(1, 'completed');
+            ui.updateStepStateSemanal(2, 'active');
+            
+            // Habilitar selector de moneda
+            if (elements.currencySelectorSemanal) {
+              elements.currencySelectorSemanal.disabled = false;
+            }
+            
+            ui.updateEstadoMensaje('Periodo seleccionado. Seleccione una moneda y genere el Excel.');
+          } else {
+            ui.updateStepStateSemanal(1, 'active');
+            ui.updateStepStateSemanal(2, 'future');
+            
+            if (elements.currencySelectorSemanal) {
+              elements.currencySelectorSemanal.disabled = true;
+              elements.currencySelectorSemanal.value = '';
+            }
+            if (elements.btnGenerarExcelSemanal) {
+              elements.btnGenerarExcelSemanal.disabled = true;
+            }
+          }
+        },
+
+        init() {
+          elements.accordionToggle?.addEventListener('click', ui.toggleAccordion);
+          elements.btnBuscarVentas?.addEventListener('click', buscarVentasDelDia);
+          
+          this.setupReportTypeSelector();
+          this.setupDateSelector();
+          this.setupCurrencySelector();
+          this.setupSemanalEventListeners();
+        }
+      };
+
+      // == Inicialización ==
+      eventHandlers.init();
+      console.log("Consolidador de ventas inicializado y optimizado.");
+    });
+  </script>
+</body>
+</html>

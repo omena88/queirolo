@@ -1,0 +1,2562 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Asistente de Reportes - Santiago Queirolo</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+  
+  <style>
+    /* SOLO ESTILOS ESPECÍFICOS PARA EL REPORTE */
+    .reporte-app {
+      font-family: 'Inter', sans-serif;
+      width: 1200px;
+      height: 800px;
+      margin: 0 auto;
+      padding: 10px;
+      display: flex;
+      gap: 20px;
+    }
+    
+    .chat-section {
+      width: 40%;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .actions-section {
+      width: 60%;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+    }
+    
+    .chat-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px 0;
+      margin-bottom: 10px;
+    }
+    
+    .chat-area::-webkit-scrollbar {
+      width: 6px;
+    }
+    
+    .chat-area::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 3px;
+    }
+    
+    .chat-area::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 3px;
+    }
+    
+    /* ELIMINAR MARGEN INFERIOR DE PALABRAS EN CHAT */
+    .chat-area p,
+    .chat-area div,
+    .chat-area span {
+      margin-bottom: 0 !important;
+      line-height: 1.3 !important;
+    }
+    
+    .typing-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    
+    .typing-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: #9CA3AF;
+      animation: typing 1.4s infinite ease-in-out;
+    }
+    
+    .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+    .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+    
+    @keyframes typing {
+      0%, 80%, 100% { transform: scale(0); opacity: 0.5; }
+      40% { transform: scale(1); opacity: 1; }
+    }
+    
+    .fade-in {
+      animation: fadeIn 0.5s ease-in;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* ESTILOS PARA SELECTORES - FORZAR SOBRE ASTRA/ELEMENTOR */
+    .reporte-app select.select-arrow {
+      color: #111827 !important; /* texto normal */
+      background-color: #ffffff !important;
+      border: 2px solid #e5e7eb !important; /* gray-200 */
+      border-radius: 0.5rem !important; /* rounded-lg */
+      padding: 0.75rem 2.5rem 0.75rem 1rem !important; /* py-3 px-4 pe-9 */
+      font-size: 0.875rem !important; /* text-sm */
+      line-height: 1.25rem !important;
+      height: auto !important;
+      min-height: 44px !important;
+      text-indent: 0 !important;
+      opacity: 1 !important;
+      font-weight: 500 !important;
+      appearance: none !important;
+      -webkit-appearance: none !important;
+      -moz-appearance: none !important;
+      text-decoration: none !important;
+      letter-spacing: normal !important;
+      -webkit-text-fill-color: currentColor !important;
+      background-clip: padding-box !important;
+      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e") !important;
+      background-position: right 0.75rem center !important;
+      background-repeat: no-repeat !important;
+      background-size: 1.25em 1.25em !important;
+    }
+
+    .reporte-app select.select-arrow:focus {
+      border-color: #3b82f6 !important; /* blue-500 */
+      box-shadow: 0 0 0 3px rgba(59,130,246,.25) !important;
+      outline: none !important;
+    }
+
+    /* ESTILOS PARA INPUTS - FORZAR SOBRE ASTRA/ELEMENTOR */
+    .reporte-app input.styled-input {
+      color: #111827 !important; /* texto normal */
+      background-color: #ffffff !important;
+      border: 2px solid #e5e7eb !important; /* gray-200 */
+      border-radius: 0.5rem !important; /* rounded-lg */
+      padding: 0.75rem 1rem !important; /* py-3 px-4 */
+      font-size: 0.875rem !important; /* text-sm */
+      line-height: 1.25rem !important;
+      height: auto !important;
+      min-height: 44px !important;
+      width: 100% !important;
+      font-weight: 500 !important;
+      -webkit-appearance: none !important;
+      appearance: none !important;
+      -moz-appearance: textfield !important;
+    }
+
+    .reporte-app input.styled-input:focus {
+      border-color: #3b82f6 !important; /* blue-500 */
+      box-shadow: 0 0 0 3px rgba(59,130,246,.25) !important;
+      outline: none !important;
+    }
+    .reporte-app input.styled-input::-webkit-outer-spin-button,
+    .reporte-app input.styled-input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    /* Placeholder y opciones */
+    .reporte-app select.select-arrow option[value=""] {
+      color: #9CA3AF !important; /* placeholder */
+    }
+    .reporte-app select.select-arrow option { 
+      color: #111827 !important; 
+      font-size: 14px !important;
+      background: #ffffff !important;
+    }
+
+    /* Cuando el select no tiene valor, forzar color placeholder */
+    .reporte-app select.select-arrow[data-has-value="false"] {
+      color: #9CA3AF !important;
+    }
+    
+    .hidden {
+      display: none;
+    }
+    
+    /* RESPONSIVE */
+    @media (max-width: 1200px) {
+      .reporte-app {
+        width: 100%;
+        max-width: 1200px;
+        flex-direction: column;
+        height: auto;
+      }
+      
+      .chat-section {
+        width: 100%;
+        height: 300px;
+      }
+      
+      .actions-section {
+        width: 100%;
+      }
+    }
+    
+    @media (max-width: 768px) {
+      .reporte-app {
+        width: 100%;
+        max-width: 100%;
+        flex-direction: column;
+        height: auto;
+      }
+      
+      .chat-section {
+        width: 100%;
+        height: 300px;
+      }
+      
+      .actions-section {
+        width: 100%;
+      }
+    }
+
+    /* Modal typography tightening */
+    #report-modal h3 { font-size: 16px !important; line-height: 1.1 !important; }
+    #rep-tabla-ventas thead, #rep-tabla-ventas tbody { font-size: 9px !important; }
+    #rep-tabla-resumen, #rep-tabla-venta-tipo, #rep-tabla-venta-cliente, #rep-tabla-produccion { font-size: 10px !important; }
+  </style>
+</head>
+<body>
+  <div class="reporte-app">
+    <!-- Sección del Chat (40%) -->
+    <div class="chat-section">
+      <div id="chat-messages" class="chat-area space-y-4">
+        <!-- Los mensajes aparecerán aquí -->
+      </div>
+    </div>
+
+    <!-- Sección de Acciones (60%) -->
+    <div class="actions-section">
+      <div id="input-area" class="hidden">
+      <!-- Paso 1: Selección de periodo -->
+      <div id="step-1" class="p-5 bg-white rounded-xl shadow-lg border border-gray-200">
+        <!-- Primera fila: Año y Mes -->
+        <div class="grid grid-cols-2 gap-4 mb-6">
+          <select id="year-selector" class="select-arrow py-4 px-4 pe-9 block w-full border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none" value="" data-has-value="false">
+            <option value="">Seleccionar año</option>
+            <option value="2024">2024</option>
+            <option value="2025">2025</option>
+            <option value="2026">2026</option>
+          </select>
+          <select id="month-selector" class="select-arrow py-4 px-4 pe-9 block w-full border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none disabled:bg-gray-100" disabled value="" data-has-value="false">
+            <option value="">Seleccionar mes</option>
+          </select>
+        </div>
+        
+        <!-- Segunda fila: Semana y Botón -->
+        <div class="grid grid-cols-2 gap-4 items-end">
+          <select id="week-selector" class="select-arrow py-4 px-4 pe-9 block w-full border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none disabled:bg-gray-100" disabled value="" data-has-value="false">
+            <option value="">Seleccionar semana</option>
+          </select>
+          <button id="continue-step-1" class="py-4 px-6 w-full text-sm font-semibold rounded-lg border border-transparent text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none transition-all duration-200" disabled>
+            Buscar
+          </button>
+        </div>
+      </div>
+
+      <!-- Paso 2: Validar Tipos de Cambio -->
+      <div id="step-2" class="p-5 bg-white rounded-xl shadow-lg border border-gray-200 hidden">
+        <div id="exchange-rate-list" class="space-y-3 mb-6 pr-2">
+          <!-- Filas de tipo de cambio se insertarán aquí dinámicamente -->
+        </div>
+        <div class="flex justify-end">
+          <button id="continue-step-2" class="py-3 px-6 inline-flex items-center gap-x-2 text-sm font-semibold rounded-lg border border-transparent text-white bg-blue-600 hover:bg-blue-700 transition-all duration-200">
+            Continuar
+          </button>
+        </div>
+      </div>
+
+      <!-- Paso 3: Carga masiva de documentos -->
+      <div id="step-3" class="p-5 bg-white rounded-xl shadow-lg border border-gray-200 hidden">
+        <!-- Área de carga masiva -->
+        <div id="mass-upload-area" class="p-6 text-center border-2 border-dashed border-gray-300 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors duration-200 mb-6">
+          <div class="mb-6">
+            <i class="fas fa-upload text-5xl text-gray-400 mb-4"></i>
+            <p class="text-lg font-semibold text-gray-700">Cargar documentos</p>
+          </div>
+          <input type="file" id="mass-file-input" multiple accept=".xlsx,.xls" class="hidden">
+          <button id="load-files-btn" onclick="document.getElementById('mass-file-input').click()" class="py-3 px-6 inline-flex items-center gap-x-2 text-sm font-semibold rounded-lg border border-transparent text-white bg-blue-600 hover:bg-blue-700 transition-all duration-200">
+            <i class="fas fa-folder-open"></i>
+            Seleccionar archivos
+          </button>
+        </div>
+
+        <!-- Mapeo de archivos en dos columnas -->
+        <div id="file-mapping-container" class="hidden mb-6">
+          <div id="mapped-files" class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6"></div>
+        </div>
+
+        <div class="flex justify-center gap-4">
+          <button id="load-more-btn" onclick="document.getElementById('mass-file-input').click()" class="py-3 px-6 inline-flex items-center gap-x-2 text-sm font-semibold rounded-lg border border-gray-200 text-gray-700 bg-white hover:bg-gray-50 transition-all duration-200 hidden">
+            <i class="fas fa-plus"></i>
+            Cargar más
+          </button>
+          <button id="continue-step-3" class="py-3 px-6 inline-flex items-center gap-x-2 text-sm font-semibold rounded-lg border border-transparent text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none transition-all duration-200" disabled>
+            Procesar documentos
+          </button>
+        </div>
+      </div>
+
+      <!-- Paso 4: Procesamiento -->
+      <div id="step-4" class="p-6 bg-white rounded-xl shadow-lg border border-gray-200 hidden">
+        <div class="text-center">
+          <div class="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <i class="fas fa-cog text-white text-2xl animate-spin"></i>
+          </div>
+          <h3 class="text-xl font-semibold text-gray-900 mb-4">Procesando documentos...</h3>
+          <p class="text-gray-600 mb-6">Estoy analizando los datos y generando tu reporte</p>
+          <div class="w-full bg-gray-200 rounded-full h-2 mb-4">
+            <div id="progress-bar" class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+          </div>
+          <p id="progress-text" class="text-sm text-gray-500">Iniciando procesamiento...</p>
+        </div>
+      </div>
+
+      <!-- Paso 5: Descarga -->
+      <div id="step-5" class="p-6 bg-white rounded-xl shadow-lg border border-gray-200 hidden">
+        <div class="text-center">
+          <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <i class="fas fa-check text-green-600 text-2xl"></i>
+          </div>
+          <h3 class="text-xl font-semibold text-gray-900 mb-4">¡Reporte listo!</h3>
+          <p class="text-gray-600 mb-6">Tu reporte de ventas ha sido generado exitosamente</p>
+          <button id="download-pdf" class="py-4 px-8 inline-flex items-center gap-x-2 text-base font-semibold rounded-lg border border-transparent text-white bg-green-600 hover:bg-green-700 transition-all duration-200">
+            <i class="fas fa-download"></i>
+            Descargar PDF
+          </button>
+          <button id="view-report" class="py-4 px-8 inline-flex items-center gap-x-2 text-base font-semibold rounded-lg border border-gray-200 text-gray-800 bg-white hover:bg-gray-50 transition-all duration-200">
+            <i class="fas fa-eye"></i>
+            Ver Reporte
+          </button>
+        </div>
+      </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal para ver reporte (visores de tablas) -->
+  <div id="report-modal" class="fixed inset-0 z-[1000] hidden" style="background: rgba(0,0,0,0.55);">
+    <div class="absolute inset-0 flex items-center justify-center p-4">
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-[1400px] h-[90vh] relative overflow-hidden">
+        <button id="close-report-modal" class="absolute top-3 right-3 inline-flex items-center justify-center w-9 h-9 rounded-full bg-white text-gray-700 hover:bg-gray-100 shadow border border-gray-200">
+          <i class="fas fa-times"></i>
+        </button>
+        <div id="report-content" class="w-full h-full overflow-auto p-4"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Verificación de librerías disponibles
+    function checkLibraries() {
+      const issues = [];
+      
+      if (typeof XLSX === 'undefined') {
+        issues.push('XLSX no está disponible');
+      }
+      
+      if (typeof window.jspdf === 'undefined') {
+        issues.push('jsPDF no está disponible');
+      }
+      
+      if (issues.length > 0) {
+        console.warn('Librerías faltantes:', issues);
+        return false;
+      }
+      
+      return true;
+    }
+
+    // Endpoint del snippet de WordPress para tipo de cambio (ajustable si cambia la ruta)
+    const EXCHANGE_RATE_ENDPOINT = './1.1 tipo de cambio.php';
+    let currentStep = 1;
+    let selectedPeriod = {};
+    let uploadedFiles = {};
+    let weekIsoDates = [];
+
+    
+    // Configuración de meses (ordenados de enero a diciembre)
+    const months = [
+      { value: '01', name: 'Enero' },
+      { value: '02', name: 'Febrero' },
+      { value: '03', name: 'Marzo' },
+      { value: '04', name: 'Abril' },
+      { value: '05', name: 'Mayo' },
+      { value: '06', name: 'Junio' },
+      { value: '07', name: 'Julio' },
+      { value: '08', name: 'Agosto' },
+      { value: '09', name: 'Septiembre' },
+      { value: '10', name: 'Octubre' },
+      { value: '11', name: 'Noviembre' },
+      { value: '12', name: 'Diciembre' }
+    ];
+
+    // Funciones de formateo de fechas
+    function formatDate(date, format = 'DD/MM/YYYY', options = {}) {
+      if (!(date instanceof Date) || isNaN(date)) {
+        return options.fallback || '--/--/----';
+      }
+      
+      const formats = {
+        'DD/MM/YYYY': (d) => `${d.getUTCDate().toString().padStart(2, '0')}/${(d.getUTCMonth() + 1).toString().padStart(2, '0')}/${d.getUTCFullYear()}`,
+        'YYYY-MM-DD': (d) => `${d.getUTCFullYear()}-${(d.getUTCMonth() + 1).toString().padStart(2, '0')}-${d.getUTCDate().toString().padStart(2, '0')}`,
+        'DD/MM': (d) => `${d.getUTCDate().toString().padStart(2, '0')}/${(d.getUTCMonth() + 1).toString().padStart(2, '0')}`
+      };
+      
+      return formats[format] ? formats[format](date) : formats['DD/MM/YYYY'](date);
+    }
+
+    // Funciones de compatibilidad simplificadas
+    const formatDateISO = (date) => formatDate(date, 'DD/MM/YYYY');
+    const formatDateISOForData = (date) => formatDate(date, 'YYYY-MM-DD');
+    const formatDateShort = (date) => formatDate(date, 'DD/MM');
+
+    function getMonday(date) {
+      const dayOfWeek = date.getUTCDay();
+      const diff = date.getUTCDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+      const monday = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), diff));
+      return monday;
+    }
+      
+    function getWeekDays(fromDate) {
+      const weekDays = [];
+      const startOfWeek = getMonday(fromDate);
+      for (let i = 0; i < 7; i++) {
+        const day = new Date(Date.UTC(startOfWeek.getUTCFullYear(), startOfWeek.getUTCMonth(), startOfWeek.getUTCDate() + i));
+        weekDays.push(day);
+      }
+      return weekDays;
+    }
+
+    function populateWeeksOfMonth() {
+      const yearSelector = document.getElementById('year-selector');
+      const monthSelector = document.getElementById('month-selector');
+      const weekSelector = document.getElementById('week-selector');
+      
+      weekSelector.innerHTML = '<option value="">Seleccionar semana</option>';
+      if (!yearSelector.value || !monthSelector.value) return;
+      
+      const year = parseInt(yearSelector.value);
+      const month = parseInt(monthSelector.value);
+      
+      // Construir semanas por Lunes-Domingo con filtros estrictos dentro de mes
+      const weeks = [];
+      const firstOfMonth = new Date(Date.UTC(year, month - 1, 1));
+      // Ir al lunes de la semana del primer día del mes
+      let cursor = getMonday(firstOfMonth);
+      // Repetir hasta salir del mes
+      while (cursor.getUTCMonth() <= (month - 1)) {
+        const weekDays = getWeekDays(cursor);
+        const firstWeekDay = weekDays[0];
+        const lastWeekDay = weekDays[6];
+        // Si toda la semana está fuera y el primer día ya pasó el mes, cortar
+        if (firstWeekDay.getUTCMonth() > (month - 1)) break;
+        // Usar solo las fechas en la semana (7 días) pero mantenerlas todas para coherencia con TC
+        const option = {
+          value: formatDateISO(firstWeekDay), // DD/MM/AAAA para mostrar
+          text: `${formatDateShort(firstWeekDay)} al ${formatDateShort(lastWeekDay)}`,
+          dates: weekDays.map(d => formatDateISOForData(d)) // YYYY-MM-DD para data-date
+        };
+        if (!weeks.some(w=>w.value===option.value)) weeks.push(option);
+        // Avanzar una semana
+        cursor = new Date(Date.UTC(firstWeekDay.getUTCFullYear(), firstWeekDay.getUTCMonth(), firstWeekDay.getUTCDate() + 7));
+      }
+      
+      weeks.forEach(week => {
+        const option = document.createElement('option');
+        option.value = week.value;
+        option.textContent = week.text;
+        option.dataset.dates = JSON.stringify(week.dates);
+        weekSelector.appendChild(option);
+      });
+    }
+
+    // Inicialización
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('🚀 Aplicación iniciada');
+      
+      // Verificar que todas las librerías estén disponibles
+      if (!checkLibraries()) {
+        console.error('❌ Algunas librerías no están disponibles. La aplicación puede no funcionar correctamente.');
+        addBotMessage('⚠️ Advertencia: Algunas librerías no están disponibles. La aplicación puede no funcionar correctamente.');
+      }
+      
+      // Probar conectividad del endpoint de tipos de cambio
+      setTimeout(() => {
+        console.log("🔍 Endpoint configurado:", EXCHANGE_RATE_ENDPOINT);
+      }, 1000);
+      
+      setTimeout(() => {
+        showTypingIndicator();
+        
+        setTimeout(() => {
+          hideTypingIndicator();
+          addBotMessage('¡Hola! 👋 Soy tu Asistente para generar reportes de ventas. Empecemos seleccionando un periodo.');
+          
+          setTimeout(() => {
+            showStep(1);
+            setupEventListeners();
+          }, 800);
+        }, 1000);
+      }, 500);
+    });
+
+    function showTypingIndicator() {
+      const chatMessages = document.getElementById('chat-messages');
+      const typingDiv = document.createElement('div');
+      typingDiv.id = 'typing-indicator';
+      typingDiv.className = 'flex items-start gap-3 fade-in';
+      typingDiv.innerHTML = `
+        <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+          <i class="fas fa-robot text-white text-sm"></i>
+        </div>
+        <div class="bg-gray-100 rounded-lg rounded-tl-none p-4 max-w-md">
+          <div class="typing-indicator">
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+          </div>
+        </div>
+      `;
+      chatMessages.appendChild(typingDiv);
+      scrollToBottom();
+    }
+
+    function hideTypingIndicator() {
+      const typingIndicator = document.getElementById('typing-indicator');
+      if (typingIndicator) {
+        typingIndicator.remove();
+      }
+    }
+
+    function setupEventListeners() {
+      console.log('⚙️ Configurando event listeners');
+      
+      try {
+        // Event listeners para selectores
+        const yearSelector = document.getElementById('year-selector');
+        const monthSelector = document.getElementById('month-selector');
+        const weekSelector = document.getElementById('week-selector');
+        const continueStep1Btn = document.getElementById('continue-step-1');
+        
+        if (yearSelector) {
+          yearSelector.addEventListener('change', (e) => {
+            e.target.dataset.hasValue = e.target.value ? 'true' : 'false';
+            updateMonthSelector();
+          });
+        }
+        
+        if (monthSelector) {
+          monthSelector.addEventListener('change', (e) => {
+            e.target.dataset.hasValue = e.target.value ? 'true' : 'false';
+            updateWeekSelector();
+          });
+        }
+        
+        if (weekSelector) {
+          weekSelector.addEventListener('change', (e) => {
+            e.target.dataset.hasValue = e.target.value ? 'true' : 'false';
+            validateStep1();
+          });
+        }
+        
+        if (continueStep1Btn) {
+          continueStep1Btn.addEventListener('click', goToStep2);
+        }
+
+        // Event listener para el nuevo paso 2 (Tipos de Cambio)
+        const continueStep2Btn = document.getElementById('continue-step-2');
+        if (continueStep2Btn) {
+          continueStep2Btn.addEventListener('click', saveExchangeRatesAndGoToStep3);
+        }
+
+        // Event listeners para botones del paso 3 (Carga de archivos)
+        const continueStep3Btn = document.getElementById('continue-step-3');
+        if (continueStep3Btn) {
+          continueStep3Btn.addEventListener('click', function() {
+            console.log('🔄 Botón "Procesar documentos" clickeado');
+            goToStep4();
+          });
+        }
+
+        // Configurar carga masiva
+        setupMassUpload();
+        
+        // Event listeners para descarga y visualización
+        const downloadPdfBtn = document.getElementById('download-pdf');
+        if (downloadPdfBtn) {
+          downloadPdfBtn.addEventListener('click', () => {
+            console.log('📥 Iniciando descarga de PDF');
+            addBotMessage('Iniciando descarga del reporte PDF...');
+            try {
+              generatePDF();
+              setTimeout(() => {
+                addBotMessage('¡Descarga completada! ¿Necesitas generar otro reporte?');
+                console.log('✅ Descarga completada');
+              }, 1000);
+            } catch (error) {
+              console.error('❌ Error generando PDF:', error);
+              addBotMessage('❌ Hubo un error generando el PDF. Por favor, verifica que todos los datos estén correctos e inténtalo de nuevo.');
+            }
+          });
+        }
+        
+        const viewBtn = document.getElementById('view-report');
+        if (viewBtn) {
+          viewBtn.addEventListener('click', openReportModal);
+        }
+        
+        const closeModalBtn = document.getElementById('close-report-modal');
+        if (closeModalBtn) {
+          closeModalBtn.addEventListener('click', closeReportModal);
+        }
+        
+        console.log('✅ Event listeners configurados correctamente');
+      } catch (error) {
+        console.error('❌ Error configurando event listeners:', error);
+      }
+    }
+
+    function setupMassUpload() {
+      const massUploadArea = document.getElementById('mass-upload-area');
+      const massFileInput = document.getElementById('mass-file-input');
+
+      massUploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        massUploadArea.classList.add('border-blue-500', 'bg-blue-50');
+      });
+
+      massUploadArea.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        massUploadArea.classList.remove('border-blue-500', 'bg-blue-50');
+      });
+
+      massUploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        massUploadArea.classList.remove('border-blue-500', 'bg-blue-50');
+        const files = Array.from(e.dataTransfer.files);
+        processMassFiles(files);
+      });
+
+      massFileInput.addEventListener('change', (e) => {
+        const files = Array.from(e.target.files);
+        processMassFiles(files);
+      });
+    }
+
+    function processMassFiles(files) {
+      console.log('📂 Procesando archivos:', files.map(f => f.name));
+      const mappedFiles = document.getElementById('mapped-files');
+      const container = document.getElementById('file-mapping-container');
+      const uploadArea = document.getElementById('mass-upload-area');
+      
+      // Limpiar archivos existentes antes de procesar nuevos
+      mappedFiles.innerHTML = '';
+      
+      document.getElementById('load-more-btn').classList.remove('hidden');
+      
+      if (uploadArea.style.display !== 'none') {
+        uploadArea.style.display = 'none';
+      }
+      
+      const mappings = {
+        'ventas': ['venta', 'sale', 'ventas'],
+        'propinas': ['propina', 'tip', 'propinas'],
+        'prod-cimp': ['cimp', 'con_imp', 'con impuesto', 'conimp'],
+        'prod-simp': ['simp', 'sin_imp', 'sin impuesto', 'sinimp'],
+        'clientes': ['cliente', 'client', 'clientes', 'customer']
+      };
+  
+      const typeNames = {
+        'ventas': 'Ventas',
+        'propinas': 'Propinas', 
+        'prod-cimp': 'Prod. c/imp',
+        'prod-simp': 'Prod. s/imp',
+        'clientes': 'Clientes'
+      };
+  
+      // Limpiar archivos subidos anteriormente
+      uploadedFiles = {};
+      
+      files.forEach(file => {
+        const fileName = file.name.toLowerCase();
+        let mappedTo = null;
+        let bestMatch = 0;
+        
+        console.log(`🔍 Analizando archivo: ${file.name} (${fileName})`);
+        
+        // Buscar la mejor coincidencia para cada archivo
+        for (const [type, keywords] of Object.entries(mappings)) {
+          for (const keyword of keywords) {
+            if (fileName.includes(keyword)) {
+              // Priorizar coincidencias más específicas
+              const matchScore = keyword.length;
+              console.log(`  📋 Coincidencia encontrada: "${keyword}" -> ${type} (score: ${matchScore})`);
+              if (matchScore > bestMatch) {
+                bestMatch = matchScore;
+                mappedTo = type;
+                console.log(`  🎯 Nueva mejor coincidencia: ${type} (score: ${matchScore})`);
+              }
+            }
+          }
+        }
+        
+        if (mappedTo) {
+          console.log(`✅ Archivo ${file.name} mapeado a: ${mappedTo}`);
+          
+          // Verificar que no haya ya un archivo de este tipo
+          if (uploadedFiles[mappedTo + '-file']) {
+            console.log(`⚠️ Ya existe un archivo de tipo ${mappedTo}, saltando: ${file.name}`);
+            return; // Saltar este archivo
+          }
+          
+          const fileId = `file-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+          
+          const fileDiv = document.createElement('div');
+          fileDiv.className = 'p-4 bg-gray-50 border border-gray-200 rounded-lg flex items-center justify-between';
+          fileDiv.id = fileId;
+          
+          fileDiv.innerHTML = `
+            <div class="flex items-center gap-3 flex-1">
+              <i class="fas fa-file-excel text-green-600 text-lg"></i>
+              <div>
+                <div class="font-medium text-gray-900">${file.name}</div>
+                <div class="text-sm text-gray-500">${typeNames[mappedTo]}</div>
+              </div>
+            </div>
+            <button class="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-full transition-colors duration-200" onclick="removeDocument('${fileId}', '${mappedTo}')" title="Eliminar archivo">
+              <i class="fas fa-times"></i>
+            </button>
+          `;
+          
+          mappedFiles.appendChild(fileDiv);
+          
+          uploadedFiles[mappedTo + '-file'] = {
+            file: file,
+            elementId: fileId
+          };
+          
+          console.log(`✅ Archivo mapeado y agregado: ${file.name} -> ${mappedTo}`);
+        } else {
+          console.log(`❌ No se pudo mapear el archivo: ${file.name}`);
+        }
+      });
+      
+      container.classList.remove('hidden');
+      validateStep2();
+    }
+
+    function removeDocument(fileId, fileType) {
+      console.log(`🗑️ Eliminando documento: ${fileId} (${fileType})`);
+      
+      const element = document.getElementById(fileId);
+      if (element) {
+        element.remove();
+      }
+      
+      const key = fileType + '-file';
+      if (uploadedFiles[key]) {
+        delete uploadedFiles[key];
+        console.log(`✅ Archivo eliminado: ${key}`);
+      }
+      
+      if (Object.keys(uploadedFiles).length === 0) {
+        document.getElementById('mass-upload-area').style.display = 'block';
+        document.getElementById('load-more-btn').classList.add('hidden');
+        document.getElementById('file-mapping-container').classList.add('hidden');
+      }
+      
+      validateStep2();
+    }
+
+    function updateMonthSelector() {
+      const year = document.getElementById('year-selector').value;
+      const monthSelector = document.getElementById('month-selector');
+      
+      if (year) {
+        monthSelector.disabled = false;
+        monthSelector.innerHTML = '<option value="">Seleccionar mes</option>';
+        
+        months.forEach(month => {
+          monthSelector.innerHTML += `<option value="${month.value}">${month.name}</option>`;
+        });
+        
+        // Resetear a placeholder después de llenar opciones
+        monthSelector.value = "";
+        monthSelector.dataset.hasValue = 'false';
+      } else {
+        monthSelector.disabled = true;
+        monthSelector.innerHTML = '<option value="">Seleccionar mes</option>';
+        monthSelector.dataset.hasValue = 'false';
+      }
+      
+      document.getElementById('week-selector').disabled = true;
+      document.getElementById('week-selector').innerHTML = '<option selected="" value="">Seleccionar semana</option>';
+      validateStep1();
+    }
+
+    function updateWeekSelector() {
+      const month = document.getElementById('month-selector').value;
+      const weekSelector = document.getElementById('week-selector');
+      
+      if (month) {
+        weekSelector.disabled = false;
+        populateWeeksOfMonth();
+      } else {
+        weekSelector.disabled = true;
+        weekSelector.innerHTML = '<option value="">Seleccionar semana</option>';
+        weekSelector.dataset.hasValue = 'false';
+      }
+      
+      validateStep1();
+    }
+
+    // FUNCIÓN PARA OBTENER TIPOS DE CAMBIO (compatible con WordPress)
+    async function fetchExchangeRates(dates) {
+      if (!dates || dates.length === 0) {
+        console.warn("⚠️ fetchExchangeRates: No se proporcionaron fechas");
+        return;
+      }
+      
+      try {
+        console.log("🔍 INICIO fetchExchangeRates");
+        console.log("🔍 Fechas recibidas (formato original):", dates);
+        console.log("🔍 Cantidad de fechas a procesar:", dates.length);
+        
+        // Convertir fechas de YYYY-MM-DD a DD/MM/AAAA para la API
+        const convertedDates = dates.map(date => {
+          if (date && typeof date === 'string' && date.includes('-')) {
+            const parts = date.split('-');
+            if (parts.length === 3) {
+              const converted = `${parts[2]}/${parts[1]}/${parts[0]}`;
+              console.log(`🔄 Fecha convertida: ${date} -> ${converted}`);
+              return converted;
+            }
+          }
+          console.warn(`⚠️ Fecha no válida para conversión: ${date}`);
+          return date;
+        });
+        
+        console.log("🔍 Fechas convertidas para API (DD/MM/AAAA):", convertedDates);
+        
+        // Crear FormData con las fechas en formato JSON
+        const formData = new FormData();
+        formData.append('action', 'get_exchange_rates'); // Acción AJAX de WordPress
+        formData.append('dates', JSON.stringify(convertedDates));
+        
+        console.log("🔍 FormData preparado:", {
+          action: formData.get('action'),
+          dates: formData.get('dates')
+        });
+        
+        // En WordPress, usar admin-ajax.php para ejecutar el code snippet
+        const endpoint = window.location.origin + '/wp-admin/admin-ajax.php';
+        console.log("🔍 Endpoint API:", endpoint);
+        
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          body: formData
+        });
+        
+        console.log("🔍 Respuesta HTTP recibida:", {
+          status: response.status,
+          statusText: response.statusText,
+          ok: response.ok,
+          url: response.url
+        });
+        
+        if (response.ok) {
+          const responseText = await response.text();
+          console.log("🔍 Respuesta cruda del servidor:", responseText.substring(0, 500) + (responseText.length > 500 ? '...' : ''));
+          
+          let responseData;
+          try {
+            responseData = JSON.parse(responseText);
+            console.log("🔍 Respuesta parseada exitosamente");
+            console.log("🔍 Estructura de respuesta:", {
+              success: responseData.success,
+              hasData: !!responseData.data,
+              hasRates: !!(responseData.data && responseData.data.rates)
+            });
+          } catch (parseError) {
+            console.error("❌ Error parseando JSON:", parseError);
+            console.error("❌ Texto que causó el error:", responseText);
+            throw new Error("Respuesta del servidor no es JSON válido");
+          }
+          
+          if (responseData.success && responseData.data && responseData.data.rates) {
+            // Guardar tipos de cambio (WordPress anida la respuesta en .data.rates)
+            exchangeRates = responseData.data.rates;
+            console.log("✅ Tipos de cambio obtenidos exitosamente");
+            console.log("📊 Cantidad de tipos de cambio:", Object.keys(exchangeRates).length);
+            console.log("📊 Tipos de cambio detallados:", exchangeRates);
+            
+            // Verificar que tenemos tipos de cambio para las fechas solicitadas
+            const fechasConTC = Object.keys(exchangeRates);
+            console.log("🔍 Fechas con tipo de cambio disponible:", fechasConTC);
+            
+            convertedDates.forEach(fecha => {
+              if (exchangeRates[fecha]) {
+                console.log(`✅ TC para ${fecha}: ${exchangeRates[fecha]}`);
+              } else {
+                console.warn(`⚠️ No se encontró TC para ${fecha}`);
+              }
+            });
+            
+            // Actualizar la tabla de resumen solo si ya está visible
+            if (document.getElementById('tabla-resumen-ventas')) {
+              console.log("🔄 Actualizando tabla de resumen con nuevos tipos de cambio");
+              // updateResumenVentasTable(); // Comentado temporalmente
+            } else {
+              console.log("ℹ️ Tipos de cambio pre-cargados. La tabla de resumen se actualizará cuando esté disponible.");
+            }
+          } else {
+            const errorMsg = responseData.data?.message || responseData.message || 'Error desconocido en respuesta';
+            console.error("❌ Error en respuesta del servidor:", errorMsg);
+            console.error("❌ Respuesta completa:", responseData);
+            // Usar tipos de cambio por defecto
+            setDefaultExchangeRates(dates);
+          }
+        } else {
+          console.warn(`⚠️ Error HTTP ${response.status} al obtener tipos de cambio`);
+          const errorText = await response.text();
+          console.error("❌ Texto del error HTTP:", errorText);
+          // Usar tipos de cambio por defecto
+          setDefaultExchangeRates(dates);
+        }
+      } catch (error) {
+        console.error("❌ Error crítico al consultar tipos de cambio:", error);
+        console.error("❌ Stack trace completo:", error.stack);
+        // Usar tipos de cambio fijos como fallback
+        setDefaultExchangeRates(dates);
+      }
+      
+      console.log("🔍 FIN fetchExchangeRates");
+    }
+
+    // FUNCIÓN PARA ESTABLECER TIPOS DE CAMBIO POR DEFECTO
+    function setDefaultExchangeRates(dates) {
+      console.log("⚠️ INICIO setDefaultExchangeRates - Aplicando tipos de cambio por defecto");
+      console.log("📅 Fechas para TC por defecto:", dates);
+      
+      exchangeRates = {};
+      if (dates && dates.length > 0) {
+        dates.forEach(date => {
+          // Convertir fecha de YYYY-MM-DD a DD/MM/AAAA para la clave
+          let dateKey = date;
+          if (date && typeof date === 'string' && date.includes('-')) {
+            const parts = date.split('-');
+            if (parts.length === 3) {
+              dateKey = `${parts[2]}/${parts[1]}/${parts[0]}`;
+              console.log(`🔄 Fecha para TC por defecto: ${date} -> ${dateKey}`);
+            }
+          } else {
+            console.warn(`⚠️ Fecha en formato inesperado para TC por defecto: ${date}`);
+          }
+          exchangeRates[dateKey] = 3.70; // Valor predeterminado
+          console.log(`💰 TC por defecto asignado: ${dateKey} = ${exchangeRates[dateKey]}`);
+        });
+        console.log("✅ Tipos de cambio fijos aplicados como fallback:", exchangeRates);
+      } else {
+        console.warn("⚠️ No se proporcionaron fechas para tipos de cambio por defecto");
+      }
+      
+      console.log("⚠️ FIN setDefaultExchangeRates");
+    }
+
+    // Funciones de compatibilidad simplificadas
+    const validateStep1 = () => validateStep(1);
+    const validateStep2 = () => validateStep(2);
+
+    // FUNCIÓN UNIFICADA DE VALIDACIÓN DE PASOS
+    function validateStep(stepNumber, options = {}) {
+      const stepConfigs = {
+        1: {
+          required: ['year-selector', 'month-selector', 'week-selector'],
+          continueBtn: 'continue-step-1',
+          onSuccess: () => {
+        const selectedOption = document.getElementById('week-selector').options[document.getElementById('week-selector').selectedIndex];
+        selectedPeriod = { 
+              year: document.getElementById('year-selector').value, 
+              month: document.getElementById('month-selector').value, 
+              week: document.getElementById('week-selector').value,
+          weekText: selectedOption.textContent
+        };
+        if (selectedOption.dataset.dates) {
+          weekIsoDates = JSON.parse(selectedOption.dataset.dates);
+        }
+        // Prefetch tipos de cambio para las fechas seleccionadas
+        if (Array.isArray(weekIsoDates) && weekIsoDates.length) {
+          console.log('Pre-cargando tipos de cambio para:', weekIsoDates);
+          fetchExchangeRates(weekIsoDates).catch((error) => {
+            console.warn('Error en pre-carga de tipos de cambio:', error);
+          });
+          try {
+            updateTableDates(weekIsoDates);
+          } catch (error) {
+            console.warn('No se pudieron actualizar las fechas de las tablas:', error);
+          }
+        }
+          }
+        },
+        2: {
+          required: ['ventas-file', 'propinas-file', 'prod-cimp-file', 'prod-simp-file', 'clientes-file'],
+          continueBtn: 'continue-step-3',
+          validator: () => {
+            const requiredFiles = ['ventas-file', 'propinas-file', 'prod-cimp-file', 'prod-simp-file', 'clientes-file'];
+            return requiredFiles.filter(file => uploadedFiles[file]).length > 0;
+          }
+        }
+      };
+
+      const config = stepConfigs[stepNumber];
+      if (!config) return;
+
+      const continueBtn = document.getElementById(config.continueBtn);
+      if (!continueBtn) return;
+
+      let isValid = true;
+      
+      if (config.validator) {
+        isValid = config.validator();
+      } else if (config.required) {
+        isValid = config.required.every(selector => {
+          const element = document.getElementById(selector);
+          return element && element.value;
+        });
+      }
+
+      const wasDisabled = continueBtn.disabled;
+      continueBtn.disabled = !isValid;
+      
+      if (isValid && config.onSuccess) {
+        config.onSuccess();
+      }
+      
+      if (wasDisabled && !continueBtn.disabled) {
+        console.log(`✅ Botón del paso ${stepNumber} habilitado`);
+      }
+    }
+
+    function goToStep2() {
+      console.log('➡️ Avanzando al paso 2 (Validar TC)');
+      addBotMessage(`Perfecto! Has seleccionado ${months.find(m => m.value === selectedPeriod.month)?.name || selectedPeriod.month} ${selectedPeriod.year}, semana ${selectedPeriod.weekText}.`);
+      
+      document.getElementById('step-1').style.display = 'none';
+      
+      setTimeout(() => {
+        showTypingIndicator();
+        setTimeout(async () => {
+          hideTypingIndicator();
+          // Esperar a que los tipos de cambio estén listos
+          await fetchExchangeRates(weekIsoDates);
+          populateExchangeRateStep();
+          addBotMessage('Por favor, valida los tipos de cambio antes de continuar.');
+        showStep(2);
+        }, 1200);
+      }, 800);
+    }
+
+    function populateExchangeRateStep() {
+      const container = document.getElementById('exchange-rate-list');
+      container.innerHTML = ''; // Limpiar
+      
+      weekIsoDates.forEach(dateISO => {
+        const parts = dateISO.split('-');
+        const formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
+        
+        // Formato DD/MM/AAAA para buscar en el objeto exchangeRates
+        const dateKey = formattedDate;
+        const rate = exchangeRates[dateKey] || 3.70; // fallback por si acaso
+
+        const row = document.createElement('div');
+        row.className = 'grid grid-cols-2 gap-4 items-center';
+        row.innerHTML = `
+          <label class="text-sm font-medium text-gray-700">${formattedDate}</label>
+          <input 
+            type="number" 
+            step="0.0001" 
+            value="${rate}" 
+            data-date="${dateISO}"
+            class="styled-input text-right"
+          />
+        `;
+        container.appendChild(row);
+      });
+    }
+
+    function saveExchangeRatesAndGoToStep3() {
+      console.log('💾 Guardando tipos de cambio y avanzando al paso 3');
+      const inputs = document.querySelectorAll('#exchange-rate-list input[data-date]');
+      
+      inputs.forEach(input => {
+        const dateISO = input.dataset.date;
+        const parts = dateISO.split('-');
+        const dateKey = `${parts[2]}/${parts[1]}/${parts[0]}`; // Clave en formato DD/MM/AAAA
+        const newRate = parseFloat(input.value);
+        
+        if (!isNaN(newRate)) {
+          exchangeRates[dateKey] = newRate;
+        }
+      });
+      
+      console.log('✅ Tipos de cambio actualizados:', exchangeRates);
+      addBotMessage('Tipos de cambio guardados. Ahora, por favor, carga los documentos necesarios.');
+      showStep(3);
+    }
+
+    async function goToStep4() {
+      showStep(4);
+      setTimeout(async () => {
+        try {
+          await processAllUploadedFiles();
+          addBotMessage('¡Excelente! Los archivos han sido procesados. Revisa los resultados y genera el PDF cuando estés listo.');
+          // Avanzar automáticamente al paso 5 después de un breve delay
+          setTimeout(() => {
+            showStep(5);
+          }, 1000);
+        } catch (error) {
+          console.error('Error procesando archivos:', error);
+          addBotMessage('❌ Ocurrió un error procesando los archivos. Por favor, intenta de nuevo.');
+        }
+      }, 500);
+    }
+
+    async function startProcessing() {
+      console.log('⚡ Iniciando procesamiento');
+      const progressBar = document.getElementById('progress-bar');
+      const progressText = document.getElementById('progress-text');
+      
+      const steps = [
+        { progress: 20, text: 'Validando archivos...' },
+        { progress: 40, text: 'Procesando datos de ventas...' },
+        { progress: 60, text: 'Analizando propinas y producción...' },
+        { progress: 80, text: 'Generando cálculos...' },
+        { progress: 100, text: 'Finalizando reporte...' }
+      ];
+      
+      let currentStepIndex = 0;
+      
+      const interval = setInterval(async () => {
+        if (currentStepIndex < steps.length) {
+          const step = steps[currentStepIndex];
+          progressBar.style.width = step.progress + '%';
+          progressText.textContent = step.text;
+          console.log(`📈 Progreso: ${step.progress}% - ${step.text}`);
+          currentStepIndex++;
+        } else {
+          clearInterval(interval);
+          console.log('✅ Procesamiento completado');
+          
+          try {
+            // Procesar realmente los archivos cargados y poblar datos/tabla replicada
+            await processAllUploadedFiles();
+            
+            setTimeout(() => {
+              addBotMessage('¡Procesamiento completado! Tu reporte está listo para descargar.');
+              console.log('➡️ Mostrando paso 5 - Descarga');
+              showStep(5);
+            }, 500);
+          } catch (error) {
+            console.error('Error durante el procesamiento de archivos:', error);
+            progressText.textContent = 'Error en el procesamiento';
+            addBotMessage('❌ Hubo un error procesando los archivos. Por favor, verifica los datos e inténtalo de nuevo.');
+            
+            setTimeout(() => {
+              showStep(3); // Volver al paso de carga de archivos
+            }, 2000);
+          }
+        }
+      }, 600);
+    }
+
+
+
+    // ====== Procesamiento real de archivos (mapeo como en RV est tabla ventas.html) ======
+    let exchangeRates = {}; // fechaISO -> TC
+    let extractedReportData = []; // Ventas (9x17)
+    let ventasExcelHeaders = []; // encabezados Excel
+    let propinasTotal = 0;
+    let produccionConImp = 0;
+    let produccionSinImp = 0;
+    let ocupabilidad = 0;
+    let queiroloTotal = 0;
+    let tiendaVentaTotal = 0;
+
+    // FUNCIONES AUXILIARES CORREGIDAS (igual que RV est tabla ventas.html)
+    function convertToNumber(value) {
+      if (typeof value === 'number') return value;
+      
+      if (typeof value === 'string') {
+        // Limpiar strings como "$123.45" o "S/ 123,45", permitir punto y coma como decimal
+        // Primero, quitar separadores de miles (asumiendo que son comas o espacios)
+        let clean = value.replace(/[, ](?=\d{3})/g, ''); 
+        // Reemplazar coma decimal por punto
+        clean = clean.replace(',', '.');
+        // Quitar caracteres no numéricos excepto punto y signo menos inicial
+        clean = clean.replace(/[^\d.\-]/g, ''); 
+        const num = parseFloat(clean);
+        return isNaN(num) ? 0 : num;
+      }
+      
+      return 0;
+    }
+    
+    function formatNumber(num, decimals = 2, forceInteger = false) {
+      const numericValue = Number(num);
+      if (isNaN(numericValue)) {
+        // Devolver 0 formateado o un string vacío/placeholder si se prefiere
+        return Number(0).toLocaleString('en-US', { 
+          minimumFractionDigits: decimals, 
+          maximumFractionDigits: decimals 
+        });
+      }
+      // Usar toLocaleString para incluir separadores de miles
+      return numericValue.toLocaleString('en-US', { 
+        minimumFractionDigits: decimals, 
+        maximumFractionDigits: decimals 
+      });
+    }
+
+
+
+    // FUNCIÓN CRÍTICA: Mapear datos Excel a tabla HTML (mejorada con logs detallados)
+    function mapExtractedDataToHtmlTable() {
+      console.log("🗂️ INICIO mapExtractedDataToHtmlTable");
+      
+      // Verificar que la tabla del modal del reporte existe antes de continuar
+      const tablaVentas = document.getElementById('rep-tabla-ventas');
+      if (!tablaVentas) {
+        console.error("❌ mapExtractedDataToHtmlTable: No se encontró la tabla #rep-tabla-ventas en el DOM");
+        console.log("🔍 Tablas disponibles en el DOM:", 
+          Array.from(document.querySelectorAll('table')).map(t => t.id || t.className));
+        return;
+      }
+      
+      const tbody = tablaVentas.querySelector('tbody');
+      if (!tbody) {
+        console.error("❌ mapExtractedDataToHtmlTable: No se encontró tbody de #rep-tabla-ventas");
+        return;
+      }
+      
+      console.log("✅ Tabla principal del reporte encontrada, verificando datos extraídos");
+      console.log(`📊 Datos extraídos disponibles: ${extractedReportData.length} filas`);
+      console.log("📋 Contenido de extractedReportData:", extractedReportData);
+      
+      if (extractedReportData.length < 2) { // Necesita encabezados + datos
+        console.warn("⚠️ mapExtractedDataToHtmlTable: No hay suficientes datos extraídos del Excel");
+        return;
+      }
+      
+      console.log("✅ Datos suficientes para procesar, continuando con mapeo");
+
+        // Obtener encabezados del HTML y del Excel (fila 0 de datos extraídos)
+      const htmlHeaders = Array.from(document.querySelectorAll('#rep-tabla-ventas thead th')).map(th => th.textContent.trim());
+        const excelHeaders = extractedReportData[0].map(h => String(h || '').trim());
+      console.log("📋 Encabezados HTML:", htmlHeaders);
+      console.log("📋 Encabezados Excel:", excelHeaders);
+      console.log("📊 Número de encabezados HTML:", htmlHeaders.length);
+      console.log("📊 Número de encabezados Excel:", excelHeaders.length);
+      
+      // Verificar que los encabezados coincidan
+      if (htmlHeaders.length !== excelHeaders.length) {
+        console.warn(`⚠️ Desajuste en número de columnas: HTML=${htmlHeaders.length}, Excel=${excelHeaders.length}`);
+      }
+
+        // Crear un mapa para relacionar los headers del Excel con los del HTML
+        const headerMap = new Map();
+        htmlHeaders.forEach((htmlHeader, htmlIndex) => {
+            let excelIndex = -1;
+            if (htmlHeader === 'Fecha') {
+                excelIndex = excelHeaders.indexOf('Secc.');
+            } else {
+                excelIndex = excelHeaders.indexOf(htmlHeader);
+            }
+            if (excelIndex !== -1) {
+                headerMap.set(htmlIndex, excelIndex); // Mapea: índice HTML -> índice Excel
+            }
+        });
+        console.log("Mapa de Headers (índice HTML -> índice Excel):", headerMap);
+
+        // Crear mapa de datos Excel por fecha DD/MM/YYYY
+        const reportDataMap = new Map();
+        for (let i = 1; i < extractedReportData.length; i++) { // Empezar en 1 para saltar headers
+            const row = extractedReportData[i];
+            const dateValue = row[0]; // Debería ser un objeto Date
+            if (dateValue instanceof Date && !isNaN(dateValue.getTime())) {
+                const dateKey = formatDate(dateValue, 'DD/MM/YYYY');
+                reportDataMap.set(dateKey, row);
+            }
+        }
+        console.log("Mapa de datos Excel por fecha DD/MM/YYYY:", reportDataMap);
+
+      // Referencias a las filas HTML del modal del reporte
+        const htmlRows = tbody.querySelectorAll('tr[data-date]'); // Filas de datos diarios
+      console.log(`🔍 Filas HTML encontradas: ${htmlRows.length}`);
+
+        // Limpiar celdas de datos numéricos en HTML antes de poblar
+        htmlRows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        cells.forEach((td, index) => {
+          // Limpiar todas las celdas, incluyendo la de Total
+          td.textContent = formatNumber(0, 2, true);
+        });
+      });
+
+        // Objetos para acumular datos para TOTAL USD
+        const valoresUsdPorDia = {}; // Para almacenar {dateISO: {headerName: value}}
+        let totalGeneralPen = 0;
+
+        // Poblar filas de datos diarios en HTML
+        htmlRows.forEach(htmlRow => {
+            const htmlDateISO = htmlRow.dataset.date;
+            
+            if (htmlDateISO && !htmlDateISO.startsWith("placeholder")) {
+                // *** CORRECCIÓN CLAVE ***
+                // Convertir la fecha de la tabla (YYYY-MM-DD) al formato del mapa (DD/MM/YYYY)
+                const parts = htmlDateISO.split('-');
+                const dateKey = `${parts[2]}/${parts[1]}/${parts[0]}`;
+
+                const excelDayData = reportDataMap.get(dateKey); // Usar la clave correcta
+                const exchangeRate = exchangeRates[dateKey] || 0; // CORREGIDO: Usar dateKey (DD/MM/YYYY) para buscar el TC
+
+                if (excelDayData) {
+                    valoresUsdPorDia[htmlDateISO] = {}; // FIX: Inicializar el objeto para la fecha actual
+                    const htmlCells = htmlRow.querySelectorAll('td');
+                    let dailyRowTotalPen = 0;
+                    htmlCells.forEach((htmlCell, htmlCellIndex) => {
+                        const htmlHeaderIndex = htmlCellIndex + 1; // El índice del header en el array (Fecha es 0)
+                        
+                        if (headerMap.has(htmlHeaderIndex)) {
+                            const excelHeaderIndex = headerMap.get(htmlHeaderIndex);
+                            const excelRawValue = excelDayData[excelHeaderIndex];
+                            const numericValue = convertToNumber(excelRawValue);
+                            htmlCell.textContent = formatNumber(numericValue);
+
+                            // Guardar valores de columnas USD
+                            const htmlHeader = htmlHeaders[htmlHeaderIndex];
+                            if (usdColumns.includes(htmlHeader) && exchangeRate > 0) {
+                                valoresUsdPorDia[htmlDateISO][htmlHeader] = numericValue;
+                            }
+
+                            // Solo sumar al total si no es la columna 'Total'
+                            if (htmlHeader !== 'Total') {
+                                dailyRowTotalPen += numericValue;
+                            }
+                        } else {
+                            // Si no hay mapeo, dejar la celda con 0.00
+                            htmlCell.textContent = formatNumber(0);
+                        }
+                    });
+
+                    // Poblar la celda 'Total' de la fila, que ahora se obtiene del excel
+                    const totalCell = htmlRow.cells[htmlRow.cells.length - 1];
+                    const totalDelExcel = convertToNumber(excelDayData[excelHeaders.indexOf('Total')]);
+                    if(totalCell) totalCell.textContent = formatNumber(totalDelExcel, 2, true);
+                    totalGeneralPen += totalDelExcel;
+                }
+            }
+        });
+
+      console.log(`💰 Total general PEN acumulado: ${totalGeneralPen}`);
+
+      // POBLAR FILA TOTAL PEN
+      const totalPenRowHtml = document.getElementById('rep-totals-pen-row');
+      if (totalPenRowHtml && extractedReportData.length > 1) {
+        // La última fila del array contiene los datos totales. Se asume que es la correcta.
+        const totalPenData = extractedReportData[extractedReportData.length - 1];
+        
+        if (totalPenData) { // Solo verificar que la fila exista
+          console.log("📊 Poblando fila TOTAL PEN desde la última fila del Excel...");
+          const htmlCells = totalPenRowHtml.querySelectorAll('td');
+ 
+          // Poblar todas las celdas de datos (todas menos la última)
+          for (let i = 0; i < htmlCells.length - 1; i++) {
+              const htmlCell = htmlCells[i];
+              const htmlHeaderIndex = i + 1;
+
+              if (headerMap.has(htmlHeaderIndex)) {
+                  const excelHeaderIndex = headerMap.get(htmlHeaderIndex);
+                  const excelRawValue = totalPenData[excelHeaderIndex];
+                  htmlCell.textContent = formatNumber(convertToNumber(excelRawValue));
+                } else {
+                  htmlCell.textContent = formatNumber(0);
+              }
+          }
+          
+          // Poblar la última celda (Total) por separado, buscando la columna 'Total' en el Excel
+          const lastCell = htmlCells[htmlCells.length - 1];
+          const totalHeaderIndexInExcel = excelHeaders.indexOf('Total');
+          let excelTotalValue = 0;
+          if (totalHeaderIndexInExcel !== -1) {
+              excelTotalValue = totalPenData[totalHeaderIndexInExcel];
+          }
+          lastCell.textContent = "S/ " + formatNumber(convertToNumber(excelTotalValue), 2, true);
+
+          console.log("✅ Fila TOTAL PEN poblada desde datos del Excel");
+        } else {
+           console.warn("⚠️ No se encontró la última fila del array del Excel para los totales.");
+        }
+      }
+
+      // INICIO: LÓGICA PARA CALCULAR Y POBLAR TOTAL USD (basado en RV est tabla ventas.html)
+      const totalUsdRowHtml = document.getElementById('rep-totals-usd-row');
+        if (totalUsdRowHtml) {
+          console.log("💵 Calculando y poblando fila TOTAL USD...");
+ 
+          // Definir aquí las columnas USD exactas para evitar problemas de scope
+          const usdColumnsForTotal = [
+              "DEPOSITO DOLARES", "EFECTIVO DOLARES", "TARJETA DOLARES AMEX-DOL",
+              "TARJETA DOLARES DC-DOL", "TARJETA DOLARES MC-DOL", "TARJETA DOLARES VISA-DOL",
+              "TRANSFER. DOLARES"
+          ];
+ 
+            const totalUsdPorColumna = {};
+          usdColumnsForTotal.forEach(header => {
+              totalUsdPorColumna[header] = 0;
+          });
+ 
+          Object.keys(valoresUsdPorDia).forEach(dateISO => {
+              const datosUsdDia = valoresUsdPorDia[dateISO];
+              const parts = dateISO.split('-');
+              const dateKey = `${parts[2]}/${parts[1]}/${parts[0]}`;
+              const exchangeRate = exchangeRates[dateKey] || 0;
+                
+                if (exchangeRate > 0) {
+                  Object.keys(datosUsdDia).forEach(headerName => {
+                      const valorEnPen = datosUsdDia[headerName] || 0;
+                      const valorEnUsd = valorEnPen / exchangeRate;
+                      if (totalUsdPorColumna.hasOwnProperty(headerName)) {
+                          totalUsdPorColumna[headerName] += valorEnUsd;
+                      }
+                    });
+                }
+            });
+            
+          const htmlCells = totalUsdRowHtml.querySelectorAll('td');
+          let totalGeneralUsd = 0;
+ 
+          htmlCells.forEach((htmlCell, htmlCellIndex) => {
+                const htmlHeaderIndex = htmlCellIndex + 1;
+                const htmlHeader = htmlHeaders[htmlHeaderIndex];
+                
+              if (usdColumnsForTotal.includes(htmlHeader)) {
+                  const totalColumna = totalUsdPorColumna[htmlHeader] || 0;
+                  htmlCell.textContent = formatNumber(totalColumna, 2, true);
+                  totalGeneralUsd += totalColumna;
+              } else if (htmlHeader !== 'Total') {
+                    htmlCell.textContent = '--';
+                }
+            });
+            
+          const lastUsdCell = htmlCells[htmlCells.length - 1];
+          if (lastUsdCell) {
+              lastUsdCell.textContent = "$ " + formatNumber(totalGeneralUsd, 2, true);
+          }
+          console.log("✅ Fila TOTAL USD poblada.");
+        }
+
+        console.log("--- mapExtractedDataToHtmlTable FIN ---");
+        
+        // Loguear estado antes de actualizar tablas inferiores
+        console.log("📊 Estado antes de actualizar tablas inferiores:", {
+            totalGeneralPen,
+            propinasTotal,
+            tiendaVentaTotal,
+            queiroloTotal
+        });
+        
+        // Actualizar la tabla de resumen de ventas
+        updateResumenVentasTable();
+        
+        // Actualizar la tabla de venta por tipo (pasando el total calculado para evitar errores de DOM)
+        // Se usa un setTimeout para asegurar que el DOM se haya actualizado con la tabla principal
+        // antes de intentar poblar las tablas inferiores.
+        setTimeout(() => updateVentasPorTipoTable(totalGeneralPen), 0);
+    }
+
+    // FUNCIÓN PARA ACTUALIZAR FECHAS DE LAS TABLAS (FALTANTE)
+    function updateTableDates(dates) {
+      if (!Array.isArray(dates) || dates.length === 0) {
+        console.warn('updateTableDates: No se proporcionaron fechas válidas');
+        return;
+      }
+      
+      console.log('Actualizando fechas de las tablas con:', dates);
+      
+      try {
+        // Actualizar tabla principal de ventas
+        const tbodyVentas = document.getElementById('tabla-ventas')?.querySelector('tbody');
+        if (tbodyVentas) {
+          const rows = tbodyVentas.querySelectorAll('tr[data-date]');
+          rows.forEach((row, index) => {
+            if (index < dates.length) {
+              const dateISO = dates[index];
+              row.dataset.date = dateISO;
+              
+              // Actualizar la primera celda (fecha) si existe
+              const firstCell = row.querySelector('th:first-child, td:first-child');
+              if (firstCell) {
+                // Convertir YYYY-MM-DD a DD/MM/AAAA (formato peruano)
+                const parts = dateISO.split('-');
+                if (parts.length === 3) {
+                  const formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
+                  firstCell.textContent = formattedDate;
+                }
+              }
+            }
+          });
+        }
+        
+        // Actualizar tabla de resumen si existe
+        const tbodyResumen = document.getElementById('tabla-resumen-ventas')?.querySelector('tbody');
+        if (tbodyResumen) {
+          const rows = tbodyResumen.querySelectorAll('tr[data-date]');
+          rows.forEach((row, index) => {
+            if (index < dates.length) {
+              const dateISO = dates[index];
+              row.dataset.date = dateISO;
+              
+              // Actualizar la primera celda (fecha) si existe
+              const firstCell = row.querySelector('th:first-child, td:first-child');
+              if (firstCell) {
+                // Convertir YYYY-MM-DD a DD/MM/AAAA (formato peruano)
+                const parts = dateISO.split('-');
+                if (parts.length === 3) {
+                  const formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
+                  firstCell.textContent = formattedDate;
+                }
+              }
+            }
+          });
+        }
+        
+        console.log('✅ Fechas de las tablas actualizadas correctamente');
+      } catch (error) {
+        console.error('Error actualizando fechas de las tablas:', error);
+      }
+    }
+
+    // FUNCIÓN PARA ACTUALIZAR TABLA DE RESUMEN DE VENTAS
+    function updateResumenVentasTable() {
+        console.log("📊 INICIO updateResumenVentasTable");
+        
+        const tbody = document.getElementById('rep-resumen-body');
+        if (!tbody) {
+            console.error("❌ updateResumenVentasTable: No se encontró tbody de #rep-resumen-body");
+            return;
+        }
+        
+        // Verificar que tenemos tipos de cambio disponibles
+        console.log("🔍 Tipos de cambio disponibles:", Object.keys(exchangeRates).length);
+        
+        if (Object.keys(exchangeRates).length === 0) {
+            console.warn("⚠️ No hay tipos de cambio disponibles, saltando actualización de tabla resumen");
+            return;
+        }
+        
+        // Columnas en soles y dólares
+        const penColumns = [
+            "CREDITO",
+            "DEPOSITO SOLES",
+            "EFECTIVO SOLES",
+            "TARJETA SOLES AMEX-SOL",
+            "TARJETA SOLES DC-SOL",
+            "TARJETA SOLES MC-SOL",
+            "TARJETA SOLES VISA-SOL",
+            "TRANSFER. SOLES"
+        ];
+        
+        const usdColumns = [
+            "DEPOSITO DOLARES",
+            "EFECTIVO DOLARES",
+            "TARJETA DOLARES AMEX-DOL",
+            "TARJETA DOLARES DC-DOL",
+            "TARJETA DOLARES MC-DOL",
+            "TARJETA DOLARES VISA-DOL",
+            "TRANSF. DOLARES"
+        ];
+        
+        // Necesitamos la tabla principal para obtener los datos de ventas
+        const tbodyVentas = document.getElementById('rep-ventas-body');
+        if (!tbodyVentas) {
+            console.error("❌ updateResumenVentasTable: No se encontró tbody de #rep-ventas-body");
+            return;
+        }
+        
+        // Obtener los headers de la tabla de ventas del HTML
+        const ventasHeaders = Array.from(document.querySelectorAll('#rep-tabla-ventas thead th')).map(th => th.textContent.trim());
+        console.log("📋 Headers de tabla de ventas:", ventasHeaders);
+        
+        let totalGenPEN = 0;
+        let totalGenOnlyPEN = 0;
+        let totalGenUSDenPEN = 0;
+        let totalGenUSD = 0;
+        
+        // Procesar cada fila de la tabla de ventas y trasladar los datos a la tabla de resumen
+        const rowsVentas = tbodyVentas.querySelectorAll('tr[data-date]');
+        
+        rowsVentas.forEach((rowVenta) => {
+            const dateISO = rowVenta.dataset.date;
+            
+            if (!dateISO || dateISO.startsWith('placeholder')) {
+                return; // Saltar placeholders
+            }
+            
+            // Buscar la fila correspondiente en la tabla de resumen
+            const rowResumen = tbody.querySelector(`tr[data-date="${dateISO}"]`);
+            if (!rowResumen) {
+                console.warn(`⚠️ No se encontró fila de resumen para fecha ${dateISO}`);
+                return;
+            }
+            
+            // Convertir fecha ISO (YYYY-MM-DD) a formato DD/MM/AAAA para buscar en exchangeRates
+            const parts = dateISO.split('-');
+            const dateKey = `${parts[2]}/${parts[1]}/${parts[0]}`;
+            
+            const exchangeRate = exchangeRates[dateKey] || 0;
+            
+            if (exchangeRate <= 0) {
+                console.warn(`⚠️ No se encontró tipo de cambio válido para ${dateKey}. TC=0, saltando fila`);
+                return; 
+            }
+            
+            // 1. Total PEN - Obtener de la última celda de la fila de ventas
+            const totalPENCell = rowVenta.cells[rowVenta.cells.length - 1];
+            const totalPENValue = totalPENCell ? convertToNumber(totalPENCell.textContent) : 0;
+            
+            if (rowResumen.cells[1]) {
+                rowResumen.cells[1].textContent = formatNumber(totalPENValue, 2, true);
+            }
+            totalGenPEN += totalPENValue;
+            
+            // 2 y 3. PEN y USD en PEN - Calcular sumando las columnas correspondientes
+            let totalPEN = 0;
+            let totalUSDenPEN = 0;
+            
+            Array.from(rowVenta.cells).forEach((cell, cellIndex) => {
+                if (cellIndex === 0 || cellIndex === rowVenta.cells.length - 1) return; // Saltar fecha y total
+
+                const headerName = ventasHeaders[cellIndex];
+                if (!headerName) return;
+                
+                const value = convertToNumber(cell.textContent);
+                
+                if (penColumns.some(col => headerName.includes(col)) || (headerName.includes("SOL") && !headerName.includes("DOLARES"))) {
+                    totalPEN += value;
+                } else if (usdColumns.some(col => headerName.includes(col)) || (headerName.includes("DOL") || headerName.includes("DOLARES"))) {
+                    totalUSDenPEN += value;
+                }
+            });
+            
+            // Actualizar celdas en la tabla de resumen
+            if (rowResumen.cells[2]) rowResumen.cells[2].textContent = formatNumber(totalPEN, 2, true);
+            if (rowResumen.cells[3]) rowResumen.cells[3].textContent = formatNumber(totalUSDenPEN, 2, true);
+            
+            // 4. USD - Convertir USD en PEN a USD usando el tipo de cambio
+            const totalUSD = exchangeRate > 0 ? totalUSDenPEN / exchangeRate : 0;
+            
+            if (rowResumen.cells[4]) {
+                rowResumen.cells[4].textContent = formatNumber(totalUSD, 2, true);
+            }
+            
+            // 5. TC - Mostrar tipo de cambio
+            if (rowResumen.cells[5]) {
+                rowResumen.cells[5].textContent = formatNumber(exchangeRate, 4, false);
+            }
+            
+            // Acumular totales
+            totalGenOnlyPEN += totalPEN;
+            totalGenUSDenPEN += totalUSDenPEN;
+            totalGenUSD += totalUSD;
+        });
+        
+        // Actualizar fila de totales
+        const tfoot = document.getElementById('rep-tabla-resumen')?.querySelector('tfoot');
+        if (tfoot) {
+            document.getElementById('rep-total-pen').textContent = formatNumber(totalGenPEN, 2, true);
+            document.getElementById('rep-total-only-pen').textContent = formatNumber(totalGenOnlyPEN, 2, true);
+            document.getElementById('rep-total-usd-pen').textContent = formatNumber(totalGenUSDenPEN, 2, true);
+            document.getElementById('rep-total-usd').textContent = formatNumber(totalGenUSD, 2, true);
+            
+            // Actualizar fila de porcentajes
+            if (totalGenPEN > 0) {
+                    const pctPEN = (totalGenOnlyPEN / totalGenPEN) * 100;
+                document.getElementById('rep-pct-pen').textContent = formatNumber(pctPEN, 1, false) + '%';
+                    const pctUSDenPEN = (totalGenUSDenPEN / totalGenPEN) * 100;
+                document.getElementById('rep-pct-usd-pen').textContent = formatNumber(pctUSDenPEN, 1, false) + '%';
+            }
+        } else {
+            console.warn("⚠️ No se encontró tfoot en tabla resumen");
+        }
+        
+        console.log("📊 FIN updateResumenVentasTable");
+    }
+
+    // FUNCIÓN PARA ACTUALIZAR TABLA DE VENTA POR TIPO (AHORA ACTUALIZA TODAS LAS TABLAS INFERIORES)
+    function updateVentasPorTipoTable(totalVentasPEN = 0) {
+        console.log("--- INICIO updateVentasPorTipoTable ---");
+        console.log(`Valores globales al ejecutar: propinasTotal=${propinasTotal}, tiendaVentaTotal=${tiendaVentaTotal}, queiroloTotal=${queiroloTotal}, produccionConImp=${produccionConImp}, produccionSinImp=${produccionSinImp}`);
+
+        // Actualizar tabla Venta por tipo
+        const propinasVentaValor = convertToNumber(propinasTotal);
+        const tiendaTotal = convertToNumber(tiendaVentaTotal);
+        const variosTotal = Math.max(totalVentasPEN - (queiroloTotal||0), 0);
+        
+        // Actualizar tabla de venta por tipo
+          const tiendaVenta = document.getElementById('rep-tienda-venta');
+          const tiendaSubtotal = document.getElementById('rep-tienda-subtotal');
+          const propinasVenta = document.getElementById('rep-propinas-venta');
+          const propinasSubtotal = document.getElementById('rep-propinas-subtotal');
+        
+        if (tiendaVenta) tiendaVenta.textContent = `S/ ${formatNumber(tiendaTotal, 2, true)}`;
+        if (tiendaSubtotal) tiendaSubtotal.textContent = `S/ ${formatNumber(totalVentasPEN - tiendaTotal, 2, true)}`;
+          if (propinasVenta) propinasVenta.textContent = `S/ ${formatNumber(propinasVentaValor, 2, true)}`;
+          if (propinasSubtotal) propinasSubtotal.textContent = `S/ ${formatNumber(totalVentasPEN - propinasVentaValor, 2, true)}`;
+ 
+          document.getElementById('rep-queirolo-total').textContent = `S/ ${formatNumber(Number(queiroloTotal||0))}`;
+          document.getElementById('rep-varios-total').textContent = `S/ ${formatNumber(variosTotal)}`;
+          document.getElementById('rep-cliente-total').textContent = `S/ ${formatNumber(totalVentasPEN)}`;
+          const qPct = totalVentasPEN > 0 ? (Number(queiroloTotal||0) / totalVentasPEN) * 100 : 0;
+          const vPct = totalVentasPEN > 0 ? (variosTotal / totalVentasPEN) * 100 : 0;
+          document.getElementById('rep-queirolo-porcentaje').textContent = `${formatNumber(qPct, 2)}%`;
+          document.getElementById('rep-varios-porcentaje').textContent = `${formatNumber(vPct, 2)}%`;
+
+          document.getElementById('rep-produccion-cimp').textContent = `S/ ${formatNumber(produccionConImp||0, 2, false)}`;
+          document.getElementById('rep-produccion-simp').textContent = `S/ ${formatNumber(produccionSinImp||0, 2, false)}`;
+          document.getElementById('rep-ocupabilidad').textContent = `${formatNumber(ocupabilidad||0, 1, false)}%`;
+
+          console.log("--- FIN updateVentasPorTipoTable ---");
+    }
+
+
+
+    // CONSTANTES NECESARIAS
+    const usdColumns = [
+        "DEPOSITO DOLARES",
+        "EFECTIVO DOLARES",
+        "TARJETA DOLARES AMEX-DOL",
+        "TARJETA DOLARES DC-DOL",
+        "TARJETA DOLARES MC-DOL",
+        "TARJETA DOLARES VISA-DOL",
+        "TRANSFER. DOLARES"
+    ];
+
+    // FUNCIÓN UNIFICADA PARA PROCESAR ARCHIVOS EXCEL
+    async function processExcelFile(file, fileType, options = {}) {
+      try {
+        const jsonData = await readXlsxAsArray(file);
+        console.log(`Procesando archivo de ${fileType}:`, file.name);
+        
+        // Lógica específica por tipo de archivo (replicada de RV est tabla ventas.html)
+        switch (fileType) {
+          case 'propinas': {
+            let ultimoValor = null;
+            for (let i = jsonData.length - 1; i >= 0; i--) {
+              if (jsonData[i] && jsonData[i].length > 5 && jsonData[i][5] !== null && jsonData[i][5] !== undefined && jsonData[i][5] !== '') {
+                ultimoValor = jsonData[i][5];
+                break;
+              }
+            }
+            if (ultimoValor !== null) {
+              propinasTotal = convertToNumber(ultimoValor);
+              console.log("Total Propinas (último valor col F):", propinasTotal);
+            }
+            break;
+          }
+          case 'produccion-con-imp': {
+            let valorHEncontrado = null;
+            let valorGEncontrado = null;
+            let contadorG = 0;
+            for (let i = 0; i < jsonData.length; i++) {
+              const row = jsonData[i];
+              if (valorHEncontrado === null && row && row.length > 7 && row[7] !== undefined && String(row[7]).trim() !== '') {
+                valorHEncontrado = row[7];
+              }
+              if (contadorG < 2 && row && row.length > 6 && row[6] !== undefined && String(row[6]).trim() !== '') {
+                contadorG++;
+                if (contadorG === 2) valorGEncontrado = row[6];
+              }
+              if (valorHEncontrado !== null && valorGEncontrado !== null) break;
+            }
+            if (valorHEncontrado !== null) {
+              produccionConImp = convertToNumber(String(valorHEncontrado).replace(/[S/$/₹£€¥]/g, '').trim());
+            }
+            if (valorGEncontrado !== null) {
+              let valorOcupabilidad = valorGEncontrado;
+              if (typeof valorGEncontrado === 'string' && valorGEncontrado.includes('%')) {
+                  valorOcupabilidad = valorGEncontrado.replace('%', '').trim();
+              } else if (typeof valorGEncontrado === 'number' && valorGEncontrado <= 1) {
+                  valorOcupabilidad = valorGEncontrado * 100;
+              }
+              ocupabilidad = convertToNumber(valorOcupabilidad);
+            }
+            console.log("Producción c/imp:", produccionConImp, "Ocupabilidad:", ocupabilidad);
+            break;
+          }
+          case 'produccion-sin-imp': {
+            let valorHEncontrado = null;
+            for (let i = 0; i < jsonData.length; i++) {
+                const row = jsonData[i];
+                if (row && row.length > 7 && row[7] !== undefined && String(row[7]).trim() !== '') {
+                    valorHEncontrado = row[7];
+                    break;
+                }
+            }
+            if (valorHEncontrado !== null) {
+              produccionSinImp = convertToNumber(String(valorHEncontrado).replace(/[S/$/₹£€¥]/g, '').trim());
+            }
+            console.log("Producción s/imp:", produccionSinImp);
+            break;
+          }
+          case 'clientes': {
+            let total = 0;
+            for (let i = 0; i < jsonData.length; i++) {
+              const row = jsonData[i];
+              if (row && row.length > 0 && String(row[0]).trim().toUpperCase() === 'SANTIAGO QUEIROLO S.A.C.') {
+                if (row.length > 9) {
+                  total += convertToNumber(row[9]);
+                }
+              }
+            }
+            queiroloTotal = total;
+            console.log("Total Clientes (S. Queirolo):", queiroloTotal);
+            break;
+          }
+        }
+        
+        console.log(`✅ Archivo de ${fileType} procesado`);
+      } catch (error) {
+        console.error(`Error procesando archivo de ${fileType}:`, error);
+        throw error;
+      }
+    }
+
+    // Funciones de compatibilidad simplificadas
+    const processPropinasXlsx = async (file) => await processExcelFile(file, 'propinas');
+    const processProduccionConImpXlsx = async (file) => await processExcelFile(file, 'produccion-con-imp');
+    const processProduccionSinImpXlsx = async (file) => await processExcelFile(file, 'produccion-sin-imp');
+    const processClientesXlsx = async (file) => await processExcelFile(file, 'clientes');
+
+    // FUNCIÓN PARA PROCESAR ARCHIVO DE VENTAS (mejorada con mapeo por headers)
+    async function processVentasXlsx(file) {
+      console.log("📂 INICIO processVentasXlsx");
+      
+      if (!file) {
+        console.warn("⚠️ No se proporcionó archivo para procesar");
+        return;
+      }
+
+      console.log("📂 Archivo recibido:", {
+        name: file.name,
+        size: file.size,
+        type: file.type
+      });
+
+      addBotMessage('Analizando archivo de ventas...');
+
+      try {
+        console.log("📖 Leyendo archivo Excel...");
+        const jsonData = await readXlsxAsArray(file);
+        console.log("📊 Datos Excel leídos:", jsonData.length, "filas");
+
+        // Nueva lógica para Tienda de Vinos
+        let tiendaRowIndex = -1;
+        let totalRowIndex = -1;
+        tiendaVentaTotal = 0; // Resetear antes de calcular
+
+        // 1. Identificar en la columna A, "Tienda".
+        for (let i = 0; i < jsonData.length; i++) {
+            if (String(jsonData[i][0]).trim().toLowerCase().includes('tienda')) {
+                tiendaRowIndex = i;
+                break;
+            }
+        }
+
+        // 2. Luego vas a la columna B y buscas debajo de esas filas la primera que tenga la palabra "Total"
+        if (tiendaRowIndex !== -1) {
+            for (let i = tiendaRowIndex + 1; i < jsonData.length; i++) {
+                if (String(jsonData[i][1]).trim().toLowerCase().includes('total')) {
+                    totalRowIndex = i;
+                    break;
+                }
+            }
+        }
+
+        // 3. Te vas a la ultima columna de esa fila que dice "Total" y capturas ese monto
+        if (totalRowIndex !== -1) {
+            const totalRow = jsonData[totalRowIndex];
+            for (let i = totalRow.length - 1; i >= 0; i--) {
+                const cellValue = totalRow[i];
+                if (cellValue !== undefined && cellValue !== null && cellValue !== '') {
+                    tiendaVentaTotal = convertToNumber(String(cellValue).replace(/,/g, ''));
+                    console.log(`🍷 Total Tienda de Vinos (lógica nueva) encontrado en fila ${totalRowIndex + 1}:`, tiendaVentaTotal);
+                    break;
+                }
+            }
+        } else {
+            console.warn("⚠️ No se pudo encontrar la fila 'Total' debajo de 'Tienda' para Tienda de Vinos.");
+        }
+
+        console.log("🔍 Buscando fila que contenga 'Secc.'...");
+        
+        // Buscar la *última* fila que contiene "Secc." en la primera columna
+        let seccIndex = -1;
+        for (let i = 0; i < jsonData.length; i++) {
+            if (jsonData[i].length > 0) {
+                const firstCell = String(jsonData[i][0] || '').trim();
+                // Usar includes para ser más flexible ('Secc.', 'Secc', etc.) y case-insensitive
+                if (firstCell.toUpperCase().includes('SECC')) { 
+                    seccIndex = i; // Guardar el índice, continuar buscando por si hay más abajo
+                }
+          }
+        }
+
+        if (seccIndex === -1) {
+            alert("No se pudo encontrar la fila que contiene 'Secc.' en la primera columna del Excel.");
+          return;
+        }
+
+        console.log(`Última fila "Secc." encontrada en el índice: ${seccIndex}`);
+        
+        // Los headers están en la MISMA fila que contiene "Secc."
+        const excelHeaders = jsonData[seccIndex] || [];
+        console.log(`📋 Headers del Excel encontrados:`, excelHeaders);
+        
+        // Verificar que tenemos los headers correctos
+        if (!excelHeaders[0] || String(excelHeaders[0]).trim() !== 'Secc.') {
+          console.error("❌ La fila encontrada no contiene 'Secc.' como primer elemento");
+          console.error("❌ Headers encontrados:", excelHeaders);
+          return;
+        }
+
+        if (!jsonData || jsonData.length === 0) {
+          throw new Error('El archivo Excel está vacío o no se pudo leer');
+        }
+
+        console.log("🔗 Mapeo simple: Secc. -> Fecha, resto igual");
+
+        // Extraer 9 filas a partir de 'Secc.': la propia fila Secc. (headers) + 8 filas siguientes
+        const extractedData = [];
+        const rowLimit = Math.min(seccIndex + 8, jsonData.length - 1); // 9 filas en total (1 header + 8 data)
+        for (let i = seccIndex; i <= rowLimit; i++) {
+          const excelRow = jsonData[i] || [];
+          const newRow = [];
+          for (let j = 0; j < 17; j++) {
+            const rawValue = (j < excelRow.length ? excelRow[j] : '');
+            let processedValue = rawValue;
+            // Para filas de datos (no la de headers) y la primera columna (fecha)
+            if (i > seccIndex && j === 0) {
+              if (rawValue !== '' && rawValue !== null) {
+                const dateAttempt = convertToDate(rawValue);
+                processedValue = dateAttempt ? dateAttempt : null; // Guardar como objeto Date
+                console.log(`Fecha parseada (fila ${i}, valor ${rawValue}):`, processedValue);
+                } else {
+                processedValue = null;
+              }
+            }
+            newRow.push(processedValue);
+          }
+          extractedData.push(newRow);
+        }
+        console.log("Datos extraídos (9x17, con fechas como objetos Date):", extractedData);
+        
+        // Guardar los datos procesados en la variable global
+        extractedReportData = extractedData;
+        console.log("✅ Datos procesados y guardados en extractedReportData");
+        console.log(`📊 Total filas extraídas: ${extractedReportData.length}`);
+        console.log("📋 Muestra de datos extraídos:", extractedReportData.slice(0, 3));
+
+        addBotMessage('✅ Archivo de ventas procesado.');
+        console.log("📂 FIN processVentasXlsx - Éxito");
+
+      } catch (error) {
+        console.error('❌ Error crítico procesando el archivo de ventas:', error);
+        console.error('❌ Stack trace:', error.stack);
+        addBotMessage(`❌ Error al procesar el archivo de ventas: ${error.message}`);
+        console.log("📂 FIN processVentasXlsx - Error");
+      }
+    }
+
+    async function processAllUploadedFiles() {
+      try {
+        console.log('🔄 Iniciando procesamiento de archivos cargados');
+        
+        const filesToProcess = [
+          uploadedFiles['ventas-file'] ? processVentasXlsx(uploadedFiles['ventas-file'].file) : Promise.resolve(),
+          uploadedFiles['propinas-file'] ? processPropinasXlsx(uploadedFiles['propinas-file'].file) : Promise.resolve(),
+          uploadedFiles['prod-cimp-file'] ? processProduccionConImpXlsx(uploadedFiles['prod-cimp-file'].file) : Promise.resolve(),
+          uploadedFiles['prod-simp-file'] ? processProduccionSinImpXlsx(uploadedFiles['prod-simp-file'].file) : Promise.resolve(),
+          uploadedFiles['clientes-file'] ? processClientesXlsx(uploadedFiles['clientes-file'].file) : Promise.resolve()
+        ];
+
+        // Esperar a que todos los archivos se procesen
+        await Promise.all(filesToProcess);
+        
+        console.log('✅ Todos los archivos han sido procesados.');
+
+        // Ahora que todos los datos están listos, abrir y poblar el modal
+        openReportModal();
+        
+      } catch (e) {
+        console.error('❌ Error crítico procesando archivos:', e);
+        throw e;
+      }
+    }
+
+    function openReportModal() {
+      try {
+        console.log('👁️ Abriendo visor de reporte');
+        const container = document.getElementById('report-content');
+        if (!container) {
+          console.error('No se encontró el contenedor del reporte');
+          return;
+        }
+        
+        // 1. Construir la estructura de las tablas
+        container.innerHTML = buildReplicatedReportHTML();
+        document.getElementById('report-modal').classList.remove('hidden');
+        
+        // Asignar evento al botón de descarga DENTRO del modal
+        const downloadBtn = document.getElementById('download-pdf-btn');
+        if (downloadBtn) {
+            downloadBtn.addEventListener('click', generatePDF);
+        } else {
+            console.error("Botón de descarga de PDF no encontrado dentro del modal.");
+        }
+
+        // 2. Crear las filas para los días de la semana
+        createReportTableRows();
+
+        // 3. Esperar un momento para que el DOM esté completamente renderizado
+        setTimeout(() => {
+            // 4. Poblar las tablas con los datos procesados
+            if (extractedReportData && extractedReportData.length > 0) {
+                console.log('Poblando tablas con datos de ventas extraídos...');
+                mapExtractedDataToHtmlTable();
+            } else {
+                console.warn('No hay datos de ventas extraídos para poblar el reporte.');
+            }
+        }, 100); 
+          
+        console.log('✅ Visor de reporte abierto exitosamente');
+      } catch (e) {
+        console.error('❌ Error abriendo visor de reporte:', e);
+        addBotMessage('❌ No se pudo abrir el visor de reporte. Por favor, inténtalo de nuevo.');
+      }
+    }
+
+    function createReportTableRows() {
+      const bodyVentas = document.getElementById('rep-ventas-body');
+      const bodyResumen = document.getElementById('rep-resumen-body');
+      if (!bodyVentas || !bodyResumen) {
+        console.error('No se encontraron los cuerpos de las tablas del reporte.');
+        return;
+      }
+
+      bodyVentas.innerHTML = '';
+      bodyResumen.innerHTML = '';
+
+      const dates = Array.isArray(weekIsoDates) ? weekIsoDates : [];
+      const maxRows = 7;
+
+      for (let i = 0; i < maxRows; i++) {
+        const dateISO = i < dates.length ? dates[i] : `placeholder-${i}`;
+        const parts = dateISO.includes('-') ? dateISO.split('-') : null;
+        const formattedDate = parts ? `${parts[2]}/${parts[1]}/${parts[0]}` : '--/--/----';
+
+        // Crear fila para tabla principal de ventas
+        const trVentas = document.createElement('tr');
+        trVentas.dataset.date = dateISO;
+        // 1 th (fecha) + 15 td (datos) + 1 td (Total) = 17 celdas totales
+        let cellsVentas = `<th class="px-3 py-2 text-left font-medium">${formattedDate}</th>`;
+        for (let j = 0; j < 15; j++) {
+          cellsVentas += `<td class="px-3 py-2 text-right">0.00</td>`;
+        }
+        // Agregar celda de Total (ya viene en la matriz, no se calcula)
+        cellsVentas += `<td class="px-3 py-2 text-right font-semibold">0.00</td>`;
+        trVentas.innerHTML = cellsVentas;
+        bodyVentas.appendChild(trVentas);
+
+        // Crear fila para tabla de resumen
+        const trResumen = document.createElement('tr');
+        trResumen.dataset.date = dateISO;
+        // 1 th (fecha) + 5 td (datos)
+        trResumen.innerHTML = `
+          <th class="px-3 py-2 text-left font-medium">${formattedDate}</th>
+          <td class="px-3 py-2 text-right">0.00</td>
+          <td class="px-3 py-2 text-right">0.00</td>
+          <td class="px-3 py-2 text-right">0.00</td>
+          <td class="px-3 py-2 text-right">0.00</td>
+          <td class="px-3 py-2 text-right">0.0000</td>
+        `;
+        bodyResumen.appendChild(trResumen);
+      }
+      console.log(`✅ Creadas ${maxRows} filas en las tablas del reporte.`);
+    }
+
+    function closeReportModal() {
+      const modal = document.getElementById('report-modal');
+      const container = document.getElementById('report-content');
+      if (container) container.innerHTML = '';
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function buildReplicatedReportHTML() {
+      return `
+        <div class="max-w-[1380px] mx-auto space-y-6">
+          <!-- Resumen por día -->
+          <div class="p-5 bg-white rounded-xl shadow-lg border border-gray-200">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-[16px] leading-none font-semibold text-gray-900 flex items-center gap-2"><i class="fas fa-table text-emerald-600"></i> Resumen de venta por día</h3>
+              <button id="download-pdf-btn" class="py-2 px-3 inline-flex items-center gap-x-2 text-sm font-semibold rounded-lg border border-transparent bg-blue-600 text-white hover:bg-blue-700">
+                <i class="fas fa-file-pdf mr-2"></i>
+                Descargar PDF
+              </button>
+            </div>
+            <div class="overflow-auto">
+              <table id="rep-tabla-ventas" class="min-w-full text-[9px] text-gray-700">
+                <thead class="bg-gray-50 text-gray-600 font-semibold text-[9px]">
+                  <tr>
+                    <th class="px-3 py-2 text-left">Fecha</th>
+                    <th class="px-3 py-2">CREDITO</th>
+                    <th class="px-3 py-2">DEPOSITO DOLARES</th>
+                    <th class="px-3 py-2">DEPOSITO SOLES</th>
+                    <th class="px-3 py-2">EFECTIVO DOLARES</th>
+                    <th class="px-3 py-2">EFECTIVO SOLES</th>
+                    <th class="px-3 py-2">TARJETA DOLARES AMEX-DOL</th>
+                    <th class="px-3 py-2">TARJETA DOLARES DC-DOL</th>
+                    <th class="px-3 py-2">TARJETA DOLARES MC-DOL</th>
+                    <th class="px-3 py-2">TARJETA DOLARES VISA-DOL</th>
+                    <th class="px-3 py-2">TARJETA SOLES AMEX-SOL</th>
+                    <th class="px-3 py-2">TARJETA SOLES DC-SOL</th>
+                    <th class="px-3 py-2">TARJETA SOLES MC-SOL</th>
+                    <th class="px-3 py-2">TARJETA SOLES VISA-SOL</th>
+                    <th class="px-3 py-2">TRANSFER. DOLARES</th>
+                    <th class="px-3 py-2">TRANSFER. SOLES</th>
+                    <th class="px-3 py-2" style="min-width: 90px;">Total</th>
+                  </tr>
+                </thead>
+                <tbody id="rep-ventas-body" class="divide-y divide-gray-100"></tbody>
+                <tfoot id="rep-ventas-foot">
+                    <tr id="rep-totals-pen-row" class="bg-gray-50 font-semibold">
+                        <th scope="row" class="px-3 py-2 text-left">TOTAL PEN</th>
+                        ${Array(16).fill('<td class="px-3 py-2 text-right">0.00</td>').join('')}
+                  </tr>
+                    <tr id="rep-totals-usd-row" class="bg-gray-50 font-semibold">
+                        <th scope="row" class="px-3 py-2 text-left">TOTAL USD</th>
+                        ${Array(16).fill('<td class="px-3 py-2 text-right">--</td>').join('')}
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+
+          <!-- Grid inferior 3 columnas -->
+          <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <!-- Resumen de ventas totales -->
+            <div class="p-5 bg-white rounded-xl shadow-lg border border-gray-200 lg:col-span-2">
+              <div class="flex items-center justify-between mb-3">
+                <h3 class="text-[16px] leading-none font-semibold text-gray-900 flex items-center gap-2"><i class="fas fa-chart-bar text-emerald-600"></i> Resumen de ventas totales</h3>
+              </div>
+              <div class="overflow-auto">
+                <table id="rep-tabla-resumen" class="min-w-full text-gray-700">
+                  <thead class="bg-gray-50 text-gray-600 font-semibold">
+                    <tr>
+                      <th class="px-3 py-2 text-left">Fecha</th>
+                      <th class="px-3 py-2">Total PEN</th>
+                      <th class="px-3 py-2">PEN</th>
+                      <th class="px-3 py-2">USD en PEN</th>
+                      <th class="px-3 py-2">USD</th>
+                      <th class="px-3 py-2">T.C.</th>
+                    </tr>
+                  </thead>
+                  <tbody id="rep-resumen-body" class="divide-y divide-gray-100"></tbody>
+                  <tfoot>
+                    <tr class="bg-gray-50 font-semibold text-gray-900">
+                      <th class="px-3 py-2 text-left">TOTALES</th>
+                      <td class="px-3 py-2 text-right whitespace-nowrap" id="rep-total-pen"></td>
+                      <td class="px-3 py-2 text-right whitespace-nowrap" id="rep-total-only-pen"></td>
+                      <td class="px-3 py-2 text-right whitespace-nowrap" id="rep-total-usd-pen"></td>
+                      <td class="px-3 py-2 text-right whitespace-nowrap" id="rep-total-usd"></td>
+                      <td class="px-3 py-2"></td>
+                    </tr>
+                    <tr class="bg-gray-50 text-gray-700">
+                      <th class="px-3 py-2 text-left">%</th>
+                      <td class="px-3 py-2"></td>
+                      <td class="px-3 py-2" id="rep-pct-pen"></td>
+                      <td class="px-3 py-2" id="rep-pct-usd-pen"></td>
+                      <td class="px-3 py-2"></td>
+                      <td class="px-3 py-2">%</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+
+            <!-- Venta por tipo -->
+            <div class="p-5 bg-white rounded-xl shadow-lg border border-gray-200">
+              <div class="flex items-center justify-between mb-3">
+                <h3 class="text-[16px] leading-none font-semibold text-gray-900 flex items-center gap-2"><i class="fas fa-tags text-emerald-600"></i> Venta por tipo</h3>
+              </div>
+              <div class="overflow-auto">
+                <table id="rep-tabla-venta-tipo" class="min-w-full text-gray-700">
+                  <thead class="bg-gray-50 text-gray-600 font-semibold"><tr><th class="px-3 py-2 text-left">Tipo</th><th class="px-3 py-2 text-right">Venta PEN</th><th class="px-3 py-2 text-right">SUBTOTAL</th></tr></thead>
+                  <tbody class="divide-y divide-gray-100">
+                    <tr><th class="px-3 py-2 text-left">TIENDA DE VINOS</th><td class="px-3 py-2 text-right whitespace-nowrap" id="rep-tienda-venta">--</td><td class="px-3 py-2 text-right whitespace-nowrap" id="rep-tienda-subtotal">--</td></tr>
+                    <tr><th class="px-3 py-2 text-left">PROPINAS</th><td class="px-3 py-2 text-right whitespace-nowrap" id="rep-propinas-venta">--</td><td class="px-3 py-2 text-right whitespace-nowrap" id="rep-propinas-subtotal">--</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Venta por cliente -->
+            <div class="p-5 bg-white rounded-xl shadow-lg border border-gray-200">
+              <div class="flex items-center justify-between mb-3">
+                <h3 class="text-[16px] leading-none font-semibold text-gray-900 flex items-center gap-2"><i class="fas fa-users text-emerald-600"></i> Venta por cliente</h3>
+              </div>
+              <div class="overflow-auto">
+                <table id="rep-tabla-venta-cliente" class="min-w-full text-gray-700">
+                  <thead class="bg-gray-50 text-gray-600 font-semibold"><tr><th class="px-3 py-2 text-left">CLIENTES</th><th class="px-3 py-2 text-right">TOTAL PEN</th><th class="px-3 py-2 text-right">%</th></tr></thead>
+                  <tbody class="divide-y divide-gray-100">
+                    <tr><th class="px-3 py-2 text-left">VARIOS</th><td class="px-3 py-2 text-right whitespace-nowrap" id="rep-varios-total">--</td><td class="px-3 py-2 text-right" id="rep-varios-porcentaje">--</td></tr>
+                    <tr><th class="px-3 py-2 text-left">SANTIAGO QUEIROLO SAC</th><td class="px-3 py-2 text-right whitespace-nowrap" id="rep-queirolo-total">--</td><td class="px-3 py-2 text-right" id="rep-queirolo-porcentaje">--</td></tr>
+                    <tr class="bg-gray-50 font-semibold text-gray-900"><th class="px-3 py-2 text-left">TOTAL</th><td class="px-3 py-2 text-right whitespace-nowrap" id="rep-cliente-total">--</td><td class="px-3 py-2 text-right">100%</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Producción y Ocupabilidad -->
+          <div class="p-5 bg-white rounded-xl shadow-lg border border-gray-200 mt-6">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-[16px] leading-none font-semibold text-gray-900 flex items-center gap-2"><i class="fas fa-chart-line text-emerald-600"></i> Producción y Ocupabilidad</h3>
+            </div>
+            <div class="overflow-auto">
+              <table id="rep-tabla-produccion" class="min-w-full text-gray-700">
+                <thead class="bg-gray-50 text-gray-600 font-semibold">
+                  <tr>
+                    <th class="px-3 py-2 text-left">Concepto</th>
+                    <th class="px-3 py-2 text-right">Con Impuesto</th>
+                    <th class="px-3 py-2 text-right">Sin Impuesto</th>
+                    <th class="px-3 py-2 text-right">Ocupabilidad %</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                  <tr>
+                    <th class="px-3 py-2 text-left font-medium">Producción</th>
+                    <td class="px-3 py-2 text-right" id="rep-produccion-cimp">--</td>
+                    <td class="px-3 py-2 text-right" id="rep-produccion-simp">--</td>
+                    <td class="px-3 py-2 text-right" id="rep-ocupabilidad">--</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    function generatePDF() {
+        try {
+            const modal = document.getElementById('report-modal');
+            if (!modal || modal.classList.contains('hidden')) {
+                addBotMessage('❌ Error: El reporte debe estar visible para generar el PDF.');
+                console.error("Error al generar PDF: #report-modal no está visible.");
+                return;
+            }
+
+            console.log("Iniciando generación de PDF...");
+
+            if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF === 'undefined') {
+                throw new Error("La biblioteca jsPDF no está disponible");
+            }
+            
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF({
+                orientation: 'landscape',
+                unit: 'mm',
+                format: 'a4'
+            });
+
+            if (typeof pdf.autoTable !== 'function') {
+                throw new Error("El plugin autoTable no está disponible");
+            }
+            
+            const pageWidth = pdf.internal.pageSize.getWidth();
+            let startY = 15;
+
+            // Estilos comunes para resaltar filas de total/pie
+            const applyTotalRowStyles = (hooksData) => {
+                Object.values(hooksData.row.cells).forEach(cell => {
+                    cell.styles.fillColor = [230, 230, 230];
+                    cell.styles.fontStyle = 'bold';
+                    cell.styles.textColor = [0, 0, 0];
+                });
+            };
+
+            // Título del reporte
+            pdf.setFont('helvetica', 'bold');
+            pdf.setFontSize(14);
+            pdf.text(`Reporte de Ventas - ${selectedPeriod.weekText} ${selectedPeriod.year}`, pageWidth / 2, 10, { align: 'center' });
+
+            // 1. Tabla Principal: Resumen de venta por día
+            pdf.setFontSize(10);
+            pdf.text("Resumen de venta por día", 14, startY);
+            startY += 4;
+            
+            pdf.autoTable({
+                html: '#rep-tabla-ventas',
+                startY: startY,
+                theme: 'grid',
+                styles: { cellPadding: 0.8, lineColor: [0, 0, 0], lineWidth: 0.1 },
+                headStyles: { 
+                    fillColor: [230, 230, 230], 
+                    textColor: [0, 0, 0], 
+                    fontStyle: 'bold', 
+                    halign: 'center', 
+                    fontSize: 6, 
+                    lineColor: [0, 0, 0],
+                    overflow: 'linebreak'
+                },
+                bodyStyles: {
+                    fontSize: 7,
+                    overflow: 'ellipsize'
+                },
+                footStyles: {
+                    fontSize: 7,
+                    overflow: 'ellipsize',
+                    fontStyle: 'bold',
+                    textColor: [0, 0, 0]
+                },
+                columnStyles: { 
+                    0: { halign: 'left', cellWidth: 18 }, // Columna Fecha
+                    16: { cellWidth: 22, halign: 'right' }   // Columna Total, más ancha
+                },
+                tableWidth: 'auto'
+                // Se elimina didParseCell para quitar los fondos de color
+            });
+            
+            startY = pdf.lastAutoTable.finalY + 8;
+
+            // --- Tablas Inferiores ---
+            const bottomTableY = startY;
+            const pageContentWidth = pageWidth - 28;
+            const gap = 5;
+            const colWidthFor4 = (pageContentWidth - (gap * 2)) / 4; 
+            
+            pdf.setFont('helvetica', 'bold');
+            pdf.setFontSize(10);
+
+            // 2. Tabla: Resumen de venta total
+            const colWidthResumen = colWidthFor4 * 2;
+            pdf.text("Resumen de venta total", 14, bottomTableY);
+            pdf.autoTable({
+                html: '#rep-tabla-resumen',
+                startY: bottomTableY + 4,
+                theme: 'grid',
+                styles: { fontSize: 7, cellPadding: 1.5, lineColor: [0, 0, 0], lineWidth: 0.1 },
+                headStyles: { fillColor: [230, 230, 230], textColor: [0, 0, 0], fontStyle: 'bold' },
+                margin: { left: 14, right: pageWidth - 14 - colWidthResumen },
+                tableWidth: colWidthResumen,
+                didParseCell: function (hooksData) {
+                    if (hooksData.section === 'foot') {
+                        applyTotalRowStyles(hooksData);
+                    }
+                }
+            });
+            let lastY = pdf.lastAutoTable.finalY;
+
+            // 3. Tabla: Venta por tipo
+            const startX_VentaTipo = 14 + colWidthResumen + gap;
+            pdf.text("Venta por tipo", startX_VentaTipo, bottomTableY);
+            pdf.autoTable({
+                html: '#rep-tabla-venta-tipo',
+                startY: bottomTableY + 4,
+                theme: 'grid',
+                styles: { fontSize: 7, cellPadding: 1.5, lineColor: [0, 0, 0], lineWidth: 0.1 },
+                headStyles: { fillColor: [230, 230, 230], textColor: [0, 0, 0], fontStyle: 'bold' },
+                margin: { left: startX_VentaTipo, right: pageWidth - startX_VentaTipo - colWidthFor4 },
+                tableWidth: colWidthFor4
+            });
+            lastY = Math.max(lastY, pdf.lastAutoTable.finalY);
+
+            // 4. Tabla: Venta por cliente
+            const startX_VentaCliente = startX_VentaTipo + colWidthFor4 + gap;
+            pdf.text("Venta por cliente", startX_VentaCliente, bottomTableY);
+            pdf.autoTable({
+                html: '#rep-tabla-venta-cliente',
+                startY: bottomTableY + 4,
+                theme: 'grid',
+                styles: { fontSize: 7, cellPadding: 1.5, lineColor: [0, 0, 0], lineWidth: 0.1 },
+                headStyles: { fillColor: [230, 230, 230], textColor: [0, 0, 0], fontStyle: 'bold' },
+                margin: { left: startX_VentaCliente, right: 14 },
+                didParseCell: function (hooksData) {
+                    if (hooksData.section === 'body' && String(hooksData.cell.raw?.innerText).toUpperCase() === 'TOTAL') {
+                         applyTotalRowStyles(hooksData);
+                    }
+                }
+            });
+            lastY = Math.max(lastY, pdf.lastAutoTable.finalY);
+            
+            startY = lastY + 8;
+
+            // 5. Tabla: Producción y Ocupabilidad
+            pdf.text("Producción y Ocupabilidad", 14, startY);
+            pdf.autoTable({
+                html: '#rep-tabla-produccion',
+                startY: startY + 4,
+                theme: 'grid',
+                styles: { fontSize: 8, cellPadding: 2, lineColor: [0, 0, 0], lineWidth: 0.1 },
+                headStyles: { fillColor: [230, 230, 230], textColor: [0, 0, 0], fontStyle: 'bold' },
+                margin: { left: 14, right: 14 }
+            });
+
+            // Guardar el PDF
+            const fecha = new Date().toISOString().slice(0, 10);
+            pdf.save(`Reporte_Ventas_${fecha}.pdf`);
+            console.log("✅ PDF generado y descargado.");
+            addBotMessage('✅ PDF generado exitosamente.');
+
+        } catch (error) {
+            console.error("❌ Error al generar el PDF:", error);
+            addBotMessage(`❌ Error al generar el PDF: ${error.message}`);
+        }
+    }
+
+    function showStep(stepNumber) {
+      console.log(`👁️ Mostrando paso ${stepNumber}`);
+      for (let i = 1; i <= 5; i++) {
+        const stepEl = document.getElementById(`step-${i}`);
+        if (stepEl) {
+          stepEl.classList.add('hidden');
+        }
+      }
+      
+      document.getElementById('input-area').classList.remove('hidden');
+      document.getElementById(`step-${stepNumber}`).classList.remove('hidden');
+      document.getElementById(`step-${stepNumber}`).classList.add('fade-in');
+      
+      currentStep = stepNumber;
+    }
+
+    function addBotMessage(message) {
+      const chatMessages = document.getElementById('chat-messages');
+      
+      const messageDiv = document.createElement('div');
+      messageDiv.className = 'flex items-start gap-3 fade-in';
+      messageDiv.innerHTML = `
+        <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+          <i class="fas fa-robot text-white text-sm"></i>
+        </div>
+        <div class="bg-gray-100 rounded-lg rounded-tl-none p-4 max-w-md">
+          <p class="text-gray-800">${message}</p>
+        </div>
+      `;
+      
+      chatMessages.appendChild(messageDiv);
+      scrollToBottom();
+    }
+
+    function scrollToBottom() {
+      const chatMessages = document.getElementById('chat-messages');
+      setTimeout(() => {
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      }, 100);
+    }
+
+    // FUNCIÓN UNIFICADA PARA LEER ARCHIVOS EXCEL
+    async function readExcelFile(file, options = { returnWorksheet: false }) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const sheetName = workbook.SheetNames[0];
+            if (!sheetName) {
+              return reject(new Error("El archivo Excel no contiene hojas."));
+            }
+            const worksheet = workbook.Sheets[sheetName];
+            
+            if (options.returnWorksheet) {
+              resolve(worksheet);
+                        } else {
+              // Leer directamente como array de arrays con configuración específica
+              const jsonData = XLSX.utils.sheet_to_json(worksheet, { 
+                header: 1,
+                raw: true, // Usar raw:true para consistencia, igual que en el archivo de referencia
+                defval: ''
+              });
+              console.log("🔍 Función readExcelFile: Primeras 3 filas:", jsonData.slice(0, 3));
+            resolve(jsonData);
+            }
+          } catch (error) {
+            reject(error);
+          }
+        };
+        reader.onerror = reject;
+        reader.readAsArrayBuffer(file);
+      });
+    }
+
+    // Funciones de compatibilidad simplificadas
+    const readXlsxAsArray = (file) => readExcelFile(file, { returnWorksheet: false });
+    const readXlsxAsWorksheet = (file) => readExcelFile(file, { returnWorksheet: true });
+
+    // =================================================================================
+    // === FUNCIONES DE PROCESAMIENTO DE ARCHIVOS ==================================
+    // =================================================================================
+
+
+
+    // Función para convertir fechas de Excel a JS
+    function excelDateToJSDate(serial) {
+      // La fórmula convierte el serial a una fecha UTC.
+      const utcDate = new Date((serial - 25569) * 86400 * 1000);
+      // Sumamos el offset de la zona horaria para que la fecha refleje el día correcto
+      // en la hora local del navegador, en lugar del día anterior a las 19:00.
+      const timezoneOffset = utcDate.getTimezoneOffset() * 60000;
+      return new Date(utcDate.getTime() + timezoneOffset);
+    }
+
+    // Función unificada para convertir fechas (incluyendo Excel serial, dd/mm/aaaa, y YYYY-MM-DD)
+    function convertToDate(value, options = {}) {
+      if (value instanceof Date && !isNaN(value.getTime())) return value;
+      
+      if (typeof value === 'number') {
+        return excelDateToJSDate(value);
+      }
+      
+      if (typeof value === 'string') {
+        const trimmedValue = value.trim();
+        const patterns = [
+          { 
+            regex: /^\d{1,2}\/\d{1,2}\/\d{4}$/, 
+            parser: (s) => new Date(parseInt(s[2]), parseInt(s[1]) - 1, parseInt(s[0])) 
+          },
+          { 
+            regex: /^\d{4}-\d{2}-\d{2}$/, 
+            parser: (s) => new Date(parseInt(s[0]), parseInt(s[1]) - 1, parseInt(s[2])) 
+          }
+        ];
+        
+        for (const pattern of patterns) {
+          if (pattern.regex.test(trimmedValue)) {
+            const date = pattern.parser(trimmedValue.split(/[\/\-]/));
+        if (date && !isNaN(date.getTime())) return date;
+      }
+        }
+      }
+      
+      return options.fallback || null;
+    }
+  </script>
+</body>
+</html>

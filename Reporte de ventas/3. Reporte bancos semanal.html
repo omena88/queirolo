@@ -1,0 +1,2398 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reporte bancos semanal</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Preline UI -->
+  <link rel="stylesheet" href="https://preline.co/assets/css/main.min.css">
+  <script src="https://preline.co/assets/js/hs-ui.bundle.js"></script>
+  
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Librerías externas CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+  
+  <!-- Estilos personalizados mínimos -->
+  <style>
+    /* Configuración de Tailwind para colores corporativos */
+    :root {
+      --color-principal: #1b8943;
+      --color-principal-hover: #157235;
+    }
+    
+    /* Estilos específicos para funcionalidad existente */
+    .accordion-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+    }
+    
+    .accordion-content.active {
+      max-height: 500px;
+    }
+    
+    .detalle-transacciones {
+      display: none;
+    }
+    
+    .detalle-transacciones.show {
+      display: table-row;
+    }
+    
+    .reporte-tabla tbody tr.clickeable td:first-child::after {
+      content: '\f107';
+      font-family: 'Font Awesome 6 Free';
+      font-weight: 900;
+      float: right;
+      color: #6b7280;
+      transition: transform 0.3s ease;
+    }
+    
+    .reporte-tabla tbody tr.clickeable.expanded td:first-child::after {
+      transform: rotate(180deg);
+    }
+    
+    /* Estilos para estados de pasos de configuración */
+    .config-step.active .step-number {
+      background-color: #3b82f6 !important;
+      color: white !important;
+    }
+    
+    .config-step.completed .step-number {
+      background-color: #10b981 !important;
+      color: white !important;
+    }
+    
+    .config-step.future .step-number {
+      background-color: #d1d5db !important;
+      color: #6b7280 !important;
+    }
+    
+    /* Estilos para detalle de transacciones en gestión de caja */
+    .detalle-content {
+      padding: 15px;
+      background-color: #f9fafb;
+      border-radius: 8px;
+      margin: 10px 0;
+    }
+    
+    .detalle-content h5 {
+      margin: 0 0 15px 0;
+      color: #374151;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    
+    .transacciones-lista {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    
+    .transaccion-item {
+      display: grid;
+      grid-template-columns: 2fr 2fr 1fr;
+      gap: 10px;
+      padding: 8px 12px;
+      background-color: white;
+      border-radius: 4px;
+      border: 1px solid #e5e7eb;
+    }
+    
+    .transaccion-concepto,
+    .transaccion-proveedor {
+      font-size: 12px;
+      color: #374151;
+    }
+    
+    .transaccion-monto {
+      font-size: 12px;
+      color: #374151;
+      text-align: right;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 font-sans">
+  <!-- Contenido del Body -->
+  <div class="max-w-7xl mx-auto p-4 lg:p-6">
+    <!-- Título del reporte -->
+    <div class="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-6">
+      <h1 class="text-2xl font-semibold text-gray-900 flex items-center gap-2">
+        <i class="fas fa-shopping-cart text-green-600"></i> 
+        Reporte bancos semanal
+      </h1>
+      <span id="fecha-reporte" class="inline-block bg-green-50 text-gray-600 px-3 py-1 rounded-full text-sm font-medium mt-2 lg:mt-0">
+        -- Seleccionar periodo --
+      </span>
+    </div>
+    
+    <!-- Acordeón de configuración usando Preline -->
+    <div class="hs-accordion-group mb-6">
+      <div class="hs-accordion bg-white border border-gray-200 rounded-lg shadow-sm" id="hs-basic-heading-one">
+        <button class="hs-accordion-toggle hs-accordion-active:text-blue-600 py-3 px-4 inline-flex items-center justify-between gap-x-3 w-full font-semibold text-start text-gray-800 hover:text-gray-500 rounded-lg disabled:opacity-50 disabled:pointer-events-none" aria-controls="hs-basic-collapse-one" id="accordion-toggle">
+          <span class="flex items-center gap-2">
+            <i class="fas fa-sliders-h text-green-600"></i>
+            Configuración
+          </span>
+          <svg class="hs-accordion-active:hidden block size-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m6 9 6 6 6-6"/>
+          </svg>
+          <svg class="hs-accordion-active:block hidden size-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m18 15-6-6-6 6"/>
+          </svg>
+        </button>
+        <div id="hs-basic-collapse-one" class="hs-accordion-content w-full overflow-hidden transition-[height] duration-300" aria-labelledby="hs-basic-heading-one">
+          <div class="p-4" id="config-content">
+            <!-- Pasos en grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-4">
+              <!-- Paso 01 -->
+              <div class="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow config-step active">
+                <div class="flex items-center gap-4 mb-4">
+                  <div class="flex items-center justify-center w-8 h-8 bg-blue-600 text-white rounded-full text-sm font-semibold step-number">
+                    01
+                  </div>
+                  <h4 class="text-lg font-semibold text-gray-900">Seleccionar periodo</h4>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Año</label>
+                    <select id="year-selector" class="py-3 px-4 pe-9 block w-full border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none">
+                      <option value="">Seleccionar año</option>
+                      <option value="2025">2025</option>
+                      <option value="2026">2026</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Mes</label>
+                    <select id="month-selector" class="py-3 px-4 pe-9 block w-full border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none">
+                      <option value="">Seleccionar mes</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Semana</label>
+                    <select id="week-selector" class="py-3 px-4 pe-9 block w-full border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none">
+                      <option value="">Seleccionar semana</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+           
+              <!-- Paso 02 -->
+              <div class="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow config-step active">
+                <div class="flex items-center gap-4 mb-4">
+                  <div class="flex items-center justify-center w-8 h-8 bg-blue-600 text-white rounded-full text-sm font-semibold step-number">
+                    02
+                  </div>
+                  <h4 class="text-lg font-semibold text-gray-900">Moneda y datos</h4>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Moneda</label>
+                    <select id="currency-selector" class="py-3 px-4 pe-9 block w-full border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none">
+                      <option value="">Seleccionar moneda</option>
+                      <option value="PEN" data-url="https://docs.google.com/spreadsheets/d/e/2PACX-1vRRhWBlTXTz5h_v8OIH-3LrKdc6tjqLR15ZG1LlxsFRbZ6867Rn0L3jnWYOUtH6Cv-LQ7QRpULms8ah/pub?gid=0&single=true&output=csv">PEN</option>
+                      <option value="USD" data-url="https://docs.google.com/spreadsheets/d/e/2PACX-1vS9bRPb-3jZj8mBz7Al-4p39nG2ua3WWgva9ieg46GvH9jAg2AYk5oSXpEW1H0lWXEJCFZgSnhCv3z3/pub?gid=0&single=true&output=csv">USD</option>
+                    </select>
+                  </div>
+                  <div class="flex items-end">
+                    <button id="btn-cargar-datos" class="py-3 px-4 inline-flex items-center gap-x-2 text-sm font-semibold rounded-lg border border-transparent bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none" disabled>
+                      <i class="fas fa-download"></i>
+                      Cargar datos
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Paso 03 - Solo para PEN -->
+              <div class="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow config-step future" id="paso-excel" style="display: none;">
+                <div class="flex items-center gap-4 mb-4">
+                  <div class="flex items-center justify-center w-8 h-8 bg-gray-300 text-gray-600 rounded-full text-sm font-semibold step-number">
+                    03
+                  </div>
+                  <h4 class="text-lg font-semibold text-gray-900">Cargar Excel de caja</h4>
+                </div>
+                <div class="space-y-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Archivo Excel</label>
+                    <input type="file" id="excel-file-input" accept=".xlsx,.xls" class="block w-full border border-gray-200 shadow-sm rounded-lg text-sm focus:z-10 focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none file:bg-gray-50 file:border-0 file:me-4 file:py-3 file:px-4">
+                  </div>
+                  <button id="btn-cargar-excel" class="py-3 px-4 inline-flex items-center gap-x-2 text-sm font-semibold rounded-lg border border-transparent bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 disabled:pointer-events-none" disabled>
+                    <i class="fas fa-file-excel"></i>
+                    Cargar Excel
+                  </button>
+                </div>
+              </div>
+
+              <!-- Paso 04 -->
+              <div class="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow config-step future" id="paso-pdf">
+                <div class="flex items-center gap-4 mb-4">
+                  <div class="flex items-center justify-center w-8 h-8 bg-gray-300 text-gray-600 rounded-full text-sm font-semibold step-number" id="numero-paso-pdf">
+                    04
+                  </div>
+                  <h4 class="text-lg font-semibold text-gray-900">Generar reporte PDF</h4>
+                </div>
+                <button id="btn-generar-pdf" class="py-3 px-4 inline-flex items-center gap-x-2 text-sm font-semibold rounded-lg border border-transparent bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 disabled:pointer-events-none" disabled>
+                  <i class="fas fa-file-pdf"></i>
+                  Generar PDF
+                </button>
+              </div>
+         </div>
+      </div>
+    </div>
+    
+    <!-- SECCIÓN PRINCIPAL: Tabla de Resumen por día -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-8">
+      <div class="flex items-center justify-between p-6 border-b border-gray-200">
+        <h3 class="text-xl font-semibold text-gray-900 flex items-center gap-2">
+          <i class="fas fa-table text-blue-600"></i>
+          Resumen por día
+        </h3>
+        <div class="flex items-center gap-2 text-sm text-gray-600">
+          <span>Saldo inicial:</span>
+          <span id="saldo-inicial" class="font-semibold text-blue-600">--</span>
+        </div>
+      </div>
+      <div class="p-6">
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200" id="tabla-resumen">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Día de la semana</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Compra soles/dólares</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ingresos</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Egresos</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Saldo</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <!-- Filas de placeholder -->
+              <tr data-date="lunes" class="hover:bg-gray-50">
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Lunes</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">--</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">--</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">--</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">--</td>
+              </tr>
+              <tr data-date="martes" class="hover:bg-gray-50">
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Martes</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">--</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">--</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">--</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">--</td>
+              </tr>
+              <tr data-date="miercoles" class="hover:bg-gray-50">
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Miércoles</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">--</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">--</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">--</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">--</td>
+              </tr>
+              <tr data-date="jueves" class="hover:bg-gray-50">
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Jueves</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">--</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">--</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">--</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">--</td>
+              </tr>
+              <tr data-date="viernes" class="hover:bg-gray-50">
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Viernes</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">--</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">--</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">--</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">--</td>
+              </tr>
+              <tr data-date="sabado" class="hover:bg-gray-50">
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Sábado</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">--</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">--</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">--</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">--</td>
+              </tr>
+              <tr data-date="domingo" class="hover:bg-gray-50">
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Domingo</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">--</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">--</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">--</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">--</td>
+              </tr>
+              <!-- Fila de total -->
+              <tr class="fila-total bg-blue-50 border-t-2 border-blue-200">
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-blue-900">TOTAL</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-blue-800">--</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-blue-800">--</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-blue-800">--</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-blue-800">--</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECCIÓN DETALLE: Detalle de egresos por día -->
+    <div class="space-y-6">
+      
+      <!-- Lunes -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200" id="detalle-lunes">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h4 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+            <i class="fas fa-calendar-day text-blue-600"></i>
+            Lunes - --/--/----
+          </h4>
+        </div>
+        <div class="p-6">
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Concepto</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Proveedor</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Monto</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-200">
+                <tr>
+                  <td colspan="3" class="px-6 py-8 text-center text-gray-500 italic">
+                    No hay datos disponibles
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Martes -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200" id="detalle-martes">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h4 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+            <i class="fas fa-calendar-day text-green-600"></i>
+            Martes - --/--/----
+          </h4>
+        </div>
+        <div class="p-6">
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Concepto</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Proveedor</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Monto</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-200">
+                <tr>
+                  <td colspan="3" class="px-6 py-8 text-center text-gray-500 italic">
+                    No hay datos disponibles
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Miércoles -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200" id="detalle-miercoles">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h4 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+            <i class="fas fa-calendar-day text-yellow-600"></i>
+            Miércoles - --/--/----
+          </h4>
+        </div>
+        <div class="p-6">
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Concepto</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Proveedor</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Monto</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-200">
+                <tr>
+                  <td colspan="3" class="px-6 py-8 text-center text-gray-500 italic">
+                    No hay datos disponibles
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Jueves -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200" id="detalle-jueves">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h4 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+            <i class="fas fa-calendar-day text-orange-600"></i>
+            Jueves - --/--/----
+          </h4>
+        </div>
+        <div class="p-6">
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Concepto</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Proveedor</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Monto</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-200">
+                <tr>
+                  <td colspan="3" class="px-6 py-8 text-center text-gray-500 italic">
+                    No hay datos disponibles
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Viernes -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200" id="detalle-viernes">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h4 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+            <i class="fas fa-calendar-day text-purple-600"></i>
+            Viernes - --/--/----
+          </h4>
+        </div>
+        <div class="p-6">
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Concepto</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Proveedor</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Monto</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-200">
+                <tr>
+                  <td colspan="3" class="px-6 py-8 text-center text-gray-500 italic">
+                    No hay datos disponibles
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sábado -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200" id="detalle-sabado">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h4 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+            <i class="fas fa-calendar-day text-indigo-600"></i>
+            Sábado - --/--/----
+          </h4>
+        </div>
+        <div class="p-6">
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Concepto</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Proveedor</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Monto</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-200">
+                <tr>
+                  <td colspan="3" class="px-6 py-8 text-center text-gray-500 italic">
+                    No hay datos disponibles
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Domingo -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200" id="detalle-domingo">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h4 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+            <i class="fas fa-calendar-day text-red-600"></i>
+            Domingo - --/--/----
+          </h4>
+        </div>
+        <div class="p-6">
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Concepto</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Proveedor</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Monto</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-200">
+                <tr>
+                  <td colspan="3" class="px-6 py-8 text-center text-gray-500 italic">
+                    No hay datos disponibles
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECCIÓN GESTIÓN DE CAJA - Solo visible cuando se selecciona PEN -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-8" id="seccion-gestion-caja" style="display: none;">
+      <div class="flex items-center justify-between p-6 border-b border-gray-200">
+        <h3 class="text-xl font-semibold text-gray-900 flex items-center gap-2">
+          <i class="fas fa-coins text-yellow-600"></i>
+          Resumen de caja
+        </h3>
+      </div>
+      <div class="p-6">
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200" id="tabla-gestion-caja">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Concepto</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Monto</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <!-- Placeholder inicial -->
+              <tr>
+                <td colspan="3" class="px-6 py-16 text-center">
+                  <div class="flex flex-col items-center justify-center text-gray-500">
+                    <i class="fas fa-file-excel text-5xl mb-4 opacity-50"></i>
+                    <p class="text-lg font-medium mb-2">No hay datos de gestión de caja</p>
+                    <p class="text-sm">Cargue un archivo Excel para ver los datos de gestión de caja</p>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts con lógica completa de semanas -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Variables globales
+      let weekIsoDates = []; // Array de fechas ISO de la semana seleccionada
+      let csvData = []; // Datos del CSV cargado
+      let selectedCurrency = ''; // Moneda seleccionada
+      let selectedCsvUrl = ''; // URL del CSV seleccionado
+
+      // == Funciones auxiliares para fechas ==
+      
+      function isDateValue(value) {
+        return value instanceof Date && !isNaN(value);
+      }
+      
+      function excelDateToJSDate(serial) {
+        const utc_days = Math.floor(serial - 25569);
+        const utc_value = utc_days * 86400;
+        const date_info = new Date(utc_value * 1000);
+        
+        return new Date(Date.UTC(date_info.getUTCFullYear(), date_info.getUTCMonth(), date_info.getUTCDate()));
+      }
+      
+      function convertToDate(value) {
+        if (value instanceof Date && !isNaN(value)) return value;
+        
+        if (typeof value === 'number') {
+          const excelDate = excelDateToJSDate(value);
+          if (!isNaN(excelDate.getTime())) return excelDate;
+        }
+        
+        if (typeof value === 'string') {
+          let date = null;
+          const trimmedValue = value.trim();
+
+          if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(trimmedValue)) {
+            const parts = trimmedValue.split('/');
+            date = new Date(Date.UTC(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0])));
+          } else if (/^\d{4}-\d{2}-\d{2}$/.test(trimmedValue)) {
+            const parts = trimmedValue.split('-');
+            date = new Date(Date.UTC(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2])));
+          } else if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(trimmedValue)) {
+            const parts = trimmedValue.split('-');
+            date = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+          }
+          
+          if (date && !isNaN(date.getTime())) return date;
+        }
+        
+        return null;
+      }
+      
+      function formatDateISO(date) {
+        if (!(date instanceof Date) || isNaN(date)) return '';
+        const year = date.getUTCFullYear();
+        const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(date.getUTCDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      }
+
+      function formatDate(date) {
+        if (!(date instanceof Date) || isNaN(date)) return '--/--/----';
+        const day = String(date.getUTCDate()).padStart(2, '0');
+        const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+        const year = date.getUTCFullYear();
+        return `${day}/${month}/${year}`;
+      }
+
+      function formatDateShort(date) {
+        if (!(date instanceof Date) || isNaN(date)) return '--/--';
+        const day = String(date.getUTCDate()).padStart(2, '0');
+        const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+        return `${day}/${month}`;
+      }
+
+      // Obtiene el Lunes de la semana de la fecha dada (en UTC)
+      function getMonday(date) {
+        const dayOfWeek = date.getUTCDay(); // 0 = Domingo, 1 = Lunes, ... 6 = Sábado
+        const diff = date.getUTCDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1); // Ajuste para Lunes
+        const monday = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), diff));
+        return monday;
+      }
+      
+      // Obtiene Lunes a Domingo de la semana que contiene fromDate (en UTC)
+      function getWeekDays(fromDate) {
+        const weekDays = [];
+        const startOfWeek = getMonday(fromDate);
+        for (let i = 0; i < 7; i++) {
+          const day = new Date(Date.UTC(startOfWeek.getUTCFullYear(), startOfWeek.getUTCMonth(), startOfWeek.getUTCDate() + i));
+          weekDays.push(day);
+        }
+        return weekDays;
+      }
+
+      // Toggle Accordion
+      function toggleAccordion() {
+        const content = document.getElementById('config-content');
+        const header = document.getElementById('accordion-toggle');
+        const icon = document.getElementById('accordion-icon');
+        
+        content.classList.toggle('active');
+        header.classList.toggle('active');
+      }
+
+      // Populate Months
+      function populateMonths() {
+        const yearSelector = document.getElementById('year-selector');
+        const monthSelector = document.getElementById('month-selector');
+        const weekSelector = document.getElementById('week-selector');
+        
+        monthSelector.innerHTML = '<option value="">Mes</option>';
+        weekSelector.innerHTML = '<option value="">Semana</option>';
+        updateWeekTitle();
+        if (!yearSelector.value) return;
+        
+        const months = [
+          { value: '01', name: 'Enero' }, { value: '02', name: 'Febrero' },
+          { value: '03', name: 'Marzo' }, { value: '04', name: 'Abril' },
+          { value: '05', name: 'Mayo' }, { value: '06', name: 'Junio' },
+          { value: '07', name: 'Julio' }, { value: '08', name: 'Agosto' },
+          { value: '09', name: 'Septiembre' }, { value: '10', name: 'Octubre' },
+          { value: '11', name: 'Noviembre' }, { value: '12', name: 'Diciembre' }
+        ];
+        
+        months.forEach(month => {
+          const option = document.createElement('option');
+          option.value = month.value;
+          option.textContent = month.name;
+          monthSelector.appendChild(option);
+        });
+      }
+      
+      // Populate Weeks of Month
+      function populateWeeksOfMonth() {
+        const yearSelector = document.getElementById('year-selector');
+        const monthSelector = document.getElementById('month-selector');
+        const weekSelector = document.getElementById('week-selector');
+        
+        weekSelector.innerHTML = '<option value="">Semana</option>';
+        updateWeekTitle();
+        if (!yearSelector.value || !monthSelector.value) return;
+        
+        const year = parseInt(yearSelector.value);
+        const month = parseInt(monthSelector.value); // Mes es 1-12
+        
+        const weeks = [];
+        let currentDate = new Date(Date.UTC(year, month - 1, 1)); // Empezar en UTC
+        
+        while (currentDate.getUTCMonth() === month - 1) {
+            const weekDays = getWeekDays(currentDate); // Obtiene semana Lunes-Domingo UTC
+            const firstWeekDay = weekDays[0];
+            const lastWeekDay = weekDays[6];
+
+            // Asegurarse que la semana contenga días del mes seleccionado
+            const daysInMonth = weekDays.filter(date => date.getUTCMonth() === month - 1).length;
+
+            if (daysInMonth > 0) {
+                const weekOption = {
+                  value: formatDateISO(firstWeekDay), // Valor es el ISO del Lunes
+                  text: `${formatDateShort(firstWeekDay)} al ${formatDateShort(lastWeekDay)}`,
+                  dates: weekDays.map(d => formatDateISO(d)) // Guardar ISOs de todos los días
+                };
+
+                // Evitar duplicados si una semana ya fue añadida
+                if (!weeks.some(w => w.value === weekOption.value)) {
+                    weeks.push(weekOption);
+                }
+            }
+
+            // Avanzar al siguiente Lunes para evitar recalcular la misma semana
+            currentDate = new Date(Date.UTC(lastWeekDay.getUTCFullYear(), lastWeekDay.getUTCMonth(), lastWeekDay.getUTCDate() + 1));
+            currentDate = getMonday(currentDate); // Asegurar que es Lunes
+        }
+        
+        weeks.forEach(week => {
+          const option = document.createElement('option');
+          option.value = week.value;
+          option.textContent = week.text;
+          option.dataset.dates = JSON.stringify(week.dates); // Guardar array de ISOs
+          weekSelector.appendChild(option);
+        });
+      }
+      
+      // Update Week Title
+      function updateWeekTitle() {
+        const weekSelector = document.getElementById('week-selector');
+        const fechaReporteSpan = document.getElementById('fecha-reporte');
+        
+        let titleText = "-- Seleccionar periodo --";
+        weekIsoDates = []; // Limpiar fechas de la semana anterior
+        
+        if (weekSelector.value) {
+          const selectedOption = weekSelector.options[weekSelector.selectedIndex];
+          titleText = "del " + selectedOption.textContent;
+          if (selectedOption.dataset.dates) {
+            try {
+               weekIsoDates = JSON.parse(selectedOption.dataset.dates); // Guardar las fechas ISO
+            } catch (e) {
+               console.error("Error parseando fechas ISO de la semana:", e);
+               weekIsoDates = [];
+            }
+          }
+        }
+        
+        fechaReporteSpan.textContent = titleText;
+        // Actualizar las tablas con las nuevas fechas
+        updateTableDates(weekIsoDates);
+      }
+
+      // Update Table Dates - Actualizar fechas en las tablas
+      function updateTableDates(isoDatesArray) {
+        const tbodyResumen = document.getElementById('tabla-resumen')?.querySelector('tbody');
+        
+        if (!tbodyResumen) {
+          console.error("updateTableDates: No se encontró tbody de tabla-resumen");
+          return;
+        }
+
+        const rowsResumen = tbodyResumen.querySelectorAll('tr[data-date]');
+        const maxDataRows = 7; 
+        const diasSemana = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+
+        // 1. Limpiar y preparar tabla de Resumen
+        rowsResumen.forEach((row, index) => {
+          if (index < 7) { // Solo las primeras 7 filas (días de la semana)
+            row.dataset.date = `placeholder-${index + 1}`; 
+            const cell = row.querySelector('.column-fecha');
+            if (cell) cell.textContent = diasSemana[index]; // Restaurar nombre del día
+            row.querySelectorAll('td').forEach(td => td.textContent = '--'); // Placeholder para celdas de datos
+          }
+        });
+
+        // 2. Poblar tabla con las fechas de la semana seleccionada
+        for (let index = 0; index < Math.min(maxDataRows, isoDatesArray.length); index++) {
+           let isoDate = null;
+           let formattedDate = '--/--/----';
+           let date = null;
+           let dayName = diasSemana[index];
+
+           if (index < isoDatesArray.length) {
+                   const potentialIsoDate = isoDatesArray[index];
+                   if (/^\d{4}-\d{2}-\d{2}$/.test(potentialIsoDate)) {
+                       isoDate = potentialIsoDate;
+                       const parts = isoDate.split('-');
+                       date = new Date(Date.UTC(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2])));
+                       if (!isNaN(date.getTime())) {
+                           formattedDate = formatDate(date);
+                           // Actualizar el nombre del día con la fecha
+                           dayName = `${diasSemana[index]} ${formatDateShort(date)}`;
+                       } else {
+                           isoDate = null; date = null;
+                       }
+                   }
+               }
+
+               // 2a. Actualizar tabla de Resumen
+               if (index < rowsResumen.length && index < 7) { // Solo días de la semana, no TOTAL
+                 const rowResumen = rowsResumen[index];
+                 rowResumen.dataset.date = isoDate ? isoDate : `placeholder-${index + 1}`;
+                 const cellResumen = rowResumen.querySelector('th.column-fecha');
+                 if (cellResumen) cellResumen.textContent = dayName;
+               }
+
+               // 2b. Actualizar detalle de egresos por día
+               updateDetalleDay(diasSemana[index].toLowerCase(), dayName);
+        }
+      }
+
+      // Actualizar el detalle de un día específico
+      function updateDetalleDay(dayKey, dayDisplayName) {
+        const detalleDay = document.getElementById(`detalle-${dayKey}`);
+        if (detalleDay) {
+          const header = detalleDay.querySelector('.detalle-dia-header h4');
+          if (header) {
+            header.innerHTML = `<i class="fas fa-calendar-day"></i> ${dayDisplayName}`;
+          }
+        }
+      }
+
+      // Event Listeners
+      const accordionToggle = document.getElementById('accordion-toggle');
+      const yearSelector = document.getElementById('year-selector');
+      const monthSelector = document.getElementById('month-selector');
+      const weekSelector = document.getElementById('week-selector');
+      const btnCargarDatos = document.getElementById('btn-cargar-datos');
+      const btnGenerarPdf = document.getElementById('btn-generar-pdf');
+      
+      if (accordionToggle) {
+        accordionToggle.addEventListener('click', toggleAccordion);
+      }
+      
+      if (yearSelector) {
+        yearSelector.addEventListener('change', function() {
+          populateMonths();
+          // Marcar paso 1 como completado si hay año, mes y semana seleccionados
+          checkStep1Completion();
+        });
+      }
+      
+      if (monthSelector) {
+        monthSelector.addEventListener('change', function() {
+          populateWeeksOfMonth();
+          checkStep1Completion();
+        });
+      }
+      
+      if (weekSelector) {
+        weekSelector.addEventListener('change', function() {
+          updateWeekTitle();
+          checkStep1Completion();
+        });
+      }
+
+      if (btnCargarDatos) {
+        btnCargarDatos.addEventListener('click', loadCSVData);
+      }
+
+      if (btnGenerarPdf) {
+        btnGenerarPdf.addEventListener('click', generatePDF);
+      }
+
+      function checkStep1Completion() {
+        const year = document.getElementById('year-selector').value;
+        const month = document.getElementById('month-selector').value;
+        const week = document.getElementById('week-selector').value;
+        
+        if (year && month && week) {
+          updateStepState(1, 'completed');
+          updateStepState(2, 'active');
+        } else {
+          updateStepState(1, 'active');
+          updateStepState(2, 'future');
+          updateStepState(3, 'future');
+        }
+      }
+
+      // Inicialización
+      enableCurrencyStep();
+      enableExcelStep();
+      updateWeekTitle(); // Llamada inicial para configurar fechas y tablas vacías
+      console.log("Interfaz de Reporte de Compras inicializada con lógica completa de semanas.");
+
+      // == Funciones para manejo de pasos ==
+      
+      function updateStepState(stepNumber, state) {
+        const step = document.querySelector(`.config-step:nth-child(${stepNumber})`);
+        if (!step) return;
+        
+        // Limpiar estados anteriores
+        step.classList.remove('active', 'completed', 'future');
+        
+        // Aplicar nuevo estado
+        step.classList.add(state);
+        
+        // Actualizar ícono según el estado
+        const stepNumber_elem = step.querySelector('.step-number');
+        if (state === 'completed' && stepNumber_elem) {
+          stepNumber_elem.innerHTML = '<i class="fas fa-check"></i>';
+        } else if (stepNumber_elem) {
+          stepNumber_elem.textContent = String(stepNumber).padStart(2, '0');
+        }
+      }
+
+      function enableCurrencyStep() {
+        const currencySelector = document.getElementById('currency-selector');
+        const btnCargarDatos = document.getElementById('btn-cargar-datos');
+        
+        if (currencySelector && btnCargarDatos) {
+          currencySelector.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            selectedCurrency = this.value;
+            selectedCsvUrl = selectedOption.dataset.url || '';
+            
+            // Mostrar/ocultar paso 3 de Excel y sección según moneda
+            toggleExcelStepAndSection(selectedCurrency);
+            
+            // Habilitar botón de cargar datos si hay moneda seleccionada
+            if (selectedCurrency && selectedCsvUrl) {
+              btnCargarDatos.disabled = false;
+              updateStepState(2, 'active');
+            } else {
+              btnCargarDatos.disabled = true;
+            }
+          });
+        }
+      }
+
+      function toggleExcelStepAndSection(currency) {
+        const pasoExcel = document.getElementById('paso-excel');
+        const pasoPdf = document.getElementById('paso-pdf');
+        const numeroPasoPdf = document.getElementById('numero-paso-pdf');
+        const seccionGestionCaja = document.getElementById('seccion-gestion-caja');
+        
+        if (currency === 'PEN') {
+          // Mostrar paso Excel y sección de gestión de caja
+          if (pasoExcel) pasoExcel.style.display = 'block';
+          if (seccionGestionCaja) seccionGestionCaja.style.display = 'block';
+          
+          // Renumerar paso PDF como 04
+          if (numeroPasoPdf) numeroPasoPdf.textContent = '04';
+        } else {
+          // Ocultar paso Excel y sección de gestión de caja
+          if (pasoExcel) pasoExcel.style.display = 'none';
+          if (seccionGestionCaja) seccionGestionCaja.style.display = 'none';
+          
+          // Renumerar paso PDF como 03
+          if (numeroPasoPdf) numeroPasoPdf.textContent = '03';
+        }
+      }
+
+      // == Funciones para carga de CSV ==
+      
+      function parseCSVLine(line) {
+        const result = [];
+        let current = '';
+        let inQuotes = false;
+        
+        for (let i = 0; i < line.length; i++) {
+          const char = line[i];
+          
+          if (char === '"') {
+            inQuotes = !inQuotes;
+          } else if (char === ',' && !inQuotes) {
+            result.push(current.trim());
+            current = '';
+          } else {
+            current += char;
+          }
+        }
+        
+        result.push(current.trim());
+        return result;
+      }
+      
+      function parseDateFromCSV(dateStr) {
+        if (!dateStr || dateStr.trim() === '') return null;
+        
+        // Manejar formato DD/MM/YYYY
+        const dateParts = dateStr.trim().split('/');
+        if (dateParts.length === 3) {
+          const day = parseInt(dateParts[0]);
+          const month = parseInt(dateParts[1]) - 1; // Mes es 0-indexado en JS
+          const year = parseInt(dateParts[2]);
+          
+          if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
+            return new Date(Date.UTC(year, month, day));
+          }
+        }
+        
+        return null;
+      }
+      
+      function populateTablesWithCSVData() {
+        if (!csvData || csvData.length === 0) {
+          console.log('No hay datos CSV para procesar');
+          return;
+        }
+        
+        console.log('Poblando tablas con datos CSV...');
+        console.log('Fechas de la semana seleccionada:', weekIsoDates);
+        
+        // Preparar estructura para acumular datos por día
+        const dayData = {};
+        const diasSemana = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+        
+        // Inicializar estructura de datos por día
+        weekIsoDates.forEach((isoDate, index) => {
+          if (index < 7) {
+            dayData[isoDate] = {
+              dayKey: diasSemana[index],
+              ingresos: 0,
+              egresos: 0,
+              compraMoneda: 0, // Nueva propiedad para compra de moneda
+              saldoInicial: 0, // Nueva propiedad para saldo inicial
+              saldoFinal: 0, // Nueva propiedad para saldo final
+              detalleEgresos: []
+            };
+          }
+        });
+        
+        // Procesar datos del CSV
+        csvData.forEach((row, rowIndex) => {
+          if (rowIndex === 0 || !row || row.length < 5) return; // Saltar header y filas inválidas (necesitamos al menos 5 columnas)
+          
+          const fechaStr = row[0]; // Primera columna: Fecha
+          const concepto = row[1] || ''; // Segunda columna: Concepto
+          const proveedor = row[2] || ''; // Tercera columna: Proveedor
+          const montoStr = row[3] || '0'; // Cuarta columna: Monto
+          const saldoStr = row[4] || '0'; // Quinta columna: Saldo
+          
+          const fecha = parseDateFromCSV(fechaStr);
+          if (!fecha) return;
+          
+          const fechaISO = formatDateISO(fecha);
+          
+          // Verificar si esta fecha está en la semana seleccionada
+          if (weekIsoDates.includes(fechaISO)) {
+            const monto = parseFloat(montoStr.replace(/[^-0-9.]/g, '')) || 0;
+            const saldo = parseFloat(saldoStr.replace(/[^-0-9.]/g, '')) || 0;
+            
+            if (dayData[fechaISO]) {
+              // Verificar si es saldo inicial
+              if (concepto.toUpperCase().includes('SALDO INICIAL')) {
+                dayData[fechaISO].saldoInicial = saldo; // Usar columna Saldo
+              }
+              // Verificar si es saldo final
+              else if (concepto.toUpperCase().includes('SALDO FINAL')) {
+                dayData[fechaISO].saldoFinal = saldo; // Usar columna Saldo
+              }
+              // Verificar si es compra de moneda (concepto empieza con COMU y monto positivo)
+              else if (concepto.toUpperCase().startsWith('COMU') && monto > 0) {
+                dayData[fechaISO].compraMoneda += monto;
+              } else if (monto > 0) {
+                dayData[fechaISO].ingresos += monto;
+              } else if (monto < 0) {
+                dayData[fechaISO].egresos += Math.abs(monto);
+                dayData[fechaISO].detalleEgresos.push({
+                  concepto: concepto,
+                  proveedor: proveedor,
+                  monto: monto
+                });
+              }
+            }
+          }
+        });
+        
+        console.log('Datos procesados por día:', dayData);
+        
+        // Poblar tabla principal
+        updateMainTable(dayData);
+        
+        // Poblar tablas de detalle
+        updateDetailTables(dayData);
+      }
+      
+      function formatNumber(num) {
+        if (num === 0 || isNaN(num)) return '--';
+        return num.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+      }
+      
+      function updateMainTable(dayData) {
+        const tbody = document.getElementById('tabla-resumen')?.querySelector('tbody');
+        if (!tbody) return;
+        
+        const rows = tbody.querySelectorAll('tr[data-date]');
+        let totalCompraMoneda = 0;
+        let totalIngresos = 0;
+        let totalEgresos = 0;
+        let saldoInicialSemana = 0;
+        
+        // Obtener saldo inicial del primer día de la semana
+        if (weekIsoDates.length > 0) {
+          const primerDia = dayData[weekIsoDates[0]];
+          if (primerDia && primerDia.saldoInicial !== 0) {
+            saldoInicialSemana = primerDia.saldoInicial;
+          }
+        }
+        
+        // Actualizar saldo inicial en la cabecera
+        const saldoInicialElement = document.getElementById('saldo-inicial');
+        if (saldoInicialElement) {
+          saldoInicialElement.textContent = formatNumber(saldoInicialSemana);
+        }
+        
+        rows.forEach((row, index) => {
+          if (index >= 7) return; // Solo procesar los primeros 7 días
+          
+          const isoDate = weekIsoDates[index];
+          const dayInfo = dayData[isoDate];
+          
+          if (dayInfo) {
+            const cells = row.querySelectorAll('td');
+            if (cells.length >= 4) {
+              // Compra soles/dólares
+              cells[0].textContent = formatNumber(dayInfo.compraMoneda);
+              
+              // Ingresos
+              cells[1].textContent = formatNumber(dayInfo.ingresos);
+              
+              // Egresos (mostrar en negativo)
+              cells[2].textContent = dayInfo.egresos > 0 ? '-' + formatNumber(dayInfo.egresos) : '--';
+              
+              // Saldo Final (mapear directamente del CSV)
+              cells[3].textContent = formatNumber(dayInfo.saldoFinal);
+              
+              totalCompraMoneda += dayInfo.compraMoneda;
+              totalIngresos += dayInfo.ingresos;
+              totalEgresos += dayInfo.egresos;
+            }
+          }
+        });
+        
+        // Actualizar fila de totales
+        const totalRow = tbody.querySelector('.fila-total');
+        if (totalRow) {
+          const totalCells = totalRow.querySelectorAll('td');
+          if (totalCells.length >= 4) {
+            totalCells[0].textContent = formatNumber(totalCompraMoneda); // Total compra soles/dólares
+            totalCells[1].textContent = formatNumber(totalIngresos); // Total ingresos
+            totalCells[2].textContent = totalEgresos > 0 ? '-' + formatNumber(totalEgresos) : '--'; // Total egresos (negativo)
+            // Para el saldo total, usar el saldo final del último día de la semana
+            let saldoFinalSemana = 0;
+            for (let i = weekIsoDates.length - 1; i >= 0; i--) {
+              const ultimoDiaData = dayData[weekIsoDates[i]];
+              if (ultimoDiaData && ultimoDiaData.saldoFinal !== 0) {
+                saldoFinalSemana = ultimoDiaData.saldoFinal;
+                break;
+              }
+            }
+            totalCells[3].textContent = formatNumber(saldoFinalSemana); // Saldo final de la semana
+          }
+        }
+      }
+      
+      function updateDetailTables(dayData) {
+        const diasSemana = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+        
+        diasSemana.forEach((dayKey, index) => {
+          const isoDate = weekIsoDates[index];
+          const dayInfo = dayData[isoDate];
+          const detalleDiv = document.getElementById(`detalle-${dayKey}`);
+          
+          if (detalleDiv && dayInfo) {
+            const tbody = detalleDiv.querySelector('tbody');
+            if (tbody) {
+              // Limpiar contenido anterior
+              tbody.innerHTML = '';
+              
+              if (dayInfo.detalleEgresos.length > 0) {
+                // Consolidar comisiones bancarias
+                const comisionesBancarias = [];
+                const otrosEgresos = [];
+                let totalComisiones = 0;
+                
+                dayInfo.detalleEgresos.forEach(egreso => {
+                  if (egreso.concepto.toUpperCase().includes('COMISION BANCARIA')) {
+                    comisionesBancarias.push(egreso);
+                    totalComisiones += Math.abs(egreso.monto);
+                  } else {
+                    otrosEgresos.push(egreso);
+                  }
+                });
+                
+                // Agregar otros egresos primero
+                otrosEgresos.forEach(egreso => {
+                  const row = tbody.insertRow();
+                  row.insertCell(0).textContent = egreso.concepto;
+                  row.insertCell(1).textContent = egreso.proveedor;
+                  const montoCell = row.insertCell(2);
+                  montoCell.textContent = '-' + formatNumber(Math.abs(egreso.monto));
+                  montoCell.style.textAlign = 'right';
+                });
+                
+                // Agregar comisiones bancarias consolidadas si existen
+                if (comisionesBancarias.length > 0) {
+                  const row = tbody.insertRow();
+                  row.insertCell(0).textContent = 'COMISION BANCARIA';
+                  row.insertCell(1).textContent = 'VARIOS';
+                  const montoCell = row.insertCell(2);
+                  montoCell.textContent = '-' + formatNumber(totalComisiones);
+                  montoCell.style.textAlign = 'right';
+                }
+              } else {
+                // Mostrar mensaje de no hay datos
+                const row = tbody.insertRow();
+                const cell = row.insertCell(0);
+                cell.colSpan = 3;
+                cell.style.textAlign = 'center';
+                cell.style.color = 'var(--color-texto-secundario)';
+                cell.style.fontStyle = 'italic';
+                cell.textContent = 'No hay egresos para este día';
+              }
+            }
+          }
+        });
+      }
+      
+      async function loadCSVData() {
+        if (!selectedCsvUrl) {
+          alert('Por favor seleccione una moneda primero');
+          return;
+        }
+
+        const btnCargarDatos = document.getElementById('btn-cargar-datos');
+        if (btnCargarDatos) {
+          btnCargarDatos.disabled = true;
+          btnCargarDatos.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cargando...';
+        }
+
+        try {
+          console.log('Cargando CSV desde:', selectedCsvUrl);
+          
+          const response = await fetch(selectedCsvUrl);
+          if (!response.ok) {
+            throw new Error(`Error HTTP: ${response.status}`);
+          }
+          
+          const csvText = await response.text();
+          console.log('CSV cargado exitosamente');
+          
+          // Parsear CSV correctamente
+          const lines = csvText.split('\n').filter(line => line.trim() !== '');
+          csvData = lines.map(line => parseCSVLine(line));
+          
+          console.log('Datos CSV parseados:', csvData.length, 'filas');
+          console.log('Primeras 5 filas:', csvData.slice(0, 5));
+          
+          // Poblar las tablas con los datos del CSV
+          populateTablesWithCSVData();
+          
+          // Marcar paso 2 como completado
+          updateStepState(2, 'completed');
+          
+          // Habilitar el siguiente paso según la moneda
+          if (selectedCurrency === 'PEN') {
+            // Habilitar paso 3 (Excel)
+            updateStepState(3, 'active');
+          } else {
+            // Habilitar paso 3 (PDF) para USD
+            updateStepState(3, 'active');
+            const btnGenerarPdf = document.getElementById('btn-generar-pdf');
+            if (btnGenerarPdf) {
+              btnGenerarPdf.disabled = false;
+            }
+          }
+          
+        } catch (error) {
+          console.error('Error al cargar CSV:', error);
+          alert('Error al cargar los datos: ' + error.message);
+        } finally {
+          if (btnCargarDatos) {
+            btnCargarDatos.disabled = false;
+            btnCargarDatos.innerHTML = '<i class="fas fa-download"></i> Cargar datos';
+          }
+        }
+      }
+
+      function enableExcelStep() {
+        const excelFileInput = document.getElementById('excel-file-input');
+        const btnCargarExcel = document.getElementById('btn-cargar-excel');
+        
+        if (excelFileInput && btnCargarExcel) {
+          excelFileInput.addEventListener('change', function() {
+            // Habilitar botón de cargar Excel si se seleccionó un archivo
+            if (this.files && this.files.length > 0) {
+              btnCargarExcel.disabled = false;
+            } else {
+              btnCargarExcel.disabled = true;
+            }
+          });
+          
+          btnCargarExcel.addEventListener('click', function() {
+            loadExcelFile();
+          });
+        }
+      }
+
+      async function loadExcelFile() {
+        const excelFileInput = document.getElementById('excel-file-input');
+        const btnCargarExcel = document.getElementById('btn-cargar-excel');
+        
+        if (!excelFileInput.files || excelFileInput.files.length === 0) {
+          alert('Por favor seleccione un archivo Excel');
+          return;
+        }
+
+        const file = excelFileInput.files[0];
+        
+        // Deshabilitar botón y mostrar estado de carga
+        if (btnCargarExcel) {
+          btnCargarExcel.disabled = true;
+          btnCargarExcel.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando Excel...';
+        }
+
+        try {
+          const arrayBuffer = await file.arrayBuffer();
+          const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+          
+          console.log('Pestañas encontradas:', workbook.SheetNames);
+          
+          if (workbook.SheetNames.length < 3) {
+            throw new Error('El archivo Excel debe tener al menos 3 pestañas');
+          }
+
+          // Procesar las 3 pestañas
+          const excelData = processExcelData(workbook);
+          
+          // Mostrar datos en la tabla
+          populateGestionCajaTable(excelData);
+          
+          // Marcar paso 3 como completado
+          updateStepState(3, 'completed');
+          
+          // Habilitar paso 4 (PDF)
+          updateStepState(4, 'active');
+          const btnGenerarPdf = document.getElementById('btn-generar-pdf');
+          if (btnGenerarPdf) {
+            btnGenerarPdf.disabled = false;
+          }
+          
+        } catch (error) {
+          console.error('Error procesando Excel:', error);
+          alert('Error al procesar el archivo Excel: ' + error.message);
+        } finally {
+          if (btnCargarExcel) {
+            btnCargarExcel.disabled = false;
+            btnCargarExcel.innerHTML = '<i class="fas fa-file-excel"></i> Cargar Excel';
+          }
+        }
+      }
+
+      function processExcelData(workbook) {
+        const excelData = {
+          cajaChica: {},
+          personalApoyo: {
+            total: 0,
+            detalle: []
+          },
+          otrosGastos: {
+            total: 0,
+            detalle: []
+          }
+        };
+
+        try {
+          // PESTAÑA 1: Caja Chica
+          const sheet1 = workbook.Sheets[workbook.SheetNames[0]];
+          
+          // Extraer número de caja chica de G3
+          const numeroG3 = sheet1['G3'] ? sheet1['G3'].v : '';
+          console.log('Celda G3:', numeroG3);
+          
+          // Encontrar última fila con datos en columna P
+          let ultimaFilaP = 0;
+          let ultimoValorP = 0;
+          for (let row = 1; row <= 1000; row++) {
+            const cellP = sheet1[`P${row}`];
+            if (cellP && cellP.v !== undefined && cellP.v !== '') {
+              ultimaFilaP = row;
+              ultimoValorP = parseFloat(cellP.v) || 0;
+            }
+          }
+          console.log('Última celda P:', ultimoValorP);
+          
+          excelData.cajaChica = {
+            numero: numeroG3,
+            monto: 10000 - ultimoValorP
+          };
+
+          // PESTAÑA 2: Personal de apoyo
+          const sheet2 = workbook.Sheets[workbook.SheetNames[1]];
+          
+          // Encontrar última fila con datos en columna J
+          let ultimaFilaJ = 0;
+          let ultimoValorJ = 0;
+          for (let row = 1; row <= 1000; row++) {
+            const cellJ = sheet2[`J${row}`];
+            if (cellJ && cellJ.v !== undefined && cellJ.v !== '') {
+              ultimaFilaJ = row;
+              ultimoValorJ = parseFloat(cellJ.v) || 0;
+            }
+          }
+          console.log('Última celda J (segunda pestaña):', ultimoValorJ);
+          
+          excelData.personalApoyo.total = ultimoValorJ;
+          
+          // Extraer detalle desde fila 13, mapear desde columna F
+          let ultimaFilaF = 0;
+          for (let row = 1; row <= 1000; row++) {
+            const cellF = sheet2[`F${row}`];
+            if (cellF && cellF.v !== undefined && cellF.v !== '') {
+              ultimaFilaF = row;
+            }
+          }
+          
+          for (let row = 13; row <= ultimaFilaF; row++) {
+            const conceptoG = sheet2[`G${row}`] ? sheet2[`G${row}`].v : '';
+            const proveedorF = sheet2[`F${row}`] ? sheet2[`F${row}`].v : '';
+            const montoJ = sheet2[`J${row}`] ? parseFloat(sheet2[`J${row}`].v) || 0 : 0;
+            
+            // Solo agregar si la fila F tiene contenido
+            if (proveedorF && proveedorF.toString().trim() !== '') {
+              excelData.personalApoyo.detalle.push({
+                concepto: conceptoG || '--',
+                proveedor: proveedorF,
+                monto: montoJ
+              });
+            }
+          }
+
+          // PESTAÑA 3: Otros gastos
+          const sheet3 = workbook.Sheets[workbook.SheetNames[2]];
+          
+          // Encontrar última fila con datos en columna H
+          let ultimaFilaH = 0;
+          let ultimoValorH = 0;
+          for (let row = 1; row <= 1000; row++) {
+            const cellH = sheet3[`H${row}`];
+            if (cellH && cellH.v !== undefined && cellH.v !== '') {
+              ultimaFilaH = row;
+              ultimoValorH = parseFloat(cellH.v) || 0;
+            }
+          }
+          console.log('Última celda H (tercera pestaña):', ultimoValorH);
+          
+          excelData.otrosGastos.total = ultimoValorH;
+          
+          // Extraer detalle desde fila 14, mapear desde columna F
+          let ultimaFilaF3 = 0;
+          for (let row = 1; row <= 1000; row++) {
+            const cellF = sheet3[`F${row}`];
+            if (cellF && cellF.v !== undefined && cellF.v !== '') {
+              ultimaFilaF3 = row;
+            }
+          }
+          
+          for (let row = 14; row <= ultimaFilaF3; row++) {
+            const conceptoG = sheet3[`G${row}`] ? sheet3[`G${row}`].v : '';
+            const proveedorF = sheet3[`F${row}`] ? sheet3[`F${row}`].v : '';
+            const montoH = sheet3[`H${row}`] ? parseFloat(sheet3[`H${row}`].v) || 0 : 0;
+            
+            // Solo agregar si la fila F tiene contenido
+            if (proveedorF && proveedorF.toString().trim() !== '') {
+              excelData.otrosGastos.detalle.push({
+                concepto: conceptoG || '--',
+                proveedor: proveedorF,
+                monto: montoH
+              });
+            }
+          }
+
+        } catch (error) {
+          console.error('Error procesando datos del Excel:', error);
+          throw new Error('Error al extraer datos de las pestañas del Excel');
+        }
+
+        console.log('Datos extraídos del Excel:', excelData);
+        return excelData;
+      }
+
+      function populateGestionCajaTable(excelData) {
+        const tbody = document.getElementById('tabla-gestion-caja')?.querySelector('tbody');
+        if (!tbody) return;
+
+        // Limpiar tabla
+        tbody.innerHTML = '';
+
+        // Obtener período actual
+        const fechaReporte = document.getElementById('fecha-reporte').textContent;
+        const periodo = fechaReporte !== '-- Seleccionar periodo --' ? fechaReporte : '';
+
+        // Fila 1: Caja Chica
+        const row1 = tbody.insertRow();
+        const cell1_0 = row1.insertCell(0);
+        cell1_0.textContent = `${excelData.cajaChica.numero} ${periodo}`;
+        cell1_0.style.textAlign = 'left';
+        row1.insertCell(1).textContent = formatNumber(excelData.cajaChica.monto);
+        row1.insertCell(2).innerHTML = '<span style="color: var(--color-texto-secundario);">--</span>';
+
+        // Fila 2: Personal de apoyo
+        const row2 = tbody.insertRow();
+        if (excelData.personalApoyo.detalle.length > 0) {
+          row2.className = 'clickeable';
+          row2.dataset.concepto = 'personal-apoyo';
+          row2.addEventListener('click', function() {
+            toggleDetalleGestionCaja(this, 'PERSONAL DE APOYO', excelData.personalApoyo.detalle);
+          });
+        }
+        const cell2_0 = row2.insertCell(0);
+        cell2_0.textContent = 'PERSONAL DE APOYO';
+        cell2_0.style.textAlign = 'left';
+        row2.insertCell(1).textContent = formatNumber(excelData.personalApoyo.total);
+        row2.insertCell(2).innerHTML = excelData.personalApoyo.detalle.length > 0 ? 
+          `<span style="color: var(--color-texto-secundario); font-size: 11px;">${excelData.personalApoyo.detalle.length} items</span>` : 
+          '<span style="color: var(--color-texto-secundario);">Sin detalle</span>';
+
+        // Fila 3: Otros gastos
+        const row3 = tbody.insertRow();
+        if (excelData.otrosGastos.detalle.length > 0) {
+          row3.className = 'clickeable';
+          row3.dataset.concepto = 'otros-gastos';
+          row3.addEventListener('click', function() {
+            toggleDetalleGestionCaja(this, 'OTROS GASTOS', excelData.otrosGastos.detalle);
+          });
+        }
+        const cell3_0 = row3.insertCell(0);
+        cell3_0.textContent = 'OTROS GASTOS';
+        cell3_0.style.textAlign = 'left';
+        row3.insertCell(1).textContent = formatNumber(excelData.otrosGastos.total);
+        row3.insertCell(2).innerHTML = excelData.otrosGastos.detalle.length > 0 ? 
+          `<span style="color: var(--color-texto-secundario); font-size: 11px;">${excelData.otrosGastos.detalle.length} items</span>` : 
+          '<span style="color: var(--color-texto-secundario);">Sin detalle</span>';
+
+        // Fila 4: Total
+        const totalCaja = excelData.cajaChica.monto + excelData.personalApoyo.total + excelData.otrosGastos.total;
+        const row4 = tbody.insertRow();
+        row4.className = 'fila-total';
+        const cell4_0 = row4.insertCell(0);
+        cell4_0.textContent = 'TOTAL';
+        cell4_0.style.textAlign = 'left';
+        row4.insertCell(1).textContent = formatNumber(totalCaja);
+        row4.insertCell(2).innerHTML = '<span style="color: var(--color-texto-secundario);">--</span>';
+
+        // Fila 5: Caja depositada
+        const row5 = tbody.insertRow();
+        const cell5_0 = row5.insertCell(0);
+        cell5_0.textContent = 'CAJA DEPOSITADA';
+        cell5_0.style.textAlign = 'left';
+        row5.insertCell(1).textContent = formatNumber(10000);
+        row5.insertCell(2).innerHTML = '<span style="color: var(--color-texto-secundario);">--</span>';
+
+        // Fila 6: Pendiente de reembolsar
+        const pendienteReembolsar = totalCaja - 10000;
+        const row6 = tbody.insertRow();
+        const cell6_0 = row6.insertCell(0);
+        cell6_0.textContent = 'PENDIENTE DE REEMBOLSAR';
+        cell6_0.style.textAlign = 'left';
+        cell6_0.style.fontWeight = 'bold';
+        const cell6_1 = row6.insertCell(1);
+        cell6_1.textContent = formatNumber(pendienteReembolsar);
+        cell6_1.style.fontWeight = 'bold';
+        row6.insertCell(2).innerHTML = '<span style="color: var(--color-texto-secundario);">--</span>';
+      }
+
+      function toggleDetalleGestionCaja(row, titulo, detalles) {
+        const isExpanded = row.classList.contains('expanded');
+        
+        // Cerrar todos los detalles abiertos en la tabla de gestión de caja
+        const allRows = document.querySelectorAll('#tabla-gestion-caja tbody tr.clickeable');
+        allRows.forEach(r => {
+          r.classList.remove('expanded');
+          const nextRow = r.nextElementSibling;
+          if (nextRow && nextRow.classList.contains('detalle-transacciones')) {
+            nextRow.remove();
+          }
+        });
+        
+        if (!isExpanded && detalles.length > 0) {
+          // Abrir el detalle de esta fila
+          row.classList.add('expanded');
+          
+          const detalleRow = row.parentNode.insertRow(row.rowIndex);
+          detalleRow.className = 'detalle-transacciones show';
+          
+          const detalleCell = detalleRow.insertCell(0);
+          detalleCell.colSpan = 3;
+          
+          const detalleContent = document.createElement('div');
+          detalleContent.className = 'detalle-content';
+          
+          const tituloElement = document.createElement('h5');
+          tituloElement.innerHTML = `<i class="fas fa-list"></i> Detalle - ${titulo}`;
+          detalleContent.appendChild(tituloElement);
+          
+          const transaccionesList = document.createElement('div');
+          transaccionesList.className = 'transacciones-lista';
+          
+          // Agregar encabezados
+          const headerItem = document.createElement('div');
+          headerItem.className = 'transaccion-item';
+          headerItem.style.backgroundColor = 'var(--color-superficie-alt)';
+          headerItem.style.fontWeight = 'bold';
+          
+          const headerConcepto = document.createElement('div');
+          headerConcepto.className = 'transaccion-concepto';
+          headerConcepto.textContent = 'CONCEPTO';
+          headerConcepto.style.textAlign = 'left';
+          
+          const headerProveedor = document.createElement('div');
+          headerProveedor.className = 'transaccion-proveedor';
+          headerProveedor.textContent = 'PROVEEDOR';
+          headerProveedor.style.textAlign = 'left';
+          
+          const headerMonto = document.createElement('div');
+          headerMonto.className = 'transaccion-monto';
+          headerMonto.textContent = 'MONTO';
+          
+          headerItem.appendChild(headerConcepto);
+          headerItem.appendChild(headerProveedor);
+          headerItem.appendChild(headerMonto);
+          transaccionesList.appendChild(headerItem);
+          
+          // Agregar cada transacción
+          detalles.forEach(detalle => {
+            const item = document.createElement('div');
+            item.className = 'transaccion-item';
+            
+            const concepto = document.createElement('div');
+            concepto.className = 'transaccion-concepto';
+            concepto.textContent = detalle.concepto;
+            concepto.style.textAlign = 'left';
+            
+            const proveedor = document.createElement('div');
+            proveedor.className = 'transaccion-proveedor';
+            proveedor.textContent = detalle.proveedor || 'N/A';
+            proveedor.style.textAlign = 'left';
+            
+            const monto = document.createElement('div');
+            monto.className = 'transaccion-monto';
+            monto.textContent = formatNumber(detalle.monto);
+            
+            item.appendChild(concepto);
+            item.appendChild(proveedor);
+            item.appendChild(monto);
+            transaccionesList.appendChild(item);
+          });
+          
+          detalleContent.appendChild(transaccionesList);
+          detalleCell.appendChild(detalleContent);
+        }
+      }
+
+      function generatePDF() {
+        try {
+          if (!window.jspdf?.jsPDF) {
+            throw new Error('jsPDF no está disponible');
+          }
+          
+          const { jsPDF } = window.jspdf;
+          
+          // Crear PDF en orientación vertical A4
+          const pdf = new jsPDF({
+            orientation: 'portrait',
+            unit: 'mm',
+            format: 'a4'
+          });
+          
+          const pageWidth = pdf.internal.pageSize.getWidth(); // 210mm
+          const pageHeight = pdf.internal.pageSize.getHeight(); // 297mm
+          const margin = { top: 15, left: 10, right: 10, bottom: 15 };
+          
+          // TÍTULO Y PERÍODO
+          pdf.setFont('helvetica', 'bold');
+          pdf.setFontSize(16);
+          const tituloReporte = 'Reporte Bancario Semanal';
+          pdf.text(tituloReporte, pageWidth / 2, margin.top, { align: 'center' });
+          
+          const fechaReporte = document.getElementById('fecha-reporte').textContent;
+          pdf.setFontSize(12);
+          pdf.setFont('helvetica', 'normal');
+          pdf.text(fechaReporte, pageWidth / 2, margin.top + 6, { align: 'center' });
+          
+          // MONEDA SELECCIONADA
+          pdf.setFontSize(10);
+          pdf.setFont('helvetica', 'bold');
+          pdf.text(`Moneda: ${selectedCurrency}`, margin.left, margin.top + 12);
+          
+          let currentY = margin.top + 20;
+          
+          // === PÁGINA 1: RESUMEN POR DÍA + GESTIÓN DE CAJA ===
+          currentY = addResumenTable(pdf, currentY, margin, null);
+          
+          // Añadir espacio entre tablas
+          currentY += 20;
+          
+          // Solo para PEN: Gestión de Caja
+          if (selectedCurrency === 'PEN') {
+            currentY = addGestionCajaTable(pdf, currentY, margin.left, null);
+          }
+          
+          // === VERIFICAR SI NECESITAMOS PÁGINA 2 (CONDICIONAL) ===
+          const personalApoyoData = getPersonalApoyoData();
+          const otrosGastosData = getOtrosGastosData();
+          const needsSecondPage = personalApoyoData.length > 0 || otrosGastosData.length > 0;
+          
+          if (needsSecondPage && selectedCurrency === 'PEN') {
+            // PÁGINA 2: DETALLES DE PERSONAL DE APOYO Y OTROS GASTOS
+            pdf.addPage();
+            
+            // Título de página 2
+            pdf.setFont('helvetica', 'bold');
+            pdf.setFontSize(14);
+            pdf.text('Detalle de Gastos', pageWidth / 2, margin.top, { align: 'center' });
+            
+            let page2Y = margin.top + 15;
+            
+            // Personal de Apoyo
+            if (personalApoyoData.length > 0) {
+              page2Y = addPersonalApoyoTable(pdf, page2Y, margin, null);
+              page2Y += 20; // Espacio entre tablas
+            }
+            
+            // Otros Gastos
+            if (otrosGastosData.length > 0) {
+              page2Y = addOtrosGastosTable(pdf, page2Y, margin.left, null);
+            }
+          }
+          
+          // === PÁGINA 3: DETALLE DE TRANSACCIONES ===
+          pdf.addPage();
+          addDetalleEgresosPage(pdf, margin, pageWidth, pageHeight);
+          
+          // PIE DE PÁGINA en todas las páginas
+          for (let i = 1; i <= pdf.getNumberOfPages(); i++) {
+            pdf.setPage(i);
+            pdf.setFontSize(8);
+            pdf.setFont('helvetica', 'normal');
+            pdf.text(`Generado el ${new Date().toLocaleDateString('es-ES')} a las ${new Date().toLocaleTimeString('es-ES')}`, 
+                     pageWidth - margin.right, pageHeight - 5, { align: 'right' });
+          }
+          
+          // DESCARGAR PDF
+          const fechaArchivo = fechaReporte.replace(/[^\w\s]/gi, '').replace(/\s+/g, '_');
+          const nombreArchivo = `Reporte_Bancario_${selectedCurrency}_${fechaArchivo}.pdf`;
+          pdf.save(nombreArchivo);
+          
+          // Marcar paso como completado
+          const pasoActual = selectedCurrency === 'PEN' ? 4 : 3;
+          updateStepState(pasoActual, 'completed');
+          
+          console.log('PDF generado exitosamente');
+          
+        } catch (error) {
+          console.error('Error generando PDF:', error);
+          alert('Error al generar PDF: ' + error.message);
+        }
+      }
+      
+      // === FUNCIONES AUXILIARES PARA GENERACIÓN DE PDF ===
+      
+      function addResumenTable(pdf, startY, margin, tableWidth = null) {
+        pdf.setFontSize(11);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('Resumen por día', margin.left, startY);
+        
+        // Extraer datos manualmente de la tabla
+        const tablaResumen = document.getElementById('tabla-resumen');
+        const headers = ['Día', 'Compra', 'Ingresos', 'Egresos', 'Saldo'];
+        const bodyData = [];
+        const totalRowData = [];
+        
+        // Obtener saldo inicial
+        const saldoInicialElement = document.getElementById('saldo-inicial');
+        const saldoInicial = saldoInicialElement ? saldoInicialElement.textContent.trim() : '--';
+        
+        // Extraer filas de datos (días de la semana)
+        const rows = tablaResumen.querySelectorAll('tbody tr:not(.fila-total)');
+        rows.forEach(row => {
+          const cells = row.querySelectorAll('th, td');
+          if (cells.length >= 5) {
+            const rowData = [
+              cells[0].textContent.trim(), // Día
+              cells[1].textContent.trim(), // Compra
+              cells[2].textContent.trim(), // Ingresos
+              cells[3].textContent.trim(), // Egresos
+              cells[4].textContent.trim()  // Saldo
+            ];
+            bodyData.push(rowData);
+          }
+        });
+        
+        // Extraer fila de totales
+        const totalRow = tablaResumen.querySelector('tbody tr.fila-total');
+        if (totalRow) {
+          const totalCells = totalRow.querySelectorAll('th, td');
+          if (totalCells.length >= 5) {
+            totalRowData.push([
+              totalCells[0].textContent.trim(), // TOTAL
+              totalCells[1].textContent.trim(), // Total compra
+              totalCells[2].textContent.trim(), // Total ingresos
+              totalCells[3].textContent.trim(), // Total egresos
+              totalCells[4].textContent.trim()  // Saldo final
+            ]);
+          }
+        }
+        
+        // Agregar fila de saldo inicial al inicio
+        if (saldoInicial !== '--') {
+          bodyData.unshift(['SALDO INICIAL', '--', '--', '--', saldoInicial]);
+        }
+        
+        // Combinar datos normales + totales
+        const allBodyData = [...bodyData, ...totalRowData];
+        
+        // Calcular ancho de columnas para formato vertical
+        const finalTableWidth = tableWidth || 190; // Para formato vertical
+        const colWidth = finalTableWidth / 5;
+        
+        // Generar tabla con estilos específicos
+        pdf.autoTable({
+          head: [headers],
+          body: allBodyData,
+          startY: startY + 5,
+          margin: { left: margin.left, right: margin.left + finalTableWidth },
+          tableWidth: finalTableWidth,
+          theme: 'striped',
+          styles: {
+            fontSize: 9,
+            cellPadding: 3,
+            halign: 'center',
+            valign: 'middle'
+          },
+          headStyles: {
+            fillColor: [90, 90, 90], // Gris oscuro monocromático
+            textColor: [255, 255, 255],
+            fontStyle: 'bold',
+            fontSize: 10
+          },
+          columnStyles: {
+            0: { halign: 'left', fontStyle: 'bold', cellWidth: colWidth * 1.2 }, // Día
+            1: { halign: 'right', cellWidth: colWidth * 0.9 }, // Compra
+            2: { halign: 'right', cellWidth: colWidth * 0.8 }, // Ingresos
+            3: { halign: 'right', cellWidth: colWidth * 0.8 }, // Egresos
+            4: { halign: 'right', cellWidth: colWidth * 1.1 }  // Saldo
+          },
+          didParseCell: function(data) {
+            // Aplicar estilos especiales a filas específicas
+            const cellValue = data.cell.text[0];
+            
+            // Fila de TOTAL
+            if (cellValue === 'TOTAL') {
+              data.cell.styles.fillColor = [90, 90, 90]; // Gris oscuro monocromático
+              data.cell.styles.textColor = [255, 255, 255];
+              data.cell.styles.fontStyle = 'bold';
+              data.cell.styles.fontSize = 9;
+            }
+            
+            // Fila de SALDO INICIAL
+            if (cellValue === 'SALDO INICIAL') {
+              data.cell.styles.fillColor = [105, 105, 105]; // Gris medio monocromático
+              data.cell.styles.textColor = [255, 255, 255];
+              data.cell.styles.fontStyle = 'bold';
+            }
+          }
+        });
+        
+        return pdf.lastAutoTable.finalY;
+      }
+      
+      function addGestionCajaTable(pdf, startY, startX, tableWidth) {
+        pdf.setFontSize(11);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('Gestión de Caja', startX, startY);
+        
+        const seccionGestionCaja = document.getElementById('seccion-gestion-caja');
+        const tablaGestionCaja = document.getElementById('tabla-gestion-caja');
+        
+        if (!seccionGestionCaja || seccionGestionCaja.style.display === 'none' || !tablaGestionCaja) {
+          // Mostrar mensaje si no hay datos
+          pdf.setFontSize(8);
+          pdf.setFont('helvetica', 'italic');
+          pdf.text('No disponible para esta moneda', startX, startY + 10);
+          return startY + 20;
+        }
+        
+        // Verificar si hay datos cargados
+        const tbody = tablaGestionCaja.querySelector('tbody');
+        const hasData = tbody && !tbody.innerHTML.includes('Cargue un archivo Excel');
+        
+        if (!hasData) {
+          pdf.setFontSize(8);
+          pdf.setFont('helvetica', 'italic');
+          pdf.text('Datos no cargados', startX, startY + 10);
+          return startY + 20;
+        }
+        
+        // Extraer datos manualmente
+        const gestionHeaders = ['Concepto', 'Monto'];
+        const gestionData = [];
+        
+        // Extraer todas las filas (incluyendo totales)
+        const rows = tablaGestionCaja.querySelectorAll('tbody tr:not(.detalle-transacciones)');
+        rows.forEach(row => {
+          const cells = row.querySelectorAll('td');
+          if (cells.length >= 2) {
+            const concepto = cells[0].textContent.trim();
+            const monto = cells[1].textContent.trim();
+            
+            if (concepto && monto) {
+              gestionData.push([concepto, monto]);
+            }
+          }
+        });
+        
+        // Si no hay datos, mostrar mensaje
+        if (gestionData.length === 0) {
+          gestionData.push(['Sin datos', '0.00']);
+        }
+        
+        const finalTableWidth = tableWidth || 190; // Para formato vertical
+        
+        pdf.autoTable({
+          head: [gestionHeaders],
+          body: gestionData,
+          startY: startY + 5,
+          margin: { left: startX, right: startX + finalTableWidth },
+          tableWidth: finalTableWidth,
+          theme: 'striped',
+          styles: {
+            fontSize: 9,
+            cellPadding: 3,
+            halign: 'center'
+          },
+          headStyles: {
+            fillColor: [90, 90, 90], // Gris oscuro monocromático
+            textColor: [255, 255, 255],
+            fontStyle: 'bold',
+            fontSize: 10
+          },
+          columnStyles: {
+            0: { halign: 'left', cellWidth: finalTableWidth * 0.65 },
+            1: { halign: 'right', cellWidth: finalTableWidth * 0.35 }
+          },
+          didParseCell: function(data) {
+            const cellValue = data.cell.text[0];
+            
+            // Estilos para filas de totales
+            if (cellValue.includes('TOTAL') || cellValue.includes('PENDIENTE')) {
+              data.cell.styles.fillColor = [90, 90, 90]; // Gris oscuro monocromático
+              data.cell.styles.textColor = [255, 255, 255];
+              data.cell.styles.fontStyle = 'bold';
+            }
+          }
+        });
+        
+        return pdf.lastAutoTable.finalY;
+      }
+      
+      function addPersonalApoyoTable(pdf, startY, margin, tableWidth) {
+        pdf.setFontSize(11);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('Detalle - Personal de Apoyo', margin.left, startY);
+        
+        // Buscar datos de Personal de Apoyo
+        const personalData = getPersonalApoyoData();
+        
+        if (personalData.length === 0) {
+          personalData.push(['Sin datos', 'N/A', '0.00']);
+        }
+        
+        const finalTableWidth = tableWidth || 190; // Para formato vertical
+        
+        pdf.autoTable({
+          head: [['Concepto', 'Proveedor', 'Monto']],
+          body: personalData,
+          startY: startY + 5,
+          margin: { left: margin.left, right: margin.left + finalTableWidth },
+          tableWidth: finalTableWidth,
+          theme: 'striped',
+          styles: {
+            fontSize: 8,
+            cellPadding: 2
+          },
+          headStyles: {
+            fillColor: [90, 90, 90], // Gris oscuro monocromático
+            textColor: [255, 255, 255],
+            fontStyle: 'bold',
+            fontSize: 9
+          },
+          columnStyles: {
+            0: { halign: 'left', cellWidth: finalTableWidth * 0.5 },
+            1: { halign: 'left', cellWidth: finalTableWidth * 0.35 },
+            2: { halign: 'right', cellWidth: finalTableWidth * 0.15 }
+          }
+        });
+        
+        return pdf.lastAutoTable.finalY;
+      }
+      
+      function addOtrosGastosTable(pdf, startY, startX, tableWidth) {
+        pdf.setFontSize(11);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('Detalle - Otros Gastos', startX, startY);
+        
+        // Buscar datos de Otros Gastos
+        const otrosData = getOtrosGastosData();
+        
+        if (otrosData.length === 0) {
+          otrosData.push(['Sin datos', 'N/A', '0.00']);
+        }
+        
+        const finalTableWidth = tableWidth || 190; // Para formato vertical
+        
+        pdf.autoTable({
+          head: [['Concepto', 'Proveedor', 'Monto']],
+          body: otrosData,
+          startY: startY + 5,
+          margin: { left: startX, right: startX + finalTableWidth },
+          tableWidth: finalTableWidth,
+          theme: 'striped',
+          styles: {
+            fontSize: 8,
+            cellPadding: 2
+          },
+          headStyles: {
+            fillColor: [90, 90, 90], // Gris oscuro monocromático
+            textColor: [255, 255, 255],
+            fontStyle: 'bold',
+            fontSize: 9
+          },
+          columnStyles: {
+            0: { halign: 'left', cellWidth: finalTableWidth * 0.5 },
+            1: { halign: 'left', cellWidth: finalTableWidth * 0.35 },
+            2: { halign: 'right', cellWidth: finalTableWidth * 0.15 }
+          }
+        });
+        
+        return pdf.lastAutoTable.finalY;
+      }
+      
+      function getPersonalApoyoData() {
+        // Buscar fila de Personal de Apoyo
+        const personalApoyoRow = document.querySelector('#tabla-gestion-caja tbody tr[data-concepto="personal-apoyo"]');
+        if (!personalApoyoRow) {
+          return [];
+        }
+        
+        // Verificar el monto total primero
+        const montoCell = personalApoyoRow.querySelector('td:last-child');
+        const montoTotal = parseFloat(montoCell.textContent.replace(/[^\d.-]/g, '')) || 0;
+        
+        // Si el monto es 0, no incluir detalles
+        if (montoTotal === 0) {
+          return [];
+        }
+        
+        // Verificar si está expandida
+        let detalleRow = personalApoyoRow.nextElementSibling;
+        const wasExpanded = detalleRow && detalleRow.classList.contains('detalle-transacciones');
+        
+        // Si no está expandida, expandir temporalmente
+        if (!wasExpanded) {
+          personalApoyoRow.click();
+          detalleRow = personalApoyoRow.nextElementSibling;
+        }
+        
+        const detalleData = [];
+        
+        if (detalleRow && detalleRow.classList.contains('detalle-transacciones')) {
+          const transaccionItems = detalleRow.querySelectorAll('.transaccion-item:not(:first-child)');
+          
+          transaccionItems.forEach(item => {
+            const concepto = item.querySelector('.transaccion-concepto')?.textContent.trim() || '';
+            const proveedor = item.querySelector('.transaccion-proveedor')?.textContent.trim() || '';
+            const monto = item.querySelector('.transaccion-monto')?.textContent.trim() || '';
+            
+            // Verificar que el monto no sea 0
+            const montoNum = parseFloat(monto.replace(/[^\d.-]/g, '')) || 0;
+            
+            if (concepto && monto && montoNum !== 0) {
+              detalleData.push([concepto, proveedor, monto]);
+            }
+          });
+        }
+        
+        // Si no estaba expandida originalmente, volver a colapsar
+        if (!wasExpanded && detalleRow && detalleRow.classList.contains('detalle-transacciones')) {
+          personalApoyoRow.click();
+        }
+        
+        return detalleData;
+      }
+      
+      function getOtrosGastosData() {
+        // Buscar fila de Otros Gastos
+        const otrosGastosRow = document.querySelector('#tabla-gestion-caja tbody tr[data-concepto="otros-gastos"]');
+        if (!otrosGastosRow) {
+          return [];
+        }
+        
+        // Verificar el monto total primero
+        const montoCell = otrosGastosRow.querySelector('td:last-child');
+        const montoTotal = parseFloat(montoCell.textContent.replace(/[^\d.-]/g, '')) || 0;
+        
+        // Si el monto es 0, no incluir detalles
+        if (montoTotal === 0) {
+          return [];
+        }
+        
+        // Verificar si está expandida
+        let detalleRow = otrosGastosRow.nextElementSibling;
+        const wasExpanded = detalleRow && detalleRow.classList.contains('detalle-transacciones');
+        
+        // Si no está expandida, expandir temporalmente
+        if (!wasExpanded) {
+          otrosGastosRow.click();
+          detalleRow = otrosGastosRow.nextElementSibling;
+        }
+        
+        const detalleData = [];
+        
+        if (detalleRow && detalleRow.classList.contains('detalle-transacciones')) {
+          const transaccionItems = detalleRow.querySelectorAll('.transaccion-item:not(:first-child)');
+          
+          transaccionItems.forEach(item => {
+            const concepto = item.querySelector('.transaccion-concepto')?.textContent.trim() || '';
+            const proveedor = item.querySelector('.transaccion-proveedor')?.textContent.trim() || '';
+            const monto = item.querySelector('.transaccion-monto')?.textContent.trim() || '';
+            
+            // Verificar que el monto no sea 0
+            const montoNum = parseFloat(monto.replace(/[^\d.-]/g, '')) || 0;
+            
+            if (concepto && monto && montoNum !== 0) {
+              detalleData.push([concepto, proveedor, monto]);
+            }
+          });
+        }
+        
+        // Si no estaba expandida originalmente, volver a colapsar
+        if (!wasExpanded && detalleRow && detalleRow.classList.contains('detalle-transacciones')) {
+          otrosGastosRow.click();
+        }
+        
+        return detalleData;
+      }
+      
+      function addDetalleEgresosPage(pdf, margin, pageWidth, pageHeight) {
+        // TÍTULO DE LA PÁGINA DE DETALLE
+        pdf.setFontSize(14);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('Detalle de Egresos por Día', pageWidth / 2, margin.top, { align: 'center' });
+        
+        let currentY = margin.top + 15;
+        
+        const diasSemana = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+        const nombresDias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+        
+        // Colores para cada día (esquema monocromático profesional)
+        const colorMap = {
+          'Lunes': [90, 90, 90],        // Gris medio-oscuro
+          'Martes': [100, 100, 100],    // Gris medio
+          'Miércoles': [110, 110, 110], // Gris medio-claro
+          'Jueves': [85, 85, 85],       // Gris oscuro
+          'Viernes': [105, 105, 105],   // Gris neutral
+          'Sábado': [80, 80, 80],       // Gris más oscuro
+          'Domingo': [115, 115, 115]    // Gris claro
+        };
+        
+        let totalGeneralEgresos = 0;
+        let hayDatosAlgunDia = false;
+        
+        // Procesar cada día individualmente
+        diasSemana.forEach((dayKey, index) => {
+          const nombreDia = nombresDias[index];
+          const detalleDiv = document.getElementById(`detalle-${dayKey}`);
+          
+          if (detalleDiv) {
+            const tbody = detalleDiv.querySelector('tbody');
+            const egresosDia = [];
+            let totalDia = 0;
+            
+            // Extraer egresos del día
+            if (tbody && tbody.children.length > 0) {
+              Array.from(tbody.children).forEach(row => {
+                if (row.children.length === 3) {
+                  const concepto = row.children[0].textContent.trim();
+                  const proveedor = row.children[1].textContent.trim();
+                  const monto = row.children[2].textContent.trim();
+                  
+                  // Verificar que no sea el mensaje "No hay datos" ni el header
+                  if (concepto && 
+                      concepto !== 'No hay datos disponibles' && 
+                      concepto !== 'No hay egresos para este día' &&
+                      concepto !== 'Concepto' &&
+                      monto && monto !== '--' && monto !== 'MONTO') {
+                    
+                    egresosDia.push([concepto, proveedor, monto]);
+                    
+                    // Calcular total del día (extraer número del monto)
+                    const montoNumerico = parseFloat(monto.replace(/[^\d.-]/g, '')) || 0;
+                    totalDia += Math.abs(montoNumerico);
+                  }
+                }
+              });
+            }
+            
+            // Solo crear tabla si hay egresos para este día
+            if (egresosDia.length > 0) {
+              hayDatosAlgunDia = true;
+              
+              // Verificar si necesitamos nueva página
+              if (currentY > pageHeight - 80) {
+                pdf.addPage();
+                currentY = margin.top;
+              }
+              
+              // Título del día
+              pdf.setFontSize(12);
+              pdf.setFont('helvetica', 'bold');
+              pdf.text(nombreDia, margin.left, currentY);
+              currentY += 8;
+              
+              // Agregar fila de total al final de los datos del día
+              egresosDia.push(['TOTAL DEL DÍA', '', `-${totalDia.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`]);
+              
+              // Crear tabla para este día
+              pdf.autoTable({
+                head: [['Concepto', 'Proveedor', 'Monto']],
+                body: egresosDia,
+                startY: currentY,
+                margin: { left: margin.left, right: margin.right },
+                theme: 'striped',
+                styles: {
+                  fontSize: 9,
+                  cellPadding: 3,
+                  lineColor: [200, 200, 200],
+                  lineWidth: 0.1,
+                  overflow: 'linebreak',
+                  valign: 'top'
+                },
+                headStyles: {
+                  fillColor: colorMap[nombreDia] || [90, 90, 90],
+                  textColor: [255, 255, 255],
+                  fontStyle: 'bold',
+                  fontSize: 10
+                },
+                columnStyles: {
+                  0: { 
+                    halign: 'left', 
+                    cellWidth: 80,
+                    fontSize: 9,
+                    overflow: 'linebreak',
+                    cellPadding: 3
+                  },
+                  1: { 
+                    halign: 'left', 
+                    cellWidth: 60,
+                    fontSize: 9,
+                    overflow: 'linebreak'
+                  },
+                  2: { 
+                    halign: 'right', 
+                    cellWidth: 35,
+                    fontSize: 9,
+                    overflow: 'hidden'
+                  }
+                },
+                didParseCell: function(data) {
+                  // Estilo especial para la fila de total
+                  if (data.cell.text[0] === 'TOTAL DEL DÍA') {
+                    data.cell.styles.fillColor = colorMap[nombreDia] || [90, 90, 90];
+                    data.cell.styles.textColor = [255, 255, 255];
+                    data.cell.styles.fontStyle = 'bold';
+                    data.cell.styles.fontSize = 10;
+                  }
+                  
+                  // Alternar colores de fila para mejor legibilidad
+                  if (data.row.section === 'body' && data.row.index % 2 === 0 && data.cell.text[0] !== 'TOTAL DEL DÍA') {
+                    data.cell.styles.fillColor = [248, 248, 248];
+                  }
+                }
+              });
+              
+              currentY = pdf.lastAutoTable.finalY + 15; // Espacio entre tablas
+              totalGeneralEgresos += totalDia;
+            }
+          }
+        });
+        
+        // Si no hay datos en ningún día
+        if (!hayDatosAlgunDia) {
+          pdf.setFontSize(12);
+          pdf.setFont('helvetica', 'italic');
+          pdf.text('No hay egresos registrados para esta semana', pageWidth / 2, currentY + 20, { align: 'center' });
+        } else {
+          // Agregar total general al final
+          if (currentY > pageHeight - 50) {
+            pdf.addPage();
+            currentY = margin.top;
+          }
+          
+          // Separador visual
+          currentY += 10;
+          pdf.setDrawColor(90, 90, 90);
+          pdf.setLineWidth(0.5);
+          pdf.line(margin.left, currentY, pageWidth - margin.right, currentY);
+          currentY += 10;
+          
+          // Total general
+          const totalGeneralData = [['TOTAL GENERAL DE EGRESOS', '', `-${totalGeneralEgresos.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`]];
+          
+          pdf.autoTable({
+            body: totalGeneralData,
+            startY: currentY,
+            margin: { left: margin.left, right: margin.right },
+            theme: 'plain',
+            styles: {
+              fontSize: 12,
+              cellPadding: 5,
+              fontStyle: 'bold',
+              fillColor: [60, 60, 60],
+              textColor: [255, 255, 255],
+              lineColor: [60, 60, 60],
+              lineWidth: 1
+            },
+            columnStyles: {
+              0: { 
+                halign: 'left', 
+                cellWidth: 80
+              },
+              1: { 
+                halign: 'left', 
+                cellWidth: 60
+              },
+              2: { 
+                halign: 'right', 
+                cellWidth: 35
+              }
+            }
+          });
+        }
+      }
+      
+
+    });
+  </script>
+</body>
+</html>
