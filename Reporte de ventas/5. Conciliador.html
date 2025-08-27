@@ -823,12 +823,12 @@
 
           try {
               // 1. Definir los encabezados de SALIDA
-              const FINAL_EXTRACTO_HEADERS = ['FECHA', 'DESCRIPCIÓN OPERACIÓN', 'MONTO', 'OPERACIÓN - NÚMERO', 'REFERENCIA2'];
-              const FINAL_AMEX_HEADERS = ['CODIGO', 'NETO_TOTAL', 'FECHA_ABONO'];
-              const FINAL_DINERS_HEADERS = ['CÓDIGO DE COMERCIO', 'ORDEN DE PAGO', 'FECHA DE PAGO', 'IMPORTE NETO DE PAGO'];
-              const FINAL_MC_HEADERS = ['CODCOM', 'NETO_TOTAL', 'FECHA_ABONO'];
-              const FINAL_VISA_HEADERS = ['COMERCIO/CADENA', 'FECHA PROCESO', 'IMPORTE NETO'];
-              const FINAL_PAYU_HEADERS = ['FECHA', 'DOCUMENTO', 'DESCRIPCION', 'CREDITOS', 'DEBITOS', 'NUEVO SALDO', 'SALDO CONGELADO ANTERIOR', 'SALDO RESERVA', 'SALDO DISPONIBLE'];
+              const FINAL_EXTRACTO_HEADERS = ['FECHA', 'DESCRIPCIÓN OPERACIÓN', 'MONTO', 'OPERACIÓN - NÚMERO', 'REFERENCIA2', 'ESTADO', '#REF'];
+              const FINAL_AMEX_HEADERS = ['CODIGO', 'NETO_TOTAL', 'FECHA_ABONO', 'ESTADO', '#REF'];
+              const FINAL_DINERS_HEADERS = ['CÓDIGO DE COMERCIO', 'ORDEN DE PAGO', 'FECHA DE PAGO', 'IMPORTE NETO DE PAGO', 'ESTADO', '#REF'];
+              const FINAL_MC_HEADERS = ['CODCOM', 'NETO_TOTAL', 'FECHA_ABONO', 'ESTADO', '#REF'];
+              const FINAL_VISA_HEADERS = ['COMERCIO/CADENA', 'FECHA PROCESO', 'IMPORTE NETO', 'ESTADO', '#REF'];
+              const FINAL_PAYU_HEADERS = ['FECHA', 'DOCUMENTO', 'DESCRIPCION', 'CREDITOS', 'DEBITOS', 'NUEVO SALDO', 'SALDO CONGELADO ANTERIOR', 'SALDO RESERVA', 'SALDO DISPONIBLE', 'ESTADO', '#REF'];
 
               // 2. Leer el archivo de extracto. Requerimos las columnas finales más la de descripción.
               const requiredExtractHeaders = [...new Set(['DESCRIPCIÓN OPERACIÓN', ...FINAL_EXTRACTO_HEADERS])];
@@ -1079,9 +1079,9 @@
           const descExtractoIndex = extractoHeaders.indexOf('DESCRIPCIÓN OPERACIÓN');
           const ref2ExtractoIndex = extractoHeaders.indexOf('REFERENCIA2');
           
-          // Añadir columna ESTADO al extracto
-          const finalExtractoHeaders = [...extractoHeaders, 'ESTADO'];
-          let dataExtractoConEstado = extractoData.map(row => [...row, 'PENDIENTE DE CONCILIACIÓN']);
+          // Añadir columnas ESTADO y #REF al extracto
+          const finalExtractoHeaders = [...extractoHeaders, 'ESTADO', '#REF'];
+          let dataExtractoConEstado = extractoData.map(row => [...row, 'Pendiente', '']);
 
           // Preparar AMEX si hay datos
           let finalAmexHeaders = [];
@@ -1093,8 +1093,8 @@
               const netoAmexIndex = amexHeaders.indexOf('NETO_TOTAL');
               const fechaAbonoAmexIndex = amexHeaders.indexOf('FECHA_ABONO');
               
-              finalAmexHeaders = [...amexHeaders, 'ESTADO'];
-              dataAmexConEstado = amexData.map(row => [...row, 'PENDIENTE DE CONCILIACIÓN']);
+              finalAmexHeaders = [...amexHeaders, 'ESTADO', '#REF'];
+              dataAmexConEstado = amexData.map(row => [...row, 'Pendiente', '']);
 
               console.log('\n📊 PASO 2: Procesando AMEX para conciliación');
               dataAmexConEstado.forEach((row, index) => {
@@ -1133,8 +1133,8 @@
               const fechaPagoDinersIndex = dinersHeaders.indexOf('FECHA DE PAGO');
               const importeNetoDinersIndex = dinersHeaders.indexOf('IMPORTE NETO DE PAGO');
               
-              finalDinersHeaders = [...dinersHeaders, 'ESTADO'];
-              datadinersConEstado = dinersData.map(row => [...row, 'PENDIENTE DE CONCILIACIÓN']);
+              finalDinersHeaders = [...dinersHeaders, 'ESTADO', '#REF'];
+              datadinersConEstado = dinersData.map(row => [...row, 'Pendiente', '']);
 
               console.log('\n🎯 PASO 3: Procesando DINERS para conciliación');
               
@@ -1176,8 +1176,8 @@
           let mcCommerceMap = new Map(); // Mapa optimizado por comercio
           
           if (mcData.length > 0) {
-              finalMcHeaders = [...mcHeaders, 'ESTADO'];
-              datamcConEstado = mcData.map(row => [...row, 'PENDIENTE DE CONCILIACIÓN']);
+              finalMcHeaders = [...mcHeaders, 'ESTADO', '#REF'];
+              datamcConEstado = mcData.map(row => [...row, 'Pendiente', '']);
               const codComMcIndex = mcHeaders.indexOf('CODCOM');
               const netoMcIndex = mcHeaders.indexOf('NETO_TOTAL');
               const fechaAbonoMcIndex = mcHeaders.indexOf('FECHA_ABONO');
@@ -1224,8 +1224,8 @@
           let visaCommerceMap = new Map(); // Mapa optimizado por comercio
           
           if (visaData.length > 0) {
-              finalVisaHeaders = [...visaHeaders, 'ESTADO'];
-              datavisaConEstado = visaData.map(row => [...row, 'PENDIENTE DE CONCILIACIÓN']);
+              finalVisaHeaders = [...visaHeaders, 'ESTADO', '#REF'];
+              datavisaConEstado = visaData.map(row => [...row, 'Pendiente', '']);
               const comercioVisaIndex = visaHeaders.indexOf('COMERCIO/CADENA');
               const fechaProcesoVisaIndex = visaHeaders.indexOf('FECHA PROCESO');
               const importeNetoVisaIndex = visaHeaders.indexOf('IMPORTE NETO');
@@ -1275,8 +1275,8 @@
               const fechaPayuIndex = payuHeaders.indexOf('FECHA');
               const debitosPayuIndex = payuHeaders.indexOf('DEBITOS');
               
-              finalPayuHeaders = [...payuHeaders, 'ESTADO'];
-              datapayuConEstado = payuData.map(row => [...row, 'PENDIENTE DE CONCILIACIÓN']);
+              finalPayuHeaders = [...payuHeaders, 'ESTADO', '#REF'];
+              datapayuConEstado = payuData.map(row => [...row, 'Pendiente', '']);
 
               console.log('\n💰 PASO 6: Procesando PAYU para conciliación');
               datapayuConEstado.forEach((row, index) => {
@@ -1309,7 +1309,7 @@
           if (amexMap.size > 0) {
               console.log('\n🔄 PASO 2: Conciliando con AMEX');
               dataExtractoConEstado.forEach((row, index) => {
-                  if (row[row.length - 1] !== 'PENDIENTE DE CONCILIACIÓN') return; // Ya conciliado
+                  if (row[row.length - 2] !== 'Pendiente') return; // Ya conciliado
 
                   const fechaRaw = row[fechaExtractoIndex];
                   const montoRaw = row[montoExtractoIndex];
@@ -1339,8 +1339,10 @@
                               const fechaStr = fecha.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
                               
                               // Marcar como conciliado con prefijo P2
-                              row[row.length - 1] = `P2 - CONCILIADO - ${codCom} - ${fechaStr}`;
-                              matchRow[matchRow.length - 1] = `P2 - CONCILIADO - ${opNum} - ${fechaStr}`;
+                              row[row.length - 2] = 'P2 - CONCILIADO';
+                              row[row.length - 1] = `${codCom} - ${fechaStr}`;
+                              matchRow[matchRow.length - 2] = 'P2 - CONCILIADO';
+                              matchRow[matchRow.length - 1] = `${opNum} - ${fechaStr}`;
                               
                               conciliadosAmex++;
                               console.log(`[EXTRACTO ${index}] ✅ P2 - CONCILIADO con AMEX código ${codCom}`);
@@ -1357,7 +1359,7 @@
           if (dinersMap.size > 0) {
               console.log('\n🎯 PASO 3: Conciliando con DINERS');
               dataExtractoConEstado.forEach((row, index) => {
-                  if (row[row.length - 1] !== 'PENDIENTE DE CONCILIACIÓN') return; // Ya conciliado
+                  if (row[row.length - 2] !== 'Pendiente') return; // Ya conciliado
 
                   const descripcion = String(row[descExtractoIndex] || '').trim();
                   const montoRaw = row[montoExtractoIndex];
@@ -1375,11 +1377,13 @@
                               const opNum = row[opNumExtractoIndex];
                               
                               // Marcar extracto como conciliado
-                              row[row.length - 1] = `P3 - CONCILIADO - ${first10}`;
-                              
+                              row[row.length - 2] = 'P3 - CONCILIADO';
+                              row[row.length - 1] = first10;
+
                               // Marcar todos los items DINERS del grupo como conciliados
                               dinersGroup.items.forEach(item => {
-                                  item.row[item.row.length - 1] = `P3 - CONCILIADO - ${opNum} - ${first10}`;
+                                  item.row[item.row.length - 2] = 'P3 - CONCILIADO';
+                                  item.row[item.row.length - 1] = `${opNum} - ${first10}`;
                               });
                               
                               conciliadosDiners++;
@@ -1416,8 +1420,12 @@
                               const fechaProceso = parseDate(row[fechaExtractoIndex]);
                               const fechaProcesoStr = fechaProceso ? fechaProceso.toLocaleDateString('es-ES', {day: '2-digit', month: '2-digit', year: 'numeric'}) : 'N/A';
                               
-                              row[row.length - 1] = `P4 - CONCILIADO - ${fechaProcesoStr}`;
-                              mcGroup.items.forEach(item => item.row[item.row.length - 1] = `P4 - CONCILIADO - ${opNum}`);
+                              row[row.length - 2] = 'P4 - CONCILIADO';
+                              row[row.length - 1] = fechaProcesoStr;
+                              mcGroup.items.forEach(item => {
+                                  item.row[item.row.length - 2] = 'P4 - CONCILIADO';
+                                  item.row[item.row.length - 1] = opNum;
+                              });
                               
                               conciliadosMc++;
                               console.log(`[EXTRACTO ${index}] ✅ P4 - CONCILIADO con MC grupo ${mcGroup.key}`);
@@ -1451,8 +1459,12 @@
                               const fechaProceso = parseDate(row[fechaExtractoIndex]);
                               const fechaProcesoStr = fechaProceso ? fechaProceso.toLocaleDateString('es-ES', {day: '2-digit', month: '2-digit', year: 'numeric'}) : 'N/A';
                               
-                              row[row.length - 1] = `P5 - CONCILIADO - ${fechaProcesoStr}`;
-                              visaGroup.items.forEach(item => item.row[item.row.length - 1] = `P5 - CONCILIADO - ${opNum}`);
+                              row[row.length - 2] = 'P5 - CONCILIADO';
+                              row[row.length - 1] = fechaProcesoStr;
+                              visaGroup.items.forEach(item => {
+                                  item.row[item.row.length - 2] = 'P5 - CONCILIADO';
+                                  item.row[item.row.length - 1] = opNum;
+                              });
                               
                               conciliadosVisa++;
                               console.log(`[EXTRACTO ${index}] ✅ P5 - CONCILIADO con VISA grupo ${visaGroup.key}`);
@@ -1468,7 +1480,7 @@
           if (payuMap.size > 0) {
               console.log('\n💰 PASO 6: Conciliando con PAYU');
               dataExtractoConEstado.forEach((row, index) => {
-                  if (row[row.length - 1] !== 'PENDIENTE DE CONCILIACIÓN') return; // Ya conciliado
+                  if (row[row.length - 2] !== 'Pendiente') return; // Ya conciliado
 
                   const fechaRaw = row[fechaExtractoIndex];
                   const montoRaw = row[montoExtractoIndex];
@@ -1498,8 +1510,10 @@
                               const fechaStr = fecha.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
                               
                               // Marcar como conciliado con prefijo P6
-                              row[row.length - 1] = `P6 - CONCILIADO - PAYU - ${fechaStr}`;
-                              matchRow[matchRow.length - 1] = `P6 - CONCILIADO - ${opNum} - ${fechaStr}`;
+                              row[row.length - 2] = 'P6 - CONCILIADO';
+                              row[row.length - 1] = `PAYU - ${fechaStr}`;
+                              matchRow[matchRow.length - 2] = 'P6 - CONCILIADO';
+                              matchRow[matchRow.length - 1] = `${opNum} - ${fechaStr}`;
                               
                               conciliadosPayu++;
                               console.log(`[EXTRACTO ${index}] ✅ P6 - CONCILIADO con PAYU débitos ${debitos}`);
@@ -1518,7 +1532,7 @@
           console.log(`P5 - VISA: ${conciliadosVisa} conciliaciones`);
           console.log(`P6 - PAYU: ${conciliadosPayu} conciliaciones`);
           
-          const totalPendientes = dataExtractoConEstado.filter(row => row[row.length - 1] === 'PENDIENTE DE CONCILIACIÓN').length;
+          const totalPendientes = dataExtractoConEstado.filter(row => row[row.length - 2] === 'Pendiente').length;
           console.log(`PENDIENTES: ${totalPendientes} registros`);
 
           return {
