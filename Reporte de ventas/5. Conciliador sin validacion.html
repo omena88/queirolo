@@ -706,25 +706,6 @@
 
         function handleFileUpload(file) {
           if (!file) return;
-          const fileName = file.name.toLowerCase();
-          const monthNames = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
-          const currentYearLastTwoDigits = new Date().getFullYear().toString().slice(-2);
-          
-          let isValid = false;
-          for(const month of monthNames){
-              const expectedPrefix = `EECC-${selectedCurrency}-${month}${currentYearLastTwoDigits}`.toLowerCase();
-              if(fileName.startsWith(expectedPrefix)){
-                  isValid = true;
-                  break;
-              }
-          }
-
-          if (!isValid) {
-            addBotMessage(`❌ El nombre del archivo no es válido. Debe seguir el formato EECC-${selectedCurrency}-MES+AÑO (ej: EECC-${selectedCurrency}-ENE25.xlsx).`);
-            uploadedFile = null;
-            document.getElementById('file-input').value = ''; // Reset input
-            return;
-          }
 
           uploadedFile = file;
           // console.log('Archivo cargado:', uploadedFile.name);
@@ -965,15 +946,6 @@
         updateContinueButton();
 
         files.forEach(file => {
-          const fileName = file.name.toLowerCase();
-          const currency = selectedCurrency.toLowerCase();
-          const regex = new RegExp(`^\\d+-amex-${currency}-[a-z]{3}\\d{2}\\.xlsx?$`);
-
-          if (!regex.test(fileName)) {
-            addBotMessage(`❌ El archivo AMEX "${file.name}" no tiene el formato esperado (ej: 1004704-AMEX-PEN-DIC24.xlsx).`);
-            return;
-          }
-
           if (amexFiles.some(f => f.name === file.name)) {
             addBotMessage(`⚠️ El archivo "${file.name}" ya fue cargado.`);
             return;
@@ -1003,15 +975,6 @@
         const fileList = document.getElementById('diners-file-list');
         
         files.forEach(file => {
-          const fileName = file.name.toLowerCase();
-          const currency = selectedCurrency.toLowerCase();
-          const regex = new RegExp(`^diners-${currency}-[a-z]{3}\\d{2}\\.xlsx?$`);
-
-          if (!regex.test(fileName)) {
-            addBotMessage(`❌ El archivo DINERS "${file.name}" no tiene el formato esperado (ej: DINERS-PEN-ENE25.xlsx).`);
-            return;
-          }
-
           if (dinersFiles.some(f => f.name === file.name)) {
             addBotMessage(`⚠️ El archivo "${file.name}" ya fue cargado.`);
             return;
@@ -1041,15 +1004,6 @@
         const fileList = document.getElementById('mc-file-list');
         
         files.forEach(file => {
-          const fileName = file.name.toLowerCase();
-          const currency = selectedCurrency.toLowerCase();
-          const regex = new RegExp(`^\\d+-mc-${currency}-[a-z]{3}\\d{2}\\.xlsx?$`);
-
-          if (!regex.test(fileName)) {
-            addBotMessage(`❌ El archivo MC "${file.name}" no tiene el formato esperado (ej: 1004704-MC-PEN-ENE25.xlsx).`);
-            return;
-          }
-
           if (mcFiles.some(f => f.name === file.name)) {
             addBotMessage(`⚠️ El archivo "${file.name}" ya fue cargado.`);
             return;
@@ -1079,15 +1033,6 @@
         const fileList = document.getElementById('visa-file-list');
         
         files.forEach(file => {
-          const fileName = file.name.toLowerCase();
-          const currency = selectedCurrency.toLowerCase();
-          const regex = new RegExp(`^\\d+-visa-${currency}-[a-z]{3}\\d{2}\\.xlsx?$`);
-
-          if (!regex.test(fileName)) {
-            addBotMessage(`❌ El archivo VISA "${file.name}" no tiene el formato esperado (ej: 1004704-VISA-PEN-DIC24.xlsx).`);
-            return;
-          }
-
           if (visaFiles.some(f => f.name === file.name)) {
             addBotMessage(`⚠️ El archivo "${file.name}" ya fue cargado.`);
             return;
@@ -1147,25 +1092,6 @@
         const fileList = document.getElementById('payu-file-list');
         
         files.forEach(file => {
-          const fileName = file.name.toLowerCase();
-          const currency = selectedCurrency.toLowerCase();
-          const monthNames = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
-          const currentYearLastTwoDigits = new Date().getFullYear().toString().slice(-2);
-          
-          let isValid = false;
-          for(const month of monthNames){
-            const expectedName = `payu-${currency}-${month}${currentYearLastTwoDigits}.xlsx`;
-            if(fileName === expectedName){
-              isValid = true;
-              break;
-            }
-          }
-
-          if (!isValid) {
-            addBotMessage(`❌ El archivo PAYU "${file.name}" no tiene el formato esperado (ej: PAYU-USD-ENE25.xlsx).`);
-            return;
-          }
-
           if (payuFiles.some(f => f.name === file.name)) {
             addBotMessage(`⚠️ El archivo "${file.name}" ya fue cargado.`);
             return;
