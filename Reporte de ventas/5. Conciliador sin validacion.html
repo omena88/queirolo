@@ -1394,7 +1394,13 @@
       }
 
       function performReconciliationMultiStep(extractoConHeaders, amexConHeaders, dinersConHeaders, mcConHeaders, visaConHeaders, payuConHeaders) {
-          // console.log('\n🔄 INICIANDO CONCILIACIÓN POR PASOS');
+          console.log('🔄 INICIANDO CONCILIACIÓN POR PASOS');
+          console.log('Extracto datos:', extractoConHeaders.length);
+          console.log('AMEX datos:', amexConHeaders.length);
+          console.log('Diners datos:', dinersConHeaders.length);
+          console.log('MC datos:', mcConHeaders.length);
+          console.log('Visa datos:', visaConHeaders.length);
+          console.log('Payu datos:', payuConHeaders.length);
           
           const [extractoHeaders, ...extractoData] = extractoConHeaders;
           const [amexHeaders, ...amexData] = amexConHeaders.length > 0 ? amexConHeaders : [[], []];
@@ -1402,6 +1408,13 @@
           const [mcHeaders, ...mcData] = mcConHeaders.length > 0 ? mcConHeaders : [[], []];
           const [visaHeaders, ...visaData] = visaConHeaders.length > 0 ? visaConHeaders : [[], []];
           const [payuHeaders, ...payuData] = payuConHeaders.length > 0 ? payuConHeaders : [[], []];
+          
+          console.log('Extracto filas de datos:', extractoData.length);
+          console.log('AMEX filas de datos:', amexData.length);
+          console.log('Diners filas de datos:', dinersData.length);
+          console.log('MC filas de datos:', mcData.length);
+          console.log('Visa filas de datos:', visaData.length);
+          console.log('Payu filas de datos:', payuData.length);
 
           // Índices de columnas clave
           const fechaExtractoIndex = extractoHeaders.indexOf('FECHA');
@@ -1427,7 +1440,7 @@
               finalAmexHeaders = amexHeaders;
               dataAmexConEstado = amexData; // Ya incluye ESTADO y #REF
 
-              // console.log('\n📊 PASO 2: Procesando AMEX para conciliación');
+              console.log('📊 PASO 2: Procesando AMEX para conciliación');
               dataAmexConEstado.forEach((row, index) => {
                   const fechaRaw = row[fechaAbonoAmexIndex];
                   const montoRaw = row[netoAmexIndex];
@@ -1445,12 +1458,13 @@
                   
                   if (fechaKey && !isNaN(monto)) {
                       const key = `${fechaKey}_${monto.toFixed(2)}`;
-                      // console.log(`[AMEX ${index}] Key: "${key}" | Código: ${row[codAmexIndex]}`);
+                      console.log(`[AMEX ${index}] Key: "${key}" | Código: ${row[codAmexIndex]}`);
                       
                       if (!amexMap.has(key)) amexMap.set(key, []);
                       amexMap.get(key).push({ row, index });
                   }
               });
+              console.log('AMEX Map size:', amexMap.size);
           }
 
           // Preparar DINERS si hay datos
@@ -1673,7 +1687,7 @@
           let conciliadosAmexF3 = 0; // Fase 3: solo monto
           let conciliadosAmex = 0;   // Total AMEX
           if (amexMap.size > 0) {
-              // console.log('\n🔄 PASO 2: Conciliando con AMEX');
+              console.log('🔄 PASO 2: Conciliando con AMEX');
               dataExtractoConEstado.forEach((row, index) => {
                   if (row[row.length - 2] !== 'Pendiente') return; // Ya conciliado
 
@@ -1693,6 +1707,7 @@
                   
                   if (fechaKey && !isNaN(monto)) {
                       const key = `${fechaKey}_${monto.toFixed(2)}`;
+                      console.log(`[EXTRACTO ${index}] Buscando key: "${key}"`);
                       
                       if (amexMap.has(key)) {
                           const matches = amexMap.get(key);
@@ -1712,13 +1727,14 @@
                               
                               conciliadosAmexF2++;
                               conciliadosAmex++;
-                              // console.log(`[EXTRACTO ${index}] ✅ P2-F2-Conciliado con AMEX código ${codCom}`);
+                              console.log(`[EXTRACTO ${index}] ✅ P2-F2-Conciliado con AMEX código ${codCom}`);
                               
                               if (matches.length === 0) amexMap.delete(key);
                           }
                       }
                   }
               });
+              console.log('Conciliados AMEX F2:', conciliadosAmexF2);
 
               // PASO 2 - FASE 3: Conciliación AMEX solo por monto (fechas diferentes)
               // console.log('\n🔄 PASO 2 - FASE 3: Conciliando AMEX (solo monto, fechas diferentes)');
