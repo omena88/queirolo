@@ -1494,9 +1494,25 @@
                                   const excelDate = new Date((fechaPago - 25569) * 86400 * 1000);
                                   fechaKey = excelDate.toISOString().split('T')[0]; // YYYY-MM-DD
                               } else if (typeof fechaPago === 'string') {
-                                  // Intentar parsear string de fecha
-                                  const parsedDate = new Date(fechaPago);
-                                  if (!isNaN(parsedDate.getTime())) {
+                                  // Manejar formato DD-MM-YYYY o DD/MM/YYYY de DINERS
+                                  const fechaStr = fechaPago.trim();
+                                  let parsedDate = null;
+                                  
+                                  // Intentar formato DD-MM-YYYY o DD/MM/YYYY
+                                  if (fechaStr.match(/^\d{1,2}[-\/]\d{1,2}[-\/]\d{4}$/)) {
+                                      const parts = fechaStr.split(/[-\/]/);
+                                      if (parts.length === 3) {
+                                          const day = parseInt(parts[0], 10);
+                                          const month = parseInt(parts[1], 10) - 1; // Mes base 0
+                                          const year = parseInt(parts[2], 10);
+                                          parsedDate = new Date(year, month, day);
+                                      }
+                                  } else {
+                                      // Intentar parseo estándar
+                                      parsedDate = new Date(fechaPago);
+                                  }
+                                  
+                                  if (parsedDate && !isNaN(parsedDate.getTime())) {
                                       fechaKey = parsedDate.toISOString().split('T')[0];
                                   }
                               }
@@ -1508,7 +1524,7 @@
                                   orderGroup.set(fechaKey, []);
                               }
                               orderGroup.get(fechaKey).push({ row, index, fechaKey });
-                              // console.log(`[DINERS ${index}] Orden: ${last10} | Fecha: ${fechaKey} | Importe: ${importeNeto}`);
+                              console.log(`[DINERS ${index}] Orden: ${last10} | Fecha Original: ${fechaPago} | Fecha Parseada: ${fechaKey} | Importe: ${importeNeto}`);
                           }
                       }
                   }
@@ -1797,17 +1813,37 @@
                           const excelDate = new Date((fechaExtracto - 25569) * 86400 * 1000);
                           fechaExtractoKey = excelDate.toISOString().split('T')[0];
                       } else if (typeof fechaExtracto === 'string') {
-                          const parsedDate = new Date(fechaExtracto);
-                          if (!isNaN(parsedDate.getTime())) {
+                          // Manejar formato DD/MM/YYYY del extracto
+                          const fechaStr = fechaExtracto.trim();
+                          let parsedDate = null;
+                          
+                          // Intentar formato DD/MM/YYYY o DD-MM-YYYY
+                          if (fechaStr.match(/^\d{1,2}[-\/]\d{1,2}[-\/]\d{4}$/)) {
+                              const parts = fechaStr.split(/[-\/]/);
+                              if (parts.length === 3) {
+                                  const day = parseInt(parts[0], 10);
+                                  const month = parseInt(parts[1], 10) - 1; // Mes base 0
+                                  const year = parseInt(parts[2], 10);
+                                  parsedDate = new Date(year, month, day);
+                              }
+                          } else {
+                              // Intentar parseo estándar
+                              parsedDate = new Date(fechaExtracto);
+                          }
+                          
+                          if (parsedDate && !isNaN(parsedDate.getTime())) {
                               fechaExtractoKey = parsedDate.toISOString().split('T')[0];
                           }
                       }
                       
                       if (fechaExtractoKey) {
                           // Buscar coincidencia por fecha y monto en los grupos DINERS
+                          console.log(`[EXTRACTO ${index}] Fecha Original: ${fechaExtracto} | Fecha Parseada: ${fechaExtractoKey} | Monto: ${monto}`);
                           for (const [compositeKey, dinersGroup] of dinersMap.entries()) {
                               const dinersTotal = parseFloat(dinersGroup.total);
                               const dinersFecha = dinersGroup.fechaPago;
+                              
+                              console.log(`[COMPARANDO] Extracto: ${fechaExtractoKey} vs DINERS: ${dinersFecha} | Monto Extracto: ${monto} vs DINERS: ${dinersTotal}`);
                               
                               // Comparar fecha y monto
                               if (dinersFecha === fechaExtractoKey && Math.abs(monto - dinersTotal) < 0.01) {
