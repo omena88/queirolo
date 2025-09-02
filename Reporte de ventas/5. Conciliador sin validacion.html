@@ -2518,7 +2518,7 @@
         const fileName = `CONCILIACION_${selectedCurrency}_${new Date().toISOString().slice(0, 10)}.xlsx`;
         XLSX.writeFile(workbook, fileName);
         addBotMessage('✅ Excel de conciliación generado. La descarga debería comenzar en breve.');
-      }
+      };
     });
   </script>
 </body>
