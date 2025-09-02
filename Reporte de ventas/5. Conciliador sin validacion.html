@@ -1469,35 +1469,69 @@
 
               // console.log('\n🎯 PASO 3: Procesando DINERS para conciliación');
               
-              // Agrupar DINERS por últimos 10 dígitos de Orden de Pago
-              const dinersGroups = new Map();
+              // NUEVO PROCESAMIENTO DINERS: Agrupar por orden de pago, luego por fecha de pago
+              const dinersGroupsByOrder = new Map(); // Primer nivel: agrupar por orden de pago
+              
               datadinersConEstado.forEach((row, index) => {
                   const ordenPago = String(row[ordenPagoDinersIndex] || '').trim();
+                  const fechaPago = row[fechaPagoDinersIndex];
                   const importeNeto = row[importeNetoDinersIndex];
                   
-                  // Solo procesar si tiene orden de pago válida e importe
-                  if (ordenPago && importeNeto !== null && importeNeto !== undefined) {
+                  // Solo procesar si tiene orden de pago válida, fecha y importe
+                  if (ordenPago && fechaPago && importeNeto !== null && importeNeto !== undefined) {
                       const last10 = ordenPago.slice(-10);
                       
                       if (last10.length === 10) {
-                          if (!dinersGroups.has(last10)) {
-                              dinersGroups.set(last10, []);
+                          if (!dinersGroupsByOrder.has(last10)) {
+                              dinersGroupsByOrder.set(last10, new Map()); // Segundo nivel: Map por fecha
                           }
-                          dinersGroups.get(last10).push({ row, index });
-                          // console.log(`[DINERS ${index}] Orden: ${ordenPago} -> Últimos 10: ${last10}`);
+                          
+                          // Convertir fecha a formato comparable
+                          let fechaKey = null;
+                          if (fechaPago) {
+                              if (typeof fechaPago === 'number' && fechaPago > 40000) {
+                                  // Fecha de Excel (número de días desde 1900)
+                                  const excelDate = new Date((fechaPago - 25569) * 86400 * 1000);
+                                  fechaKey = excelDate.toISOString().split('T')[0]; // YYYY-MM-DD
+                              } else if (typeof fechaPago === 'string') {
+                                  // Intentar parsear string de fecha
+                                  const parsedDate = new Date(fechaPago);
+                                  if (!isNaN(parsedDate.getTime())) {
+                                      fechaKey = parsedDate.toISOString().split('T')[0];
+                                  }
+                              }
+                          }
+                          
+                          if (fechaKey) {
+                              const orderGroup = dinersGroupsByOrder.get(last10);
+                              if (!orderGroup.has(fechaKey)) {
+                                  orderGroup.set(fechaKey, []);
+                              }
+                              orderGroup.get(fechaKey).push({ row, index, fechaKey });
+                              // console.log(`[DINERS ${index}] Orden: ${last10} | Fecha: ${fechaKey} | Importe: ${importeNeto}`);
+                          }
                       }
                   }
               });
 
-              // Calcular totales por grupo y crear mapa de conciliación
-              dinersGroups.forEach((grupo, last10) => {
-                  const total = grupo.reduce((sum, item) => {
-                      const importe = convertToNumber(item.row[importeNetoDinersIndex]);
-                      return sum + (isNaN(importe) ? 0 : importe);
-                  }, 0);
-                  
-                  dinersMap.set(last10, { total: total.toFixed(2), items: grupo });
-                  // console.log(`[DINERS GRUPO] ${last10} -> Total: ${total.toFixed(2)} (${grupo.length} items)`);
+              // Crear mapa final: combinar orden + fecha como clave, con total del grupo
+              dinersGroupsByOrder.forEach((fechaGroups, ordenPago) => {
+                  fechaGroups.forEach((items, fechaPago) => {
+                      const total = items.reduce((sum, item) => {
+                          const importe = convertToNumber(item.row[importeNetoDinersIndex]);
+                          return sum + (isNaN(importe) ? 0 : importe);
+                      }, 0);
+                      
+                      // Clave compuesta: orden_fecha para identificación única
+                      const compositeKey = `${ordenPago}_${fechaPago}`;
+                      dinersMap.set(compositeKey, { 
+                          total: total.toFixed(2), 
+                          items: items,
+                          ordenPago: ordenPago,
+                          fechaPago: fechaPago
+                      });
+                      // console.log(`[DINERS GRUPO] ${compositeKey} -> Total: ${total.toFixed(2)} (${items.length} items)`);
+                  });
               });
           }
 
@@ -1744,43 +1778,59 @@
               // console.log(`[F3 RESUMEN] ${conciliadosAmexF3} conciliaciones realizadas en fase 3`);
           }
 
-          // PASO 3: Conciliación DINERS
+          // PASO 3: Conciliación DINERS (NUEVA LÓGICA: por fecha y monto)
           let conciliadosDiners = 0;
           if (dinersMap.size > 0) {
-              // console.log('\n🎯 PASO 3: Conciliando con DINERS');
+              // console.log('\n🎯 PASO 3: Conciliando con DINERS por fecha y monto');
               dataExtractoConEstado.forEach((row, index) => {
                   if (row[row.length - 2] !== 'Pendiente') return; // Ya conciliado
 
-                  const descripcion = String(row[descExtractoIndex] || '').trim();
+                  const fechaExtracto = row[fechaExtractoIndex];
                   const montoRaw = row[montoExtractoIndex];
-                  
-                  // Extraer primeros 10 caracteres de descripción
-                  const first10 = descripcion.substring(0, 10);
                   const monto = convertToNumber(montoRaw);
                   
-                  if (first10.length === 10 && !isNaN(monto)) {
-                      if (dinersMap.has(first10)) {
-                          const dinersGroup = dinersMap.get(first10);
-                          const dinersTotal = parseFloat(dinersGroup.total);
-                          
-                          if (Math.abs(monto - dinersTotal) < 0.01) { // Tolerancia de centavos
-                              const opNum = row[opNumExtractoIndex];
+                  if (fechaExtracto && !isNaN(monto)) {
+                      // Convertir fecha del extracto a formato comparable
+                      let fechaExtractoKey = null;
+                      if (typeof fechaExtracto === 'number' && fechaExtracto > 40000) {
+                          // Fecha de Excel
+                          const excelDate = new Date((fechaExtracto - 25569) * 86400 * 1000);
+                          fechaExtractoKey = excelDate.toISOString().split('T')[0];
+                      } else if (typeof fechaExtracto === 'string') {
+                          const parsedDate = new Date(fechaExtracto);
+                          if (!isNaN(parsedDate.getTime())) {
+                              fechaExtractoKey = parsedDate.toISOString().split('T')[0];
+                          }
+                      }
+                      
+                      if (fechaExtractoKey) {
+                          // Buscar coincidencia por fecha y monto en los grupos DINERS
+                          for (const [compositeKey, dinersGroup] of dinersMap.entries()) {
+                              const dinersTotal = parseFloat(dinersGroup.total);
+                              const dinersFecha = dinersGroup.fechaPago;
                               
-                              // Marcar extracto como conciliado
-                              row[row.length - 2] = 'P3 - CONCILIADO';
-                              row[row.length - 1] = first10;
-                              
-                              // Marcar todos los items DINERS del grupo como conciliados
-                              dinersGroup.items.forEach(item => {
-                                  item.row[item.row.length - 2] = 'P3 - CONCILIADO';
-                                  item.row[item.row.length - 1] = `${opNum} - ${first10}`;
-                              });
-                              
-                              conciliadosDiners++;
-                              // console.log(`[EXTRACTO ${index}] ✅ P3 - CONCILIADO con DINERS grupo ${first10} | Total: ${dinersTotal}`);
-                              
-                              // Remover del mapa para evitar re-matches
-                              dinersMap.delete(first10);
+                              // Comparar fecha y monto
+                              if (dinersFecha === fechaExtractoKey && Math.abs(monto - dinersTotal) < 0.01) {
+                                  const opNum = row[opNumExtractoIndex];
+                                  const ordenPago = dinersGroup.ordenPago;
+                                  
+                                  // Marcar extracto como conciliado
+                                  row[row.length - 2] = 'P3 - CONCILIADO';
+                                  row[row.length - 1] = `${ordenPago} - ${dinersFecha}`;
+                                  
+                                  // Marcar todos los items DINERS del grupo como conciliados
+                                  dinersGroup.items.forEach(item => {
+                                      item.row[item.row.length - 2] = 'P3 - CONCILIADO';
+                                      item.row[item.row.length - 1] = `${opNum} - ${ordenPago} - ${dinersFecha}`;
+                                  });
+                                  
+                                  conciliadosDiners++;
+                                  // console.log(`[EXTRACTO ${index}] ✅ P3 - CONCILIADO con DINERS | Fecha: ${dinersFecha} | Monto: ${dinersTotal} | Orden: ${ordenPago}`);
+                                  
+                                  // Remover del mapa para evitar re-matches
+                                  dinersMap.delete(compositeKey);
+                                  break; // Salir del loop una vez encontrada la coincidencia
+                              }
                           }
                       }
                   }
