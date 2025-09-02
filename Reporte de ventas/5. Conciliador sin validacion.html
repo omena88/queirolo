@@ -1524,7 +1524,7 @@
                                   orderGroup.set(fechaKey, []);
                               }
                               orderGroup.get(fechaKey).push({ row, index, fechaKey });
-                              console.log(`[DINERS ${index}] Orden: ${last10} | Fecha Original: ${fechaPago} | Fecha Parseada: ${fechaKey} | Importe: ${importeNeto}`);
+                              // console.log(`[DINERS ${index}] Orden: ${last10} | Fecha Original: ${fechaPago} | Fecha Parseada: ${fechaKey} | Importe: ${importeNeto}`);
                           }
                       }
                   }
@@ -1578,7 +1578,7 @@
                       });
                   }
               });
-              console.log(`[MC] Mapa de comercios creado con ${mcCommerceMap.size} comercios (línea por línea).`);
+              // console.log(`[MC] Mapa de comercios creado con ${mcCommerceMap.size} comercios (línea por línea).`);
           }
 
           // Preparar VISA si hay datos - AGRUPAR POR FECHA PROCESO Y TOTALIZAR POR COMERCIO
@@ -1627,7 +1627,7 @@
               });
               });
               
-              console.log(`[VISA] Mapa de comercios creado con ${visaCommerceMap.size} comercios (agrupado por fecha y totalizado).`);
+              // console.log(`[VISA] Mapa de comercios creado con ${visaCommerceMap.size} comercios (agrupado por fecha y totalizado).`);
           }
 
           // Preparar PAYU si hay datos
@@ -1879,19 +1879,19 @@
           let conciliadosMcF2 = 0;
           let conciliadosMcF3 = 0;
           if (mcCommerceMap.size > 0) {
-              console.log('\n💳 PASO 4: Conciliando con MC (3 Fases)');
-              console.log(`[PASO 4] Comercios MC disponibles:`, Array.from(mcCommerceMap.keys()));
+              // console.log('\n💳 PASO 4: Conciliando con MC (3 Fases)');
+              // console.log(`[PASO 4] Comercios MC disponibles:`, Array.from(mcCommerceMap.keys()));
               
-              // Mostrar detalles de cada comercio para debugging
-              mcCommerceMap.forEach((registros, comercio) => {
-                  console.log(`[PASO 4] Comercio ${comercio}: ${registros.length} registros individuales`);
-                  registros.forEach((registro, idx) => {
-                      console.log(`  Registro ${idx}: Monto: ${registro.monto}`);
-                  });
+              // mcCommerceMap.forEach((registros, comercio) => {
+              //     console.log(`[PASO 4] Comercio ${comercio}: ${registros.length} registros individuales`);
+              //     registros.forEach((registro, idx) => {
+              //         console.log(`  Registro ${idx}: Monto: ${registro.monto}`);
+              //     });
+              // });
               });
 
               // FASE 1: Conciliación por CODCOM + MONTO (línea por línea)
-              console.log('\n🔄 PASO 4 - FASE 1: Conciliando MC (CODCOM + MONTO)');
+              // console.log('\n🔄 PASO 4 - FASE 1: Conciliando MC (CODCOM + MONTO)');
               dataExtractoConEstado.forEach((row, index) => {
                   if (row[row.length - 2] !== 'Pendiente') return;
 
@@ -1904,12 +1904,12 @@
                       const fullCode = match ? match[1] : "";
                       const codcomKey = fullCode.slice(-7);
                       
-                      console.log(`[PASO 4-F1] Extracto ${index}: REFERENCIA2="${referencia2}" → codcomKey="${codcomKey}" | Monto: ${monto}`);
+                      // console.log(`[PASO 4-F1] Extracto ${index}: REFERENCIA2="${referencia2}" → codcomKey="${codcomKey}" | Monto: ${monto}`);
                       
                       if (mcCommerceMap.has(codcomKey)) {
                           const potentialMatches = mcCommerceMap.get(codcomKey);
-                          console.log(`[PASO 4-F1] Encontrado comercio ${codcomKey} con ${potentialMatches.length} registros`);
-                          console.log(`[PASO 4-F1] Montos disponibles para ${codcomKey}:`, potentialMatches.map(m => m.monto));
+                          // console.log(`[PASO 4-F1] Encontrado comercio ${codcomKey} con ${potentialMatches.length} registros`);
+                          // console.log(`[PASO 4-F1] Montos disponibles para ${codcomKey}:`, potentialMatches.map(m => m.monto));
                           const matchIndex = potentialMatches.findIndex(match => Math.abs(monto - match.monto) < 0.01);
 
                           if (matchIndex !== -1) {
@@ -1928,19 +1928,19 @@
                               
                               conciliadosMcF1++;
                               conciliadosMc++;
-                              console.log(`[PASO 4-F1] ✅ CONCILIADO: Extracto ${index} con MC registro | Monto: ${monto}`);
+                              // console.log(`[PASO 4-F1] ✅ CONCILIADO: Extracto ${index} con MC registro | Monto: ${monto}`);
                               potentialMatches.splice(matchIndex, 1); // Eliminar el registro para no reutilizarlo
                           } else {
-                              console.log(`[PASO 4-F1] ❌ NO MATCH: Comercio ${codcomKey} encontrado pero sin coincidencia de monto ${monto}`);
+                              // console.log(`[PASO 4-F1] ❌ NO MATCH: Comercio ${codcomKey} encontrado pero sin coincidencia de monto ${monto}`);
                           }
                       } else {
-                          console.log(`[PASO 4-F1] ❌ NO FOUND: Comercio ${codcomKey} no existe en mcCommerceMap`);
+                          // console.log(`[PASO 4-F1] ❌ NO FOUND: Comercio ${codcomKey} no existe en mcCommerceMap`);
                       }
                   }
               });
 
               // FASE 2: Conciliación solo por MONTO (como AMEX Fase 3)
-              console.log('\n🔄 PASO 4 - FASE 2: Conciliando MC (solo MONTO)');
+              // console.log('\n🔄 PASO 4 - FASE 2: Conciliando MC (solo MONTO)');
               const mcMontoMap = new Map();
               
               // Crear mapa de montos MC pendientes
@@ -1979,7 +1979,7 @@
                               
                               conciliadosMcF2++;
                               conciliadosMc++;
-                              console.log(`[PASO 4-F2] ✅ CONCILIADO: Extracto ${index} con MC por monto | Monto: ${monto}`);
+                              // console.log(`[PASO 4-F2] ✅ CONCILIADO: Extracto ${index} con MC por monto | Monto: ${monto}`);
                               
                               if (matches.length === 0) mcMontoMap.delete(montoKey);
                           }
@@ -1988,7 +1988,7 @@
               });
 
               // FASE 3: Agrupación por fecha del extracto vs pendientes MC
-              console.log('\n🔄 PASO 4 - FASE 3: Conciliando MC (Agrupación por fecha extracto)');
+              // console.log('\n🔄 PASO 4 - FASE 3: Conciliando MC (Agrupación por fecha extracto)');
               const extractoFechaGroups = new Map();
               
               // Agrupar extracto pendiente por fecha
@@ -2021,18 +2021,18 @@
               });
 
               // Conciliar totales de fecha extracto vs MC pendientes
-              console.log(`[PASO 4-F3] Procesando ${extractoFechaGroups.size} fechas de extracto vs ${mcPendientes.length} registros MC pendientes`);
+              // console.log(`[PASO 4-F3] Procesando ${extractoFechaGroups.size} fechas de extracto vs ${mcPendientes.length} registros MC pendientes`);
               let procesedDatesMC = 0;
               extractoFechaGroups.forEach((extractoGroup, fechaKey) => {
                   procesedDatesMC++;
                   const totalExtracto = parseFloat(extractoGroup.total.toFixed(2));
-                  console.log(`[PASO 4-F3] Procesando fecha ${procesedDatesMC}/${extractoFechaGroups.size}: ${fechaKey} con total ${totalExtracto}`);
+                  // console.log(`[PASO 4-F3] Procesando fecha ${procesedDatesMC}/${extractoFechaGroups.size}: ${fechaKey} con total ${totalExtracto}`);
                   
                   // Buscar combinaciones de MC que sumen este total
                   const mcCombination = findCombinationBySum(mcPendientes, totalExtracto);
                   
                   if (mcCombination.length > 0) {
-                      console.log(`[PASO 4-F3] ✅ CONCILIADO: Fecha ${fechaKey} total ${totalExtracto} con ${mcCombination.length} registros MC`);
+                      // console.log(`[PASO 4-F3] ✅ CONCILIADO: Fecha ${fechaKey} total ${totalExtracto} con ${mcCombination.length} registros MC`);
                       
                       // Marcar extracto como conciliado
                       extractoGroup.items.forEach(item => {
@@ -2051,7 +2051,7 @@
                   }
               });
 
-              console.log(`[PASO 4] RESUMEN: F1=${conciliadosMcF1}, F2=${conciliadosMcF2}, F3=${conciliadosMcF3}, Total=${conciliadosMc} conciliaciones MC`);
+              // console.log(`[PASO 4] RESUMEN: F1=${conciliadosMcF1}, F2=${conciliadosMcF2}, F3=${conciliadosMcF3}, Total=${conciliadosMc} conciliaciones MC`);
           }
 
           // Función auxiliar para crear fechas sin problemas de zona horaria
@@ -2117,11 +2117,11 @@
           let conciliadosVisa = 0;
           
           if (visaCommerceMap.size > 0) {
-              console.log('\n🏛️ PASO 5: Conciliando con VISA (2 FASES)');
-              console.log(`[PASO 5] Comercios VISA disponibles:`, Array.from(visaCommerceMap.keys()));
+              // console.log('\n🏛️ PASO 5: Conciliando con VISA (2 FASES)');
+              // console.log(`[PASO 5] Comercios VISA disponibles:`, Array.from(visaCommerceMap.keys()));
               
               // FASE 1: Línea de extracto vs Grupos totalizados de VISA
-              console.log('\n--- FASE 1: Extracto línea vs VISA grupos ---');
+              // console.log('\n--- FASE 1: Extracto línea vs VISA grupos ---');
               dataExtractoConEstado.forEach((row, index) => {
                   if (row[row.length - 2] !== 'Pendiente') return;
 
@@ -2134,7 +2134,7 @@
                       const fullCode = match ? match[1] : "";
                       const codcomKey = fullCode.slice(-7);
                       
-                      console.log(`[PASO 5 F1] Extracto ${index}: REFERENCIA2="${referencia2}" → codcomKey="${codcomKey}" | Monto: ${monto}`);
+                      // console.log(`[PASO 5 F1] Extracto ${index}: REFERENCIA2="${referencia2}" → codcomKey="${codcomKey}" | Monto: ${monto}`);
                       
                       if (visaCommerceMap.has(codcomKey)) {
                           const gruposVisa = visaCommerceMap.get(codcomKey);
@@ -2159,7 +2159,7 @@
                               });
                               
                               conciliadosVisaF1++;
-                              console.log(`[PASO 5 F1] ✅ CONCILIADO: Extracto ${index} con VISA grupo | Monto: ${monto}`);
+                              // console.log(`[PASO 5 F1] ✅ CONCILIADO: Extracto ${index} con VISA grupo | Monto: ${monto}`);
                               gruposVisa.splice(matchIndex, 1); // Eliminar el grupo para no reutilizarlo
                               
                               if (gruposVisa.length === 0) {
@@ -2171,7 +2171,7 @@
               });
               
               // FASE 2: Agrupar extracto por fecha y comercio, comparar con grupos VISA
-              console.log('\n--- FASE 2: Extracto agrupado por fecha vs VISA grupos por fecha ---');
+              // console.log('\n--- FASE 2: Extracto agrupado por fecha vs VISA grupos por fecha ---');
               
               // Agrupar extracto pendiente por fecha y comercio
               let extractoFechaGroups = new Map();
@@ -2208,7 +2208,7 @@
                   }
               });
               
-              console.log(`[PASO 5 F2] Grupos de extracto creados: ${extractoFechaGroups.size}`);
+              // console.log(`[PASO 5 F2] Grupos de extracto creados: ${extractoFechaGroups.size}`);
               
               // Comparar grupos del extracto con grupos de VISA
               extractoFechaGroups.forEach((grupoExtracto, groupKey) => {
@@ -2221,7 +2221,7 @@
                       const matchIndex = gruposVisa.findIndex(grupoVisa => {
                           const visaFechaKey = createDateKey(grupoVisa.fechaProceso);
                           const montoMatch = Math.abs(grupoExtracto.total - grupoVisa.total) < 0.01;
-                          console.log(`[PASO 5 F2] Comparando: Extracto ${fechaKey}:${grupoExtracto.total} vs VISA ${visaFechaKey}:${grupoVisa.total} = ${montoMatch}`);
+                          // console.log(`[PASO 5 F2] Comparando: Extracto ${fechaKey}:${grupoExtracto.total} vs VISA ${visaFechaKey}:${grupoVisa.total} = ${montoMatch}`);
                           return montoMatch; // Solo por monto, no por fecha
                       });
                       
@@ -2251,13 +2251,13 @@
                           }
                           
                           conciliadosVisaF2++;
-                          console.log(`[PASO 5 F2] ✅ CONCILIADO: Comercio ${codcomKey} - Monto: ${grupoExtracto.total} - Extracto(${fechaKey}) vs VISA(${visaFechaKey})`);
+                          // console.log(`[PASO 5 F2] ✅ CONCILIADO: Comercio ${codcomKey} - Monto: ${grupoExtracto.total} - Extracto(${fechaKey}) vs VISA(${visaFechaKey})`);
                       }
                   }
               });
               
               conciliadosVisa = conciliadosVisaF1 + conciliadosVisaF2;
-              console.log(`[PASO 5] RESUMEN: F1=${conciliadosVisaF1}, F2=${conciliadosVisaF2}, Total=${conciliadosVisa} conciliaciones VISA`);
+              // console.log(`[PASO 5] RESUMEN: F1=${conciliadosVisaF1}, F2=${conciliadosVisaF2}, Total=${conciliadosVisa} conciliaciones VISA`);
           }
 
           // PASO 6: Conciliación PAYU
