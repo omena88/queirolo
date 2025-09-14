@@ -941,6 +941,36 @@
       }
 
       // --- FILE HANDLING ---
+      // Función para detectar si un nombre de archivo contiene un formato de mes-año (ENE25, FEB26, etc.)
+      function detectarFormatoMesAnio(fileName) {
+        // Lista de abreviaturas de meses en español
+        const meses = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SET', 'OCT', 'NOV', 'DIC'];
+        
+        // Convertir a mayúsculas para facilitar la comparación
+        const fileNameUpper = fileName.toUpperCase();
+        
+        console.log(`Analizando formato mes-año en archivo: ${fileName}`);
+        
+        // Verificar si contiene alguna de las abreviaturas de mes seguida de 2 dígitos (año)
+        for (const mes of meses) {
+          // Buscar patrón MES + 2 dígitos (ej: ENE25, FEB26)
+          const regex = new RegExp(`${mes}\d{2}`);
+          if (regex.test(fileNameUpper)) {
+            const match = fileNameUpper.match(regex)[0];
+            const anio = match.substring(3); // Extraer los 2 dígitos del año
+            console.log(`✅ Formato mes-año encontrado: ${mes}${anio}`);
+            return {
+              encontrado: true,
+              mes: mes,
+              anio: anio
+            };
+          }
+        }
+        
+        console.log(`❌ No se encontró formato mes-año en: ${fileName}`);
+        return { encontrado: false };
+      }
+
       function handleAmexUpload(files) {
         const fileList = document.getElementById('amex-file-list');
         updateContinueButton();
@@ -951,6 +981,20 @@
             return;
           }
 
+          // Detectar si el archivo tiene formato mes-año
+          const formatoMesAnio = detectarFormatoMesAnio(file.name);
+          
+          // Guardar la información del formato en una propiedad del archivo
+          file.formatoMesAnio = formatoMesAnio.encontrado;
+          file.mesMesAnio = formatoMesAnio.mes;
+          file.anioMesAnio = formatoMesAnio.anio;
+          
+          console.log(`📄 Archivo AMEX cargado: ${file.name}`);
+          console.log(`   - Formato MMMAA: ${file.formatoMesAnio ? 'Sí' : 'No'}`);
+          if (file.formatoMesAnio) {
+              console.log(`   - Mes: ${file.mesMesAnio}, Año: ${file.anioMesAnio}`);
+          }
+          
           amexFiles.push(file);
           saveFileToCache(file, 'amex');
 
@@ -961,6 +1005,7 @@
             <div class="flex items-center gap-2 flex-1 min-w-0">
               <i class="fas fa-file-excel text-blue-600 text-xs"></i>
               <span class="font-medium text-blue-900 truncate">${file.name}</span>
+              ${file.formatoMesAnio ? `<span class="text-xs text-orange-600 ml-1">(${file.mesMesAnio}${file.anioMesAnio})</span>` : ''}
             </div>
             <button class="p-1 text-red-500 hover:text-red-700" onclick="removeAmexFile('${file.name}')">
               <i class="fas fa-times text-xs"></i>
@@ -980,6 +1025,20 @@
             return;
           }
 
+          // Detectar si el archivo tiene formato mes-año
+          const formatoMesAnio = detectarFormatoMesAnio(file.name);
+          
+          // Guardar la información del formato en una propiedad del archivo
+          file.formatoMesAnio = formatoMesAnio.encontrado;
+          file.mesMesAnio = formatoMesAnio.mes;
+          file.anioMesAnio = formatoMesAnio.anio;
+          
+          console.log(`📄 Archivo DINERS cargado: ${file.name}`);
+          console.log(`   - Formato MMMAA: ${file.formatoMesAnio ? 'Sí' : 'No'}`);
+          if (file.formatoMesAnio) {
+              console.log(`   - Mes: ${file.mesMesAnio}, Año: ${file.anioMesAnio}`);
+          }
+
           dinersFiles.push(file);
           saveFileToCache(file, 'diners');
 
@@ -990,6 +1049,7 @@
             <div class="flex items-center gap-2 flex-1 min-w-0">
               <i class="fas fa-file-excel text-green-600 text-xs"></i>
               <span class="font-medium text-green-900 truncate">${file.name}</span>
+              ${file.formatoMesAnio ? `<span class="text-xs text-orange-600 ml-1">(${file.mesMesAnio}${file.anioMesAnio})</span>` : ''}
             </div>
             <button class="p-1 text-red-500 hover:text-red-700" onclick="removeDinersFile('${file.name}')">
               <i class="fas fa-times text-xs"></i>
@@ -1009,6 +1069,20 @@
             return;
           }
 
+          // Detectar si el archivo tiene formato mes-año
+          const formatoMesAnio = detectarFormatoMesAnio(file.name);
+          
+          // Guardar la información del formato en una propiedad del archivo
+          file.formatoMesAnio = formatoMesAnio.encontrado;
+          file.mesMesAnio = formatoMesAnio.mes;
+          file.anioMesAnio = formatoMesAnio.anio;
+          
+          console.log(`📄 Archivo MC cargado: ${file.name}`);
+          console.log(`   - Formato MMMAA: ${file.formatoMesAnio ? 'Sí' : 'No'}`);
+          if (file.formatoMesAnio) {
+              console.log(`   - Mes: ${file.mesMesAnio}, Año: ${file.anioMesAnio}`);
+          }
+
           mcFiles.push(file);
           saveFileToCache(file, 'mc');
 
@@ -1019,6 +1093,7 @@
             <div class="flex items-center gap-2 flex-1 min-w-0">
               <i class="fas fa-file-excel text-red-600 text-xs"></i>
               <span class="font-medium text-red-900 truncate">${file.name}</span>
+              ${file.formatoMesAnio ? `<span class="text-xs text-orange-600 ml-1">(${file.mesMesAnio}${file.anioMesAnio})</span>` : ''}
             </div>
             <button class="p-1 text-red-500 hover:text-red-700" onclick="removeMcFile('${file.name}')">
               <i class="fas fa-times text-xs"></i>
@@ -1038,6 +1113,20 @@
             return;
           }
 
+          // Detectar si el archivo tiene formato mes-año
+          const formatoMesAnio = detectarFormatoMesAnio(file.name);
+          
+          // Guardar la información del formato en una propiedad del archivo
+          file.formatoMesAnio = formatoMesAnio.encontrado;
+          file.mesMesAnio = formatoMesAnio.mes;
+          file.anioMesAnio = formatoMesAnio.anio;
+          
+          console.log(`📄 Archivo VISA cargado: ${file.name}`);
+          console.log(`   - Formato MMMAA: ${file.formatoMesAnio ? 'Sí' : 'No'}`);
+          if (file.formatoMesAnio) {
+              console.log(`   - Mes: ${file.mesMesAnio}, Año: ${file.anioMesAnio}`);
+          }
+
           visaFiles.push(file);
           saveFileToCache(file, 'visa');
 
@@ -1048,6 +1137,7 @@
             <div class="flex items-center gap-2 flex-1 min-w-0">
               <i class="fas fa-file-excel text-purple-600 text-xs"></i>
               <span class="font-medium text-purple-900 truncate">${file.name}</span>
+              ${file.formatoMesAnio ? `<span class="text-xs text-orange-600 ml-1">(${file.mesMesAnio}${file.anioMesAnio})</span>` : ''}
             </div>
             <button class="p-1 text-red-500 hover:text-red-700" onclick="removeVisaFile('${file.name}')">
               <i class="fas fa-times text-xs"></i>
@@ -1097,6 +1187,20 @@
             return;
           }
 
+          // Detectar si el archivo tiene formato mes-año
+          const formatoMesAnio = detectarFormatoMesAnio(file.name);
+          
+          // Guardar la información del formato en una propiedad del archivo
+          file.formatoMesAnio = formatoMesAnio.encontrado;
+          file.mesMesAnio = formatoMesAnio.mes;
+          file.anioMesAnio = formatoMesAnio.anio;
+          
+          console.log(`📄 Archivo PAYU cargado: ${file.name}`);
+          console.log(`   - Formato MMMAA: ${file.formatoMesAnio ? 'Sí' : 'No'}`);
+          if (file.formatoMesAnio) {
+              console.log(`   - Mes: ${file.mesMesAnio}, Año: ${file.anioMesAnio}`);
+          }
+
           payuFiles.push(file);
           saveFileToCache(file, 'payu');
 
@@ -1107,6 +1211,7 @@
             <div class="flex items-center gap-2 flex-1 min-w-0">
               <i class="fas fa-file-excel text-yellow-600 text-xs"></i>
               <span class="font-medium text-yellow-900 truncate">${file.name}</span>
+              ${file.formatoMesAnio ? `<span class="text-xs text-orange-600 ml-1">(${file.mesMesAnio}${file.anioMesAnio})</span>` : ''}
             </div>
             <button class="p-1 text-red-500 hover:text-red-700" onclick="removePayuFile('${file.name}')">
               <i class="fas fa-times text-xs"></i>
@@ -1164,6 +1269,7 @@
                          desc.endsWith('CIA DE SERV') || 
                          desc.endsWith('DE PROCESOS DE MEDIOS') ||
                          desc.endsWith('DINERS CLUB PERU S.') ||
+                         desc.endsWith('DE PAYU PERU S.A.C') ||
                          desc.includes('COMPAN');
               });
 
@@ -1176,26 +1282,60 @@
               
               // 6. Consolidar y mapear archivos AMEX
               let consolidatedAmexData = [];
+              let amexFilesInfo = []; // Almacenar información de los archivos para cada fila
               if (amexFiles.length > 0) {
                   for (const file of amexFiles) {
                       // console.log(`📄 Procesando archivo AMEX: ${file.name}`);
                       const [rawAmexHeaders, ...rawAmexData] = await readFileAndGetData(file, { requiredHeaders: INPUT_AMEX_HEADERS });
                       const amexHeaderMap = INPUT_AMEX_HEADERS.map(h => rawAmexHeaders.findIndex(rawH => rawH.toUpperCase().trim() === h));
                       const mappedAmex = rawAmexData.map(row => amexHeaderMap.map(index => row[index]));
+                      
+                      // Guardar la referencia al archivo para cada fila
+                      const startIndex = consolidatedAmexData.length;
                       consolidatedAmexData.push(...mappedAmex);
+                      for (let i = 0; i < mappedAmex.length; i++) {
+                          amexFilesInfo[startIndex + i] = file;
+                      }
+                      
+                      // Log para verificar la información del archivo
+                      console.log(`📄 Archivo AMEX: ${file.name}`);
+                      console.log(`   - Formato MMMAA: ${file.formatoMesAnio ? 'Sí' : 'No'}`);
+                      if (file.formatoMesAnio) {
+                          console.log(`   - Mes: ${file.mesMesAnio}, Año: ${file.anioMesAnio}`);
+                      }
                   }
 
                   // 5.1. Filtrar AMEX por Neto_Total != 0
                   const netoTotalIndex = INPUT_AMEX_HEADERS.indexOf('NETO_TOTAL');
-                  consolidatedAmexData = consolidatedAmexData.filter(row => {
+                  
+                  // Filtrar manteniendo la correspondencia entre datos y archivos
+                  const filteredIndexes = [];
+                  consolidatedAmexData.forEach((row, index) => {
                       const netoTotal = convertToNumber(row[netoTotalIndex]);
-                      return !isNaN(netoTotal) && netoTotal !== 0;
+                      if (!isNaN(netoTotal) && netoTotal !== 0) {
+                          filteredIndexes.push(index);
+                      }
                   });
-                  // console.log(`📊 AMEX: ${consolidatedAmexData.length} filas válidas después del filtro`);
+                  
+                  // Crear nuevos arrays filtrados manteniendo la correspondencia
+                  const newConsolidatedAmexData = [];
+                  const newAmexFilesInfo = [];
+                  
+                  filteredIndexes.forEach(index => {
+                      newConsolidatedAmexData.push(consolidatedAmexData[index]);
+                      newAmexFilesInfo.push(amexFilesInfo[index]);
+                  });
+                  
+                  consolidatedAmexData = newConsolidatedAmexData;
+                  amexFilesInfo = newAmexFilesInfo;
+                  
+                  console.log(`📊 AMEX: ${consolidatedAmexData.length} filas válidas después del filtro`);
+                  console.log(`📊 AMEX Files Info: ${amexFilesInfo.length} referencias a archivos después del filtro`);
               }
 
               // 6. Consolidar y mapear archivos DINERS
               let consolidatedDinersData = [];
+              let dinersFilesInfo = []; // Array para mantener información de archivos
               if (dinersFiles.length > 0) {
                   for (const file of dinersFiles) {
                       // console.log(`📄 Procesando archivo DINERS: ${file.name}`);
@@ -1212,12 +1352,23 @@
                       
                       const mappedDiners = filteredDinersData.map(row => dinersHeaderMap.map(index => row[index]));
                       consolidatedDinersData.push(...mappedDiners);
+                      
+                      // Agregar información del archivo para cada fila procesada
+                      for (let i = 0; i < mappedDiners.length; i++) {
+                          dinersFilesInfo.push({
+                              formatoMesAnio: file.formatoMesAnio,
+                              fileName: file.name,
+                              mes: file.mesMesAnio,
+                              anio: file.anioMesAnio
+                          });
+                      }
                   }
                   // console.log(`📊 DINERS: ${consolidatedDinersData.length} filas válidas después del filtro`);
               }
 
               // 7. Consolidar y mapear archivos MASTERCARD
               let consolidatedMcData = [];
+              let mcFilesInfo = []; // Array para mantener información de archivos
               if (mcFiles.length > 0) {
                   for (const file of mcFiles) {
                       // console.log(`📄 Procesando archivo MC: ${file.name}`);
@@ -1236,12 +1387,23 @@
                           });
 
                       consolidatedMcData.push(...mappedMc);
+                      
+                      // Agregar información del archivo para cada fila procesada
+                      for (let i = 0; i < mappedMc.length; i++) {
+                          mcFilesInfo.push({
+                              formatoMesAnio: file.formatoMesAnio,
+                              fileName: file.name,
+                              mes: file.mesMesAnio,
+                              anio: file.anioMesAnio
+                          });
+                      }
                   }
                   // console.log(`📊 MC: ${consolidatedMcData.length} filas válidas después del filtro`);
               }
 
               // 8. Consolidar y mapear archivos VISA
               let consolidatedVisaData = [];
+              let visaFilesInfo = []; // Array para mantener información de archivos
               if (visaFiles.length > 0) {
                   for (const file of visaFiles) {
                       // console.log(`📄 Procesando archivo VISA: ${file.name}`);
@@ -1259,12 +1421,23 @@
                           });
 
                       consolidatedVisaData.push(...mappedVisa);
+                      
+                      // Agregar información del archivo para cada fila procesada
+                      for (let i = 0; i < mappedVisa.length; i++) {
+                          visaFilesInfo.push({
+                              formatoMesAnio: file.formatoMesAnio,
+                              fileName: file.name,
+                              mes: file.mesMesAnio,
+                              anio: file.anioMesAnio
+                          });
+                      }
                   }
                   // console.log(`📊 VISA: ${consolidatedVisaData.length} filas válidas después del filtro`);
               }
 
               // 8. Consolidar y mapear archivos PAYU
               let consolidatedPayuData = [];
+              let payuFilesInfo = []; // Array para mantener información de archivos
               if (payuFiles.length > 0) {
                   for (const file of payuFiles) {
                       // console.log(`📄 Procesando archivo PAYU: ${file.name}`);
@@ -1282,23 +1455,76 @@
                       const filteredPayuData = rawPayuData.filter(row => {
                           const descripcion = String(row[descripcionIndex] || '').toUpperCase();
                           const debitos = row[debitosIndex];
-                          return descripcion.includes('PAYMENT_ORDER [PAYMENT_ORDER]') && 
+                          // Filtro exacto para PAYU: solo incluir PAYMENT_ORDER exactos
+                          return descripcion === 'PAYMENT_ORDER [PAYMENT_ORDER]' && 
                                  debitos !== null && debitos !== undefined && debitos !== '' &&
                                  convertToNumber(debitos) !== 0;
                       });
                       
-                      const mappedPayu = filteredPayuData.map(row => payuHeaderMap.map(index => row[index]));
+                      // Eliminar duplicados en PAYU basados en DOCUMENTO y DEBITOS
+                      const payuUniqueMap = new Map();
+                      const documentoIndex = rawPayuHeaders.findIndex(h => h.toUpperCase().trim() === 'DOCUMENTO');
+                      
+                      const uniqueFilteredPayuData = filteredPayuData.filter(row => {
+                          const documento = String(row[documentoIndex] || '');
+                          const debitos = convertToNumber(row[debitosIndex]);
+                          const key = `${documento}_${debitos.toFixed(2)}`;
+                          
+                          if (payuUniqueMap.has(key)) {
+                              return false; // Es un duplicado
+                          } else {
+                              payuUniqueMap.set(key, true);
+                              return true;
+                          }
+                      });
+                      
+                      const mappedPayu = uniqueFilteredPayuData.map(row => payuHeaderMap.map(index => row[index]));
                       consolidatedPayuData.push(...mappedPayu);
+                      
+                      // Agregar información del archivo para cada fila procesada
+                      for (let i = 0; i < mappedPayu.length; i++) {
+                          payuFilesInfo.push({
+                              formatoMesAnio: file.formatoMesAnio,
+                              fileName: file.name,
+                              mes: file.mesMesAnio,
+                              anio: file.anioMesAnio
+                          });
+                      }
                   }
                   // console.log(`📊 PAYU: ${consolidatedPayuData.length} filas válidas después del filtro`);
               }
 
               // 9. Agregar columnas ESTADO y #REF a todos los datos consolidados
-              const amexDataWithEstado = consolidatedAmexData.map(row => [...row, 'Pendiente', '']);
-              const dinersDataWithEstado = consolidatedDinersData.map(row => [...row, 'Pendiente', '']);
-              const mcDataWithEstado = consolidatedMcData.map(row => [...row, 'Pendiente', '']);
-              const visaDataWithEstado = consolidatedVisaData.map(row => [...row, 'Pendiente', '']);
-              const payuDataWithEstado = consolidatedPayuData.map(row => [...row, 'Pendiente', '']);
+              // Para archivos con formato MMMAA, usar 'Pendiente MA' como estado inicial
+              const amexDataWithEstado = consolidatedAmexData.map((row, index) => {
+                  const fileInfo = amexFilesInfo[index];
+                  const estado = fileInfo && fileInfo.formatoMesAnio ? 'Pendiente MA' : 'Pendiente';
+                  return [...row, estado, ''];
+              });
+              
+              const dinersDataWithEstado = consolidatedDinersData.map((row, index) => {
+                  const fileInfo = dinersFilesInfo[index];
+                  const estado = fileInfo && fileInfo.formatoMesAnio ? 'Pendiente MA' : 'Pendiente';
+                  return [...row, estado, ''];
+              });
+              
+              const mcDataWithEstado = consolidatedMcData.map((row, index) => {
+                  const fileInfo = mcFilesInfo[index];
+                  const estado = fileInfo && fileInfo.formatoMesAnio ? 'Pendiente MA' : 'Pendiente';
+                  return [...row, estado, ''];
+              });
+              
+              const visaDataWithEstado = consolidatedVisaData.map((row, index) => {
+                  const fileInfo = visaFilesInfo[index];
+                  const estado = fileInfo && fileInfo.formatoMesAnio ? 'Pendiente MA' : 'Pendiente';
+                  return [...row, estado, ''];
+              });
+              
+              const payuDataWithEstado = consolidatedPayuData.map((row, index) => {
+                  const fileInfo = payuFilesInfo[index];
+                  const estado = fileInfo && fileInfo.formatoMesAnio ? 'Pendiente MA' : 'Pendiente';
+                  return [...row, estado, ''];
+              });
 
               // 10. Realizar la Conciliación por pasos
               const { conciliadoExtracto, conciliadoAmex, conciliadoDiners, conciliadoMc, conciliadoVisa, conciliadoPayu } = performReconciliationMultiStep(
@@ -1307,7 +1533,12 @@
                   [FINAL_DINERS_HEADERS, ...dinersDataWithEstado],
                   [FINAL_MC_HEADERS, ...mcDataWithEstado],
                   [FINAL_VISA_HEADERS, ...visaDataWithEstado],
-                  [FINAL_PAYU_HEADERS, ...payuDataWithEstado]
+                  [FINAL_PAYU_HEADERS, ...payuDataWithEstado],
+                  amexFilesInfo,
+                  dinersFilesInfo,
+                  mcFilesInfo,
+                  visaFilesInfo,
+                  payuFilesInfo
               );
 
               // 11. Formatear fechas en salidas
@@ -1393,7 +1624,7 @@
           }
       }
 
-      function performReconciliationMultiStep(extractoConHeaders, amexConHeaders, dinersConHeaders, mcConHeaders, visaConHeaders, payuConHeaders) {
+      function performReconciliationMultiStep(extractoConHeaders, amexConHeaders, dinersConHeaders, mcConHeaders, visaConHeaders, payuConHeaders, amexFilesInfo = [], dinersFilesInfo = [], mcFilesInfo = [], visaFilesInfo = [], payuFilesInfo = []) {
           console.log('🔄 INICIANDO CONCILIACIÓN POR PASOS');
           console.log('Extracto datos:', extractoConHeaders.length);
           console.log('AMEX datos:', amexConHeaders.length);
@@ -1460,8 +1691,18 @@
                       const key = `${fechaKey}_${monto.toFixed(2)}`;
                       console.log(`[AMEX ${index}] Key: "${key}" | Código: ${row[codAmexIndex]}`);
                       
+                      // Obtener la referencia al archivo correspondiente a esta fila
+                      const file = amexFilesInfo[index - 1]; // -1 porque dataAmexConEstado no incluye la fila de encabezados
+                      
+                      // Log para verificar la información del archivo
+                      if (file) {
+                          console.log(`[AMEX ${index}] Archivo: ${file.name}, Formato MMMAA: ${file.formatoMesAnio ? 'Sí' : 'No'}`);
+                      } else {
+                          console.log(`[AMEX ${index}] ⚠️ No se encontró información del archivo para esta fila`);
+                      }
+                      
                       if (!amexMap.has(key)) amexMap.set(key, []);
-                      amexMap.get(key).push({ row, index });
+                      amexMap.get(key).push({ row, index, file });
                   }
               });
               console.log('AMEX Map size:', amexMap.size);
@@ -1552,13 +1793,18 @@
                           return sum + (isNaN(importe) ? 0 : importe);
                       }, 0);
                       
+                      // Obtener información del archivo del primer item del grupo
+                      const firstItemIndex = items[0].index;
+                      const fileInfo = dinersFilesInfo[firstItemIndex] || { formatoMesAnio: false };
+                      
                       // Clave compuesta: orden_fecha para identificación única
                       const compositeKey = `${ordenPago}_${fechaPago}`;
                       dinersMap.set(compositeKey, { 
                           total: total.toFixed(2), 
                           items: items,
                           ordenPago: ordenPago,
-                          fechaPago: fechaPago
+                          fechaPago: fechaPago,
+                          formatoMesAnio: fileInfo.formatoMesAnio
                       });
                       // console.log(`[DINERS GRUPO] ${compositeKey} -> Total: ${total.toFixed(2)} (${items.length} items)`);
                   });
@@ -1585,10 +1831,15 @@
                       if (!mcCommerceMap.has(codcom)) {
                           mcCommerceMap.set(codcom, []);
                       }
+                      
+                      // Obtener información del archivo
+                      const fileInfo = mcFilesInfo[index] || { formatoMesAnio: false };
+                      
                       mcCommerceMap.get(codcom).push({
                           row,
                           index,
-                          monto: parseFloat(monto.toFixed(2))
+                          monto: parseFloat(monto.toFixed(2)),
+                          formatoMesAnio: fileInfo.formatoMesAnio
                       });
                   }
               });
@@ -1633,10 +1884,16 @@
                       if (!visaCommerceMap.has(comercio)) {
                           visaCommerceMap.set(comercio, []);
                       }
+                      
+                      // Obtener información del archivo del primer item del grupo
+                      const firstItemIndex = comercioGroup.items[0].index;
+                      const fileInfo = visaFilesInfo[firstItemIndex] || { formatoMesAnio: false };
+                      
                       visaCommerceMap.get(comercio).push({
                           fechaProceso: fechaKey,
                           total: parseFloat(comercioGroup.total.toFixed(2)),
-                          items: comercioGroup.items
+                          items: comercioGroup.items,
+                          formatoMesAnio: fileInfo.formatoMesAnio
                   });
               });
               });
@@ -1658,26 +1915,22 @@
 
               // console.log('\n💰 PASO 6: Procesando PAYU para conciliación');
               datapayuConEstado.forEach((row, index) => {
-                  const fechaRaw = row[fechaPayuIndex];
                   const debitosRaw = row[debitosPayuIndex];
-                  
-                  const fecha = parseDate(fechaRaw);
-                  let fechaKey = null;
-                  if (fecha) {
-                      const year = fecha.getUTCFullYear();
-                      const month = String(fecha.getUTCMonth() + 1).padStart(2, '0');
-                      const day = String(fecha.getUTCDate()).padStart(2, '0');
-                      fechaKey = `${year}-${month}-${day}`;
-                  }
-                  
                   const debitos = Math.abs(convertToNumber(debitosRaw)); // Valor absoluto de débitos
                   
-                  if (fechaKey && !isNaN(debitos)) {
-                      const key = `${fechaKey}_${debitos.toFixed(2)}`;
+                  if (!isNaN(debitos)) {
+                      const key = `${debitos.toFixed(2)}`;
                       // console.log(`[PAYU ${index}] Key: "${key}" | Débitos: ${debitos}`);
                       
+                      // Obtener información del archivo
+                      const fileInfo = payuFilesInfo[index] || { formatoMesAnio: false };
+                      
                       if (!payuMap.has(key)) payuMap.set(key, []);
-                      payuMap.get(key).push({ row, index });
+                      payuMap.get(key).push({ 
+                          row, 
+                          index, 
+                          formatoMesAnio: fileInfo.formatoMesAnio 
+                      });
                   }
               });
           }
@@ -1719,11 +1972,16 @@
                               const opNum = row[opNumExtractoIndex];
                               const fechaStr = fecha.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
                               
-                              // Marcar como conciliado con prefijo P2-F2
-                              row[row.length - 2] = 'P2-F2-Conciliado';
-                              row[row.length - 1] = `${codCom} - ${fechaStr}`;
-                              matchRow[matchRow.length - 2] = 'P2-F2-Conciliado';
-                              matchRow[matchRow.length - 1] = `${opNum} - ${fechaStr}`;
+                              // Verificar si el registro tiene estado 'Pendiente MA' para asignar etiqueta 'MA'
+                              const esArchivoMA = matchRow[matchRow.length - 2] === 'Pendiente MA';
+                              const etiqueta = esArchivoMA ? 'MA' : '';
+                              console.log('Etiqueta aplicada:', etiqueta, 'Estado original:', matchRow[matchRow.length - 2]);
+                              
+                              // Marcar como conciliado
+                              row[row.length - 2] = `${etiqueta}P2-F2-Conciliado`;
+                              row[row.length - 1] = `${etiqueta}${codCom} - ${fechaStr}`;
+                              matchRow[matchRow.length - 2] = `${etiqueta}P2-F2-Conciliado`;
+                              matchRow[matchRow.length - 1] = `${etiqueta}${opNum} - ${fechaStr}`;
                               
                               conciliadosAmexF2++;
                               conciliadosAmex++;
@@ -1756,8 +2014,18 @@
                           const montoKey = monto.toFixed(2);
                           // console.log(`[AMEX F3 ${index}] Monto: "${montoKey}" | Código: ${row[codAmexIndexF3]}`);
 
+                          // Obtener la referencia al archivo correspondiente a esta fila
+                          const file = amexFilesInfo[index - 1]; // -1 porque dataAmexConEstado no incluye la fila de encabezados
+                          
+                          // Log para verificar la información del archivo en Fase 3
+                          if (file) {
+                              console.log(`[AMEX F3 ${index}] Archivo: ${file.name}, Formato MMMAA: ${file.formatoMesAnio ? 'Sí' : 'No'}`);
+                          } else {
+                              console.log(`[AMEX F3 ${index}] ⚠️ No se encontró información del archivo para esta fila`);
+                          }
+                          
                           if (!amexMontoMap.has(montoKey)) amexMontoMap.set(montoKey, []);
-                          amexMontoMap.get(montoKey).push({ row, index });
+                          amexMontoMap.get(montoKey).push({ row, index, file });
                       }
                   }
               });
@@ -1785,11 +2053,16 @@
                                   fechaExtractoStr.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }) :
                                   'Fecha inválida';
 
-                              // Marcar como conciliado con prefijo P2-F3
-                              row[row.length - 2] = 'P2-F3-Conciliado';
-                              row[row.length - 1] = `${codCom} - Monto: ${montoKey} (fechas diferentes)`;
-                              matchRow[matchRow.length - 2] = 'P2-F3-Conciliado';
-                              matchRow[matchRow.length - 1] = `${opNum} - Monto: ${montoKey} (fechas diferentes)`;
+                              // Verificar si el registro tiene estado 'Pendiente MA' para asignar etiqueta 'MA'
+                              const esArchivoMA = matchRow[matchRow.length - 2] === 'Pendiente MA';
+                              const etiqueta = esArchivoMA ? 'MA' : '';
+                              console.log('Etiqueta F3 aplicada:', etiqueta, 'Estado original:', matchRow[matchRow.length - 2]);
+                              
+                              // Marcar como conciliado
+                              row[row.length - 2] = `${etiqueta}P2-F3-Conciliado`;
+                              row[row.length - 1] = `${etiqueta}${codCom} - Monto: ${montoKey} (fechas diferentes)`;
+                              matchRow[matchRow.length - 2] = `${etiqueta}P2-F3-Conciliado`;
+                              matchRow[matchRow.length - 1] = `${etiqueta}${opNum} - Monto: ${montoKey} (fechas diferentes)`;
 
                               conciliadosAmexF3++;
                               conciliadosAmex++;
@@ -1812,8 +2085,12 @@
 
           // PASO 3: Conciliación DINERS (NUEVA LÓGICA: por fecha y monto)
           let conciliadosDiners = 0;
+          let conciliadosDinersFase1 = 0;
+          let conciliadosDinersFase2 = 0;
+          
           if (dinersMap.size > 0) {
-              // console.log('\n🎯 PASO 3: Conciliando con DINERS por fecha y monto');
+              // FASE 1: Conciliación por fecha y monto exacto
+              // console.log('\n🎯 PASO 3 - FASE 1: Conciliando con DINERS por fecha y monto');
               dataExtractoConEstado.forEach((row, index) => {
                   if (row[row.length - 2] !== 'Pendiente') return; // Ya conciliado
 
@@ -1854,30 +2131,35 @@
                       
                       if (fechaExtractoKey) {
                           // Buscar coincidencia por fecha y monto en los grupos DINERS
-                          console.log(`[EXTRACTO ${index}] Fecha Original: ${fechaExtracto} | Fecha Parseada: ${fechaExtractoKey} | Monto: ${monto}`);
+                          // console.log(`[EXTRACTO ${index}] Fecha Original: ${fechaExtracto} | Fecha Parseada: ${fechaExtractoKey} | Monto: ${monto}`);
                           for (const [compositeKey, dinersGroup] of dinersMap.entries()) {
                               const dinersTotal = parseFloat(dinersGroup.total);
                               const dinersFecha = dinersGroup.fechaPago;
                               
-                              console.log(`[COMPARANDO] Extracto: ${fechaExtractoKey} vs DINERS: ${dinersFecha} | Monto Extracto: ${monto} vs DINERS: ${dinersTotal}`);
+                              // console.log(`[COMPARANDO] Extracto: ${fechaExtractoKey} vs DINERS: ${dinersFecha} | Monto Extracto: ${monto} vs DINERS: ${dinersTotal}`);
                               
                               // Comparar fecha y monto
                               if (dinersFecha === fechaExtractoKey && Math.abs(monto - dinersTotal) < 0.01) {
                                   const opNum = row[opNumExtractoIndex];
                                   const ordenPago = dinersGroup.ordenPago;
                                   
+                                  // Verificar si algún registro del grupo tiene estado 'Pendiente MA'
+                                  const esArchivoMA = dinersGroup.items.some(item => item.row[item.row.length - 2] === 'Pendiente MA');
+                                  const etiqueta = esArchivoMA ? 'MA' : '';
+                                  
                                   // Marcar extracto como conciliado
-                                  row[row.length - 2] = 'P3 - CONCILIADO';
-                                  row[row.length - 1] = `${ordenPago} - ${dinersFecha}`;
+                                  row[row.length - 2] = `${etiqueta}P3-F1 - CONCILIADO`;
+                                  row[row.length - 1] = `${etiqueta}${ordenPago} - ${dinersFecha}`;
                                   
                                   // Marcar todos los items DINERS del grupo como conciliados
                                   dinersGroup.items.forEach(item => {
-                                      item.row[item.row.length - 2] = 'P3 - CONCILIADO';
-                                      item.row[item.row.length - 1] = `${opNum} - ${ordenPago} - ${dinersFecha}`;
+                                      item.row[item.row.length - 2] = `${etiqueta}P3-F1 - CONCILIADO`;
+                                      item.row[item.row.length - 1] = `${etiqueta}${opNum} - ${ordenPago} - ${dinersFecha}`;
                                   });
                                   
+                                  conciliadosDinersFase1++;
                                   conciliadosDiners++;
-                                  // console.log(`[EXTRACTO ${index}] ✅ P3 - CONCILIADO con DINERS | Fecha: ${dinersFecha} | Monto: ${dinersTotal} | Orden: ${ordenPago}`);
+                                  // console.log(`[EXTRACTO ${index}] ✅ P3-F1 - CONCILIADO con DINERS | Fecha: ${dinersFecha} | Monto: ${dinersTotal} | Orden: ${ordenPago}`);
                                   
                                   // Remover del mapa para evitar re-matches
                                   dinersMap.delete(compositeKey);
@@ -1887,6 +2169,76 @@
                       }
                   }
               });
+              
+              // FASE 2: Conciliación solo por monto restando 2.07
+              // console.log('\n🎯 PASO 3 - FASE 2: Conciliando con DINERS solo por monto restando 2.07');
+              
+              // Crear un mapa de DINERS solo por monto para la fase 2
+              const dinersMontoMap = new Map();
+              for (const [compositeKey, dinersGroup] of dinersMap.entries()) {
+                  const dinersTotal = parseFloat(dinersGroup.total);
+                  const montoKey = dinersTotal.toFixed(2);
+                  
+                  if (!dinersMontoMap.has(montoKey)) {
+                      dinersMontoMap.set(montoKey, []);
+                  }
+                  dinersMontoMap.get(montoKey).push({
+                      compositeKey,
+                      dinersGroup
+                  });
+              }
+              
+              // Conciliar extracto pendiente con DINERS por monto - 2.07
+              dataExtractoConEstado.forEach((row, index) => {
+                  if (row[row.length - 2] !== 'Pendiente') return; // Ya conciliado
+                  
+                  const montoRaw = row[montoExtractoIndex];
+                  const monto = convertToNumber(montoRaw);
+                  
+                  if (!isNaN(monto)) {
+                      // Calcular monto ajustado (monto + 2.07)
+                      const montoAjustado = monto + 2.07;
+                      const montoAjustadoKey = montoAjustado.toFixed(2);
+                      
+                      if (dinersMontoMap.has(montoAjustadoKey)) {
+                          const matches = dinersMontoMap.get(montoAjustadoKey);
+                          if (matches.length > 0) {
+                              const matchData = matches.shift();
+                              const { compositeKey, dinersGroup } = matchData;
+                              const dinersTotal = parseFloat(dinersGroup.total);
+                              const opNum = row[opNumExtractoIndex];
+                              
+                              // Verificar si algún registro del grupo tiene estado 'Pendiente MA'
+                              const esArchivoMA = dinersGroup.items.some(item => item.row[item.row.length - 2] === 'Pendiente MA');
+                              const etiqueta = esArchivoMA ? 'MA' : '';
+                              
+                              // Marcar extracto como conciliado
+                              row[row.length - 2] = `${etiqueta}P3-F2 - CONCILIADO`;
+                              row[row.length - 1] = `${etiqueta}DINERS - Monto: ${monto.toFixed(2)} + 2.07 = ${montoAjustadoKey}`;
+                              
+                              // Marcar todos los items DINERS del grupo como conciliados
+                              dinersGroup.items.forEach(item => {
+                                  item.row[item.row.length - 2] = `${etiqueta}P3-F2 - CONCILIADO`;
+                                  item.row[item.row.length - 1] = `${etiqueta}${opNum} - Monto ajustado: ${montoAjustadoKey}`;
+                              });
+                              
+                              conciliadosDinersFase2++;
+                              conciliadosDiners++;
+                              // console.log(`[EXTRACTO ${index}] ✅ P3-F2 - CONCILIADO con DINERS | Monto Extracto: ${monto.toFixed(2)} | Monto Ajustado: ${montoAjustadoKey} | Monto DINERS: ${dinersTotal}`);
+                              
+                              // Remover del mapa para evitar re-matches
+                              dinersMap.delete(compositeKey);
+                              
+                              // Si no quedan más matches para este monto, eliminar del mapa
+                              if (matches.length === 0) {
+                                  dinersMontoMap.delete(montoAjustadoKey);
+                              }
+                          }
+                      }
+                  }
+              });
+              
+              // console.log(`[DINERS RESUMEN] Total: ${conciliadosDiners} (Fase 1: ${conciliadosDinersFase1}, Fase 2: ${conciliadosDinersFase2})`);
           }
 
           // PASO 4: Conciliación MC (3 FASES)
@@ -1933,13 +2285,17 @@
                               const fechaProceso = parseDate(row[fechaExtractoIndex]);
                               const fechaProcesoStr = fechaProceso ? fechaProceso.toLocaleDateString('es-ES', {day: '2-digit', month: '2-digit', year: 'numeric'}) : 'N/A';
                               
+                              // Verificar si el registro MC tiene estado 'Pendiente MA'
+                              const esArchivoMA = mcRecord.row[mcRecord.row.length - 2] === 'Pendiente MA';
+                              const etiqueta = esArchivoMA ? 'MA' : '';
+                              
                               // Marcar extracto como conciliado
-                              row[row.length - 2] = 'P4-F1-Conciliado';
-                              row[row.length - 1] = `MC-${codcomKey} - ${fechaProcesoStr}`;
+                              row[row.length - 2] = `${etiqueta}P4-F1-Conciliado`;
+                              row[row.length - 1] = `${etiqueta}MC-${codcomKey} - ${fechaProcesoStr}`;
                               
                               // Marcar registro MC como conciliado
-                              mcRecord.row[mcRecord.row.length - 2] = 'P4-F1-Conciliado';
-                              mcRecord.row[mcRecord.row.length - 1] = `${opNum} - ${fechaProcesoStr}`;
+                              mcRecord.row[mcRecord.row.length - 2] = `${etiqueta}P4-F1-Conciliado`;
+                              mcRecord.row[mcRecord.row.length - 1] = `${etiqueta}${opNum} - ${fechaProcesoStr}`;
                               
                               conciliadosMcF1++;
                               conciliadosMc++;
@@ -1984,13 +2340,17 @@
                               const fechaProceso = parseDate(row[fechaExtractoIndex]);
                               const fechaProcesoStr = fechaProceso ? fechaProceso.toLocaleDateString('es-ES', {day: '2-digit', month: '2-digit', year: 'numeric'}) : 'N/A';
                               
+                              // Verificar si el registro MC tiene estado 'Pendiente MA'
+                              const esArchivoMA = mcRecord.row[mcRecord.row.length - 2] === 'Pendiente MA';
+                              const etiqueta = esArchivoMA ? 'MA' : '';
+                              
                               // Marcar extracto como conciliado
-                              row[row.length - 2] = 'P4-F2-Conciliado';
-                              row[row.length - 1] = `MC-Monto: ${montoKey} - ${fechaProcesoStr}`;
+                              row[row.length - 2] = `${etiqueta}P4-F2-Conciliado`;
+                              row[row.length - 1] = `${etiqueta}MC-Monto: ${montoKey} - ${fechaProcesoStr}`;
                               
                               // Marcar registro MC como conciliado
-                              mcRecord.row[mcRecord.row.length - 2] = 'P4-F2-Conciliado';
-                              mcRecord.row[mcRecord.row.length - 1] = `${opNum} - Monto: ${montoKey}`;
+                              mcRecord.row[mcRecord.row.length - 2] = `${etiqueta}P4-F2-Conciliado`;
+                              mcRecord.row[mcRecord.row.length - 1] = `${etiqueta}${opNum} - Monto: ${montoKey}`;
                               
                               conciliadosMcF2++;
                               conciliadosMc++;
@@ -2049,16 +2409,22 @@
                   if (mcCombination.length > 0) {
                       // console.log(`[PASO 4-F3] ✅ CONCILIADO: Fecha ${fechaKey} total ${totalExtracto} con ${mcCombination.length} registros MC`);
                       
+                      // Verificar si algún registro MC tiene estado 'Pendiente MA'
+                      const esArchivoMA = mcCombination.some(mcRecord => mcRecord.row[mcRecord.row.length - 2] === 'Pendiente MA');
+                      const etiqueta = esArchivoMA ? 'MA' : '';
+                      
                       // Marcar extracto como conciliado
                       extractoGroup.items.forEach(item => {
-                          item.row[item.row.length - 2] = 'P4-F3-Conciliado';
-                          item.row[item.row.length - 1] = `MC-Fecha: ${fechaKey} - Total: ${totalExtracto}`;
+                          item.row[item.row.length - 2] = `${etiqueta}P4-F3-Conciliado`;
+                          item.row[item.row.length - 1] = `${etiqueta}MC-Fecha: ${fechaKey} - Total: ${totalExtracto}`;
                       });
                       
                       // Marcar MC como conciliado
                       mcCombination.forEach(mcRecord => {
-                          mcRecord.row[mcRecord.row.length - 2] = 'P4-F3-Conciliado';
-                          mcRecord.row[mcRecord.row.length - 1] = `Extracto-Fecha: ${fechaKey} - Total: ${totalExtracto}`;
+                          const esRegistroMA = mcRecord.row[mcRecord.row.length - 2] === 'Pendiente MA';
+                          const etiquetaMC = esRegistroMA ? 'MA' : '';
+                          mcRecord.row[mcRecord.row.length - 2] = `${etiquetaMC}P4-F3-Conciliado`;
+                          mcRecord.row[mcRecord.row.length - 1] = `${etiquetaMC}Extracto-Fecha: ${fechaKey} - Total: ${totalExtracto}`;
                       });
                       
                       conciliadosMcF3 += extractoGroup.items.length;
@@ -2163,14 +2529,18 @@
                               const fechaProceso = parseDate(row[fechaExtractoIndex]);
                               const fechaProcesoStr = fechaProceso ? fechaProceso.toLocaleDateString('es-ES', {day: '2-digit', month: '2-digit', year: 'numeric'}) : 'N/A';
                               
+                              // Verificar si algún registro VISA del grupo tiene estado 'Pendiente MA'
+                              const esArchivoMA = grupoVisa.items.some(item => item.row[item.row.length - 2] === 'Pendiente MA');
+                              const etiqueta = esArchivoMA ? 'MA' : '';
+                              
                               // Marcar extracto como conciliado F1
-                              row[row.length - 2] = 'P5-F1-Conciliado';
-                              row[row.length - 1] = `VISA-${codcomKey} - ${fechaProcesoStr}`;
+                              row[row.length - 2] = `${etiqueta}P5-F1-Conciliado`;
+                              row[row.length - 1] = `${etiqueta}VISA-${codcomKey} - ${fechaProcesoStr}`;
                               
                               // Marcar todos los registros VISA del grupo como conciliados F1
                               grupoVisa.items.forEach(item => {
-                                  item.row[item.row.length - 2] = 'P5-F1-Conciliado';
-                                  item.row[item.row.length - 1] = `${opNum} - ${fechaProcesoStr}`;
+                                  item.row[item.row.length - 2] = `${etiqueta}P5-F1-Conciliado`;
+                                  item.row[item.row.length - 1] = `${etiqueta}${opNum} - ${fechaProcesoStr}`;
                               });
                               
                               conciliadosVisaF1++;
@@ -2245,18 +2615,26 @@
                           
                           const visaFechaKey = createDateKey(grupoVisa.fechaProceso);
                           
+                          // Determinar prefijo AM- si algún archivo VISA tiene formato mes-año
+                          const tieneFormatoMesAnio = grupoVisa.formatoMesAnio;
+                          // Verificar si algún registro VISA del grupo tiene estado 'Pendiente MA'
+                          const esArchivoMA = grupoVisa.items.some(item => item.row[item.row.length - 2] === 'Pendiente MA');
+                          const etiqueta = esArchivoMA ? 'MA' : '';
+                          
                           // Marcar todos los registros del extracto como conciliados F2
                           grupoExtracto.items.forEach(item => {
                               const opNum = item.row[opNumExtractoIndex];
-                              item.row[item.row.length - 2] = 'P5-F2-Conciliado';
-                              item.row[item.row.length - 1] = `VISA-${codcomKey} - Monto: ${grupoExtracto.total} (${fechaKey}→${visaFechaKey})`;
+                              item.row[item.row.length - 2] = `${etiqueta}P5-F2-Conciliado`;
+                              item.row[item.row.length - 1] = `${etiqueta}VISA-${codcomKey} - Monto: ${grupoExtracto.total} (${fechaKey}→${visaFechaKey})`;
                           });
                           
                           // Marcar todos los registros VISA del grupo como conciliados F2
                           grupoVisa.items.forEach(item => {
                               const firstOpNum = grupoExtracto.items[0].row[opNumExtractoIndex];
-                              item.row[item.row.length - 2] = 'P5-F2-Conciliado';
-                              item.row[item.row.length - 1] = `${firstOpNum} - Monto: ${grupoExtracto.total} (${fechaKey}→${visaFechaKey})`;
+                              const esRegistroMA = item.row[item.row.length - 2] === 'Pendiente MA';
+                              const etiquetaVisa = esRegistroMA ? 'MA' : '';
+                              item.row[item.row.length - 2] = `${etiquetaVisa}P5-F2-Conciliado`;
+                              item.row[item.row.length - 1] = `${etiquetaVisa}${firstOpNum} - Monto: ${grupoExtracto.total} (${fechaKey}→${visaFechaKey})`;
                           });
                           
                           // Remover el grupo VISA usado
@@ -2286,18 +2664,10 @@
                   const montoRaw = row[montoExtractoIndex];
                   
                   const fecha = parseDate(fechaRaw);
-                  let fechaKey = null;
-                  if (fecha) {
-                      const year = fecha.getUTCFullYear();
-                      const month = String(fecha.getUTCMonth() + 1).padStart(2, '0');
-                      const day = String(fecha.getUTCDate()).padStart(2, '0');
-                      fechaKey = `${year}-${month}-${day}`;
-                  }
-                  
                   const monto = convertToNumber(montoRaw);
                   
-                  if (fechaKey && !isNaN(monto)) {
-                      const key = `${fechaKey}_${monto.toFixed(2)}`;
+                  if (!isNaN(monto)) {
+                      const key = `${monto.toFixed(2)}`;
                       
                       if (payuMap.has(key)) {
                           const matches = payuMap.get(key);
@@ -2307,13 +2677,16 @@
                               
                               const debitos = matchRow[payuHeaders.indexOf('DEBITOS')];
                               const opNum = row[opNumExtractoIndex];
-                              const fechaStr = fecha.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                              const fechaStr = fecha ? fecha.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'N/A';
+                              
+                              // Determinar prefijo AM- si el archivo tiene formato mes-año
+                              const prefijo = matchData.formatoMesAnio ? 'AM-' : '';
                               
                               // Marcar como conciliado con prefijo P6
-                              row[row.length - 2] = 'P6 - CONCILIADO';
-                              row[row.length - 1] = `PAYU - ${fechaStr}`;
-                              matchRow[matchRow.length - 2] = 'P6 - CONCILIADO';
-                              matchRow[matchRow.length - 1] = `${opNum} - ${fechaStr}`;
+                              row[row.length - 2] = `${prefijo}P6 - CONCILIADO`;
+                              row[row.length - 1] = `PAYU - Monto: ${monto.toFixed(2)}`;
+                              matchRow[matchRow.length - 2] = `${prefijo}P6 - CONCILIADO`;
+                              matchRow[matchRow.length - 1] = `${opNum} - Monto: ${monto.toFixed(2)}`;
                               
                               conciliadosPayu++;
                               // console.log(`[EXTRACTO ${index}] ✅ P6 - CONCILIADO con PAYU débitos ${debitos}`);
@@ -2365,6 +2738,23 @@
                       
                       const headers = jsonData[headerRowIndex].map(h => String(h || '').trim());
                       const upperHeaders = headers.map(h => h.toUpperCase());
+                      
+                      // Agregar información de formato MMMAA si existe en el archivo
+                      if (file.formatoMesAnio) {
+                          console.log(`Archivo con formato MMMAA detectado: ${file.mesMesAnio}${file.anioMesAnio}`);
+                      }
+
+                      // Verificar si es un archivo PAYU (por el nombre o por las columnas presentes)
+                      const isPayuFile = file.name.toLowerCase().includes('payu') || 
+                                        (upperHeaders.includes('DESCRIPCION') && 
+                                         upperHeaders.includes('DEBITOS') && 
+                                         upperHeaders.includes('DOCUMENTO'));
+
+                      // Si es un archivo PAYU y está intentando validar columnas que no son de PAYU
+                      if (isPayuFile && options.requiredHeaders.includes('NETO_TOTAL')) {
+                          // Ajustar los encabezados requeridos para PAYU
+                          options.requiredHeaders = ['FECHA', 'DOCUMENTO', 'DESCRIPCION', 'CREDITOS', 'DEBITOS', 'NUEVO SALDO', 'SALDO CONGELADO ANTERIOR', 'SALDO RESERVA', 'SALDO DISPONIBLE'];
+                      }
 
                       const missingHeaders = options.requiredHeaders.filter(h => !upperHeaders.includes(h.toUpperCase()));
                       if (missingHeaders.length > 0) {
