@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Consolidador de Ventas - Santiago Queirolo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/flowbite@2.5.1/dist/flowbite.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/flowbite@2.5.1/dist/flowbite.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+  <style>
+    :root {
+      --red-pantone: #e63946ff;
+      --honeydew: #f1faeeff;
+      --non-photo-blue: #a8dadcff;
+      --cerulean: #457b9dff;
+      --berkeley-blue: #1d3557ff;
+      --primary-color: var(--cerulean);
+      --secondary-color: var(--non-photo-blue);
+      --background-color: var(--honeydew);
+      --text-dark: var(--berkeley-blue);
+      --text-light: #6b7280;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--background-color);
+      min-height: 100vh;
+    }
+
+    /* Main Container */
+    .main-container {
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .app-container {
+      width: 100%;
+      max-width: 900px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* Styles from EST 1 for consistency */
+    .step-badge {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      width: 2rem !important;
+      height: 2rem !important;
+      background-color: #dbeafe !important;
+      color: #3b82f6 !important;
+      border-radius: 9999px !important;
+      font-weight: 700 !important;
+      font-size: 0.875rem !important;
+    }
+
+    .step-title {
+      font-size: 1.125rem !important;
+      font-weight: 700 !important;
+      color: #111827 !important;
+      margin: 0 !important;
+    }
+
+    .card {
+      background-color: white;
+      border-radius: 0.5rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      border: 1px solid #e5e7eb;
+      padding: 1.5rem;
+    }
+
+    /* Table Styles */
+    .reporte-tabla {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+    }
+
+    .reporte-tabla th {
+      background-color: #f3f4f6;
+      color: #374151;
+      font-weight: 600;
+      text-align: left;
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .reporte-tabla td {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid #e5e7eb;
+      color: #1f2937;
+    }
+
+    .reporte-tabla tr:last-child td {
+      border-bottom: none;
+    }
+
+    .reporte-tabla .fila-total {
+      background-color: #f9fafb;
+      font-weight: 700;
+    }
+
+    .reporte-tabla .fila-total td {
+      color: #111827;
+    }
+
+    /* Clickable rows */
+    .clickeable {
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    .clickeable:hover {
+      background-color: #f9fafb;
+    }
+
+    /* Detalle transacciones */
+    .detalle-transacciones {
+      background-color: #f8fafc;
+    }
+
+    .detalle-content {
+      padding: 1rem;
+      border-top: 1px solid #e2e8f0;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .transaccion-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid #e2e8f0;
+      font-size: 0.8rem;
+    }
+
+    .transaccion-item:last-child {
+      border-bottom: none;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="main-container">
+    <div class="app-container">
+
+      <!-- Header -->
+      <div class="flex items-center justify-between mb-2">
+        <h1
+          style="font-size: 1.5rem !important; font-weight: 700 !important; color: #111827 !important; display: flex !important; align-items: center !important; gap: 0.75rem !important; margin: 0 !important;">
+          <i class="fas fa-search-dollar" style="color: #3b82f6 !important;"></i>
+          Consolidador de Ventas
+        </h1>
+      </div>
+
+      <!-- Tipo de Reporte Card -->
+      <div class="card">
+        <div class="flex items-center gap-3 mb-4">
+          <span class="step-badge">01</span>
+          <h2 class="step-title">Tipo de Reporte</h2>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <label class="cursor-pointer relative">
+            <input type="radio" name="report-type" value="venta-tarjetas" checked class="peer sr-only">
+            <div
+              class="p-4 border rounded-lg hover:bg-gray-50 peer-checked:border-blue-500 peer-checked:bg-blue-50 transition-all">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                  <i class="fas fa-credit-card"></i>
+                </div>
+                <div>
+                  <h3 class="font-semibold text-gray-900">Venta Tarjetas</h3>
+                  <p class="text-sm text-gray-500">Consolidado diario por medio de pago</p>
+                </div>
+              </div>
+            </div>
+          </label>
+
+          <label class="cursor-pointer relative">
+            <input type="radio" name="report-type" value="ventas-semanales" class="peer sr-only">
+            <div
+              class="p-4 border rounded-lg hover:bg-gray-50 peer-checked:border-blue-500 peer-checked:bg-blue-50 transition-all">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600">
+                  <i class="fas fa-calendar-week"></i>
+                </div>
+                <div>
+                  <h3 class="font-semibold text-gray-900">Ventas Semanales</h3>
+                  <p class="text-sm text-gray-500">Generar Excel de venta semanal</p>
+                </div>
+              </div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Configuración Card -->
+      <div class="card">
+        <div class="flex items-center gap-3 mb-4">
+          <span class="step-badge">02</span>
+          <h2 class="step-title">Configuración</h2>
+        </div>
+
+        <!-- Configuración Venta Tarjetas -->
+        <div id="config-venta-tarjetas">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Paso 1: Fecha -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Seleccionar Fecha</label>
+              <input type="date" id="date-selector"
+                class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
+            </div>
+
+            <!-- Paso 2: Moneda y Buscar -->
+            <div class="flex flex-col gap-2">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Moneda y Acción</label>
+              <div class="flex gap-2">
+                <select id="currency-selector" disabled
+                  class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 flex-1 disabled:opacity-50">
+                  <option value="">Moneda</option>
+                  <option value="PEN"
+                    data-url="https://docs.google.com/spreadsheets/d/e/2PACX-1vRRhWBlTXTz5h_v8OIH-3LrKdc6tjqLR15ZG1LlxsFRbZ6867Rn0L3jnWYOUtH6Cv-LQ7QRpULms8ah/pub?gid=0&single=true&output=csv">
+                    PEN</option>
+                  <option value="USD"
+                    data-url="https://docs.google.com/spreadsheets/d/e/2PACX-1vS9bRPb-3jZj8mBz7Al-4p39nG2ua3WWgva9ieg46GvH9jAg2AYk5oSXpEW1H0lWXEJCFZgSnhCv3z3/pub?gid=0&single=true&output=csv">
+                    USD</option>
+                </select>
+                <button id="btn-buscar-ventas" disabled
+                  class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 disabled:opacity-50 disabled:cursor-not-allowed">
+                  <i class="fas fa-search mr-2"></i>Buscar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Configuración Ventas Semanales -->
+        <div id="config-ventas-semanales" style="display: none;">
+          <div class="grid grid-cols-1 gap-4">
+            <!-- Selectores de Periodo -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Seleccionar Periodo</label>
+              <div class="grid grid-cols-3 gap-2">
+                <select id="year-selector-semanal"
+                  class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
+                  <option value="">Año</option>
+                  <option value="2025">2025</option>
+                  <option value="2026">2026</option>
+                </select>
+                <select id="month-selector-semanal"
+                  class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
+                  <option value="">Mes</option>
+                </select>
+                <select id="week-selector-semanal"
+                  class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
+                  <option value="">Semana</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Moneda y Generar -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Generar Reporte</label>
+              <div class="flex gap-2">
+                <select id="currency-selector-semanal" disabled
+                  class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 w-1/3 disabled:opacity-50">
+                  <option value="">Moneda</option>
+                  <option value="PEN"
+                    data-url="https://docs.google.com/spreadsheets/d/e/2PACX-1vRRhWBlTXTz5h_v8OIH-3LrKdc6tjqLR15ZG1LlxsFRbZ6867Rn0L3jnWYOUtH6Cv-LQ7QRpULms8ah/pub?gid=0&single=true&output=csv">
+                    PEN</option>
+                  <option value="USD"
+                    data-url="https://docs.google.com/spreadsheets/d/e/2PACX-1vS9bRPb-3jZj8mBz7Al-4p39nG2ua3WWgva9ieg46GvH9jAg2AYk5oSXpEW1H0lWXEJCFZgSnhCv3z3/pub?gid=0&single=true&output=csv">
+                    USD</option>
+                </select>
+                <button id="btn-generar-excel-semanal" disabled
+                  class="flex-1 text-white bg-green-600 hover:bg-green-700 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 disabled:opacity-50 disabled:cursor-not-allowed">
+                  <i class="fas fa-file-excel mr-2"></i>Generar Excel Semanal
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Estado / Mensajes -->
+      <div id="estado-mensaje" class="p-4 mb-4 text-sm text-blue-800 rounded-lg bg-blue-50 text-center" role="alert">
+        Seleccione una fecha para comenzar
+      </div>
+
+      <!-- Resultados Venta Tarjetas -->
+      <div id="tabla-ventas-container" class="card" style="display: none;">
+        <div class="flex items-center gap-3 mb-4 border-b pb-4">
+          <h3 class="text-lg font-semibold text-gray-900">
+            <i class="fas fa-list-alt text-blue-600 mr-2"></i>
+            Ventas consolidadas por medio de pago
+          </h3>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="reporte-tabla" id="tabla-ventas">
+            <thead>
+              <tr>
+                <th>Medio de pago</th>
+                <th class="text-center">Transacciones</th>
+                <th class="text-right">Monto Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Dinámico -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      // Variables globales
+      const appState = {
+        reportType: 'venta-tarjetas',
+        csvData: [],
+        selectedCurrency: '',
+        selectedCsvUrl: '',
+        selectedDate: '',
+        ventasDetalladasGlobal: {},
+        semanal: {
+          weekIsoDates: [],
+          csvData: [],
+          selectedCurrency: '',
+          selectedCsvUrl: '',
+          processedData: []
+        }
+      };
+
+      // Mapeo de conceptos
+      const conceptMapping = {
+        'MC Y VISA': ['DE PROCESOS DE MEDIOS', 'MC', 'VISA'],
+        'DINERS CLUB': ['DINERS CLUB'],
+        'AMEX': ['COMPAN', 'CIA DE SERV']
+      };
+
+      // Referencias DOM
+      const elements = {
+        dateSelector: document.getElementById('date-selector'),
+        currencySelector: document.getElementById('currency-selector'),
+        btnBuscarVentas: document.getElementById('btn-buscar-ventas'),
+        estadoMensaje: document.getElementById('estado-mensaje'),
+        tablaVentasContainer: document.getElementById('tabla-ventas-container'),
+        tablaVentas: document.getElementById('tabla-ventas'),
+        configVentaTarjetas: document.getElementById('config-venta-tarjetas'),
+        configVentasSemanales: document.getElementById('config-ventas-semanales'),
+        reportTypeRadios: document.querySelectorAll('input[name="report-type"]'),
+        yearSelectorSemanal: document.getElementById('year-selector-semanal'),
+        monthSelectorSemanal: document.getElementById('month-selector-semanal'),
+        weekSelectorSemanal: document.getElementById('week-selector-semanal'),
+        currencySelectorSemanal: document.getElementById('currency-selector-semanal'),
+        btnGenerarExcelSemanal: document.getElementById('btn-generar-excel-semanal')
+      };
+
+      // == Utils ==
+      const utils = {
+        parseDateFromCSV(dateStr) {
+          if (!dateStr?.trim()) return null;
+          const dateParts = dateStr.trim().split('/');
+          if (dateParts.length === 3) {
+            const [day, month, year] = dateParts.map(Number);
+            if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
+              return new Date(Date.UTC(year, month - 1, day));
+            }
+          }
+          return null;
+        },
+        formatDateISO(date) {
+          if (!(date instanceof Date) || isNaN(date)) return '';
+          return date.toISOString().split('T')[0];
+        },
+        formatDate(date) {
+          if (!(date instanceof Date) || isNaN(date)) return '--/--/----';
+          return date.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' });
+        },
+        formatNumber(num) {
+          if (num === 0 || isNaN(num)) return '0.00';
+          return num.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        },
+        parseCSVLine(line) {
+          const result = [];
+          let current = '';
+          let inQuotes = false;
+          for (const char of line) {
+            if (char === '"') inQuotes = !inQuotes;
+            else if (char === ',' && !inQuotes) { result.push(current.trim()); current = ''; }
+            else current += char;
+          }
+          result.push(current.trim());
+          return result;
+        }
+      };
+
+      // == Week Utils ==
+      const weekUtils = {
+        getMonday(date) {
+          const dayOfWeek = date.getUTCDay();
+          const diff = date.getUTCDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+          return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), diff));
+        },
+        getWeekDays(fromDate) {
+          const weekDays = [];
+          const startOfWeek = this.getMonday(fromDate);
+          for (let i = 0; i < 7; i++) {
+            weekDays.push(new Date(Date.UTC(startOfWeek.getUTCFullYear(), startOfWeek.getUTCMonth(), startOfWeek.getUTCDate() + i)));
+          }
+          return weekDays;
+        },
+        populateMonths() {
+          const ms = elements.monthSelectorSemanal;
+          const ws = elements.weekSelectorSemanal;
+          ms.innerHTML = '<option value="">Mes</option>';
+          ws.innerHTML = '<option value="">Semana</option>';
+          if (!elements.yearSelectorSemanal.value) return;
+
+          const months = [
+            { v: '01', n: 'Enero' }, { v: '02', n: 'Febrero' }, { v: '03', n: 'Marzo' }, { v: '04', n: 'Abril' },
+            { v: '05', n: 'Mayo' }, { v: '06', n: 'Junio' }, { v: '07', n: 'Julio' }, { v: '08', n: 'Agosto' },
+            { v: '09', n: 'Septiembre' }, { v: '10', n: 'Octubre' }, { v: '11', n: 'Noviembre' }, { v: '12', n: 'Diciembre' }
+          ];
+          months.forEach(m => {
+            const opt = document.createElement('option');
+            opt.value = m.v; opt.textContent = m.n;
+            ms.appendChild(opt);
+          });
+        },
+        populateWeeksOfMonth() {
+          const ys = elements.yearSelectorSemanal;
+          const ms = elements.monthSelectorSemanal;
+          const ws = elements.weekSelectorSemanal;
+          ws.innerHTML = '<option value="">Semana</option>';
+          if (!ys.value || !ms.value) return;
+
+          const year = parseInt(ys.value);
+          const month = parseInt(ms.value);
+          const weeks = [];
+          let currentDate = new Date(Date.UTC(year, month - 1, 1));
+
+          while (currentDate.getUTCMonth() === month - 1) {
+            const weekDays = this.getWeekDays(currentDate);
+            const first = weekDays[0];
+            const last = weekDays[6];
+            const daysInMonth = weekDays.filter(d => d.getUTCMonth() === month - 1).length;
+
+            if (daysInMonth > 0) {
+              const val = utils.formatDateISO(first);
+              if (!weeks.some(w => w.value === val)) {
+                weeks.push({
+                  value: val,
+                  text: `${utils.formatDate(first).slice(0, 5)} al ${utils.formatDate(last).slice(0, 5)}`,
+                  dates: weekDays.map(d => utils.formatDateISO(d))
+                });
+              }
+            }
+            currentDate = new Date(Date.UTC(last.getUTCFullYear(), last.getUTCMonth(), last.getUTCDate() + 1));
+            currentDate = this.getMonday(currentDate);
+          }
+
+          weeks.forEach(w => {
+            const opt = document.createElement('option');
+            opt.value = w.value; opt.textContent = w.text;
+            opt.dataset.dates = JSON.stringify(w.dates);
+            ws.appendChild(opt);
+          });
+        },
+        updateWeekSelection() {
+          const ws = elements.weekSelectorSemanal;
+          appState.semanal.weekIsoDates = [];
+          if (ws.value) {
+            try {
+              appState.semanal.weekIsoDates = JSON.parse(ws.options[ws.selectedIndex].dataset.dates);
+            } catch (e) { console.error(e); }
+          }
+        }
+      };
+
+      // == UI Functions ==
+      const ui = {
+        updateEstadoMensaje(msg) {
+          if (elements.estadoMensaje) elements.estadoMensaje.textContent = msg;
+        },
+        switchReportType(type) {
+          appState.reportType = type;
+          elements.configVentaTarjetas.style.display = 'none';
+          elements.configVentasSemanales.style.display = 'none';
+          elements.tablaVentasContainer.style.display = 'none';
+
+          if (type === 'venta-tarjetas') {
+            elements.configVentaTarjetas.style.display = 'block';
+            this.resetVentaTarjetasForm();
+          } else {
+            elements.configVentasSemanales.style.display = 'block';
+            this.resetVentasSemanalForm();
+            this.updateEstadoMensaje('Seleccione periodo y moneda para generar Excel semanal');
+          }
+        },
+        resetVentaTarjetasForm() {
+          appState.selectedDate = '';
+          appState.selectedCurrency = '';
+          appState.selectedCsvUrl = '';
+          appState.csvData = [];
+          if (elements.dateSelector) elements.dateSelector.value = '';
+          if (elements.currencySelector) { elements.currencySelector.value = ''; elements.currencySelector.disabled = true; }
+          if (elements.btnBuscarVentas) elements.btnBuscarVentas.disabled = true;
+          this.updateEstadoMensaje('Seleccione una fecha para comenzar');
+        },
+        resetVentasSemanalForm() {
+          appState.semanal.weekIsoDates = [];
+          appState.semanal.csvData = [];
+          appState.semanal.selectedCurrency = '';
+          appState.semanal.selectedCsvUrl = '';
+          if (elements.yearSelectorSemanal) elements.yearSelectorSemanal.value = '';
+          if (elements.monthSelectorSemanal) elements.monthSelectorSemanal.innerHTML = '<option value="">Mes</option>';
+          if (elements.weekSelectorSemanal) elements.weekSelectorSemanal.innerHTML = '<option value="">Semana</option>';
+          if (elements.currencySelectorSemanal) { elements.currencySelectorSemanal.value = ''; elements.currencySelectorSemanal.disabled = true; }
+          if (elements.btnGenerarExcelSemanal) elements.btnGenerarExcelSemanal.disabled = true;
+        }
+      };
+
+      // == Data Processor ==
+      const dataProcessor = {
+        consolidateConcept(concepto) {
+          const upper = concepto.toUpperCase();
+          for (const [name, keywords] of Object.entries(conceptMapping)) {
+            if (keywords.some(k => upper.includes(k))) return name;
+          }
+          return null;
+        },
+        async loadCSVData(url) {
+          const res = await fetch(url);
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const txt = await res.text();
+          return txt.split('\n').filter(l => l.trim() !== '').map(l => utils.parseCSVLine(l));
+        },
+        processSalesData(csvData, targetDate) {
+          const targetISO = utils.formatDateISO(new Date(targetDate + 'T00:00:00.000Z'));
+          const consolidadas = {};
+          const detalladas = {};
+
+          csvData.forEach((row, i) => {
+            if (i === 0 || !row || row.length < 4) return;
+            const [fStr, con = '', prov = '', mStr = '0'] = row;
+            const fecha = utils.parseDateFromCSV(fStr);
+            if (!fecha || utils.formatDateISO(fecha) !== targetISO) return;
+
+            const monto = parseFloat(mStr.replace(/[^-0-9.]/g, '')) || 0;
+            if (monto > 0) {
+              const cons = this.consolidateConcept(con);
+              if (cons) {
+                if (!consolidadas[cons]) { consolidadas[cons] = { cantidad: 0, montoTotal: 0 }; detalladas[cons] = []; }
+                consolidadas[cons].cantidad++;
+                consolidadas[cons].montoTotal += monto;
+                detalladas[cons].push({ concepto: con, proveedor: prov, monto: monto });
+              }
+            }
+          });
+          return { consolidadas, detalladas };
+        }
+      };
+
+      // == Semanal Processor ==
+      const semanalProcessor = {
+        async generarExcel() {
+          if (!appState.semanal.selectedCsvUrl || appState.semanal.weekIsoDates.length === 0) return;
+          const btn = elements.btnGenerarExcelSemanal;
+          btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Generando...';
+
+          try {
+            ui.updateEstadoMensaje('Cargando datos...');
+            appState.semanal.csvData = await dataProcessor.loadCSVData(appState.semanal.selectedCsvUrl);
+            const registros = this.procesarDatosSemanal();
+
+            if (registros.length === 0) { alert('No hay registros'); return; }
+
+            const wb = XLSX.utils.book_new();
+            const excelData = registros.map(r => ({
+              'Fecha': r.fecha, 'Concepto': r.concepto, 'Proveedor': r.proveedor,
+              'Monto': r.monto, '# Operacion': r.operacion, 'Hora': r.hora, 'Referencia': r.referencia
+            }));
+
+            const ws = XLSX.utils.json_to_sheet(excelData);
+            ws['!cols'] = [{ wch: 12 }, { wch: 30 }, { wch: 25 }, { wch: 15 }, { wch: 15 }, { wch: 10 }, { wch: 20 }];
+
+            const wsName = elements.weekSelectorSemanal.value ? 'Semana_Select' : 'Ventas';
+            XLSX.utils.book_append_sheet(wb, ws, wsName);
+            XLSX.writeFile(wb, `Ventas_Semanales_${appState.semanal.selectedCurrency}.xlsx`);
+
+            ui.updateEstadoMensaje(`Excel generado: ${registros.length} registros`);
+          } catch (e) {
+            console.error(e); alert('Error: ' + e.message);
+          } finally {
+            btn.disabled = false; btn.innerHTML = '<i class="fas fa-file-excel mr-2"></i>Generar Excel Semanal';
+          }
+        },
+        procesarDatosSemanal() {
+          if (!appState.semanal.csvData.length) return [];
+          const regs = [];
+          appState.semanal.csvData.forEach((row, i) => {
+            if (i === 0 || !row || row.length < 7) return;
+            const [fStr, con, prov, mStr, , op, hr, ref] = row;
+            const fecha = utils.parseDateFromCSV(fStr);
+            if (!fecha) return;
+
+            if (appState.semanal.weekIsoDates.includes(utils.formatDateISO(fecha))) {
+              const monto = parseFloat((mStr || '0').replace(/[^-0-9.]/g, '')) || 0;
+              const cUp = (con || '').toUpperCase();
+              if (!cUp.includes('SALDO INICIAL') && !cUp.includes('SALDO FINAL') && monto !== 0) {
+                regs.push({
+                  fecha: utils.formatDate(fecha), concepto: con, proveedor: prov,
+                  monto: monto, operacion: op, hora: hr, referencia: ref
+                });
+              }
+            }
+          });
+          return regs;
+        }
+      };
+
+      // == Event Listeners ==
+      elements.reportTypeRadios.forEach(radio => {
+        radio.addEventListener('change', (e) => ui.switchReportType(e.target.value));
+      });
+
+      // Venta Tarjetas Events
+      if (elements.dateSelector) {
+        elements.dateSelector.addEventListener('change', (e) => {
+          appState.selectedDate = e.target.value;
+          if (elements.currencySelector) elements.currencySelector.disabled = !e.target.value;
+        });
+      }
+
+      if (elements.currencySelector) {
+        elements.currencySelector.addEventListener('change', (e) => {
+          appState.selectedCurrency = e.target.value;
+          const opt = e.target.options[e.target.selectedIndex];
+          appState.selectedCsvUrl = opt.dataset.url || '';
+          if (elements.btnBuscarVentas) elements.btnBuscarVentas.disabled = !appState.selectedCurrency;
+        });
+      }
+
+      if (elements.btnBuscarVentas) {
+        elements.btnBuscarVentas.addEventListener('click', () => buscarVentasDelDia());
+      }
+
+      // Semanal Events
+      if (elements.yearSelectorSemanal) {
+        elements.yearSelectorSemanal.addEventListener('change', () => weekUtils.populateMonths());
+      }
+      if (elements.monthSelectorSemanal) {
+        elements.monthSelectorSemanal.addEventListener('change', () => weekUtils.populateWeeksOfMonth());
+      }
+      if (elements.weekSelectorSemanal) {
+        elements.weekSelectorSemanal.addEventListener('change', (e) => {
+          weekUtils.updateWeekSelection();
+          if (elements.currencySelectorSemanal) elements.currencySelectorSemanal.disabled = !e.target.value;
+        });
+      }
+      if (elements.currencySelectorSemanal) {
+        elements.currencySelectorSemanal.addEventListener('change', (e) => {
+          appState.semanal.selectedCurrency = e.target.value;
+          const opt = e.target.options[e.target.selectedIndex];
+          appState.semanal.selectedCsvUrl = opt.dataset.url || '';
+          if (elements.btnGenerarExcelSemanal) elements.btnGenerarExcelSemanal.disabled = !appState.semanal.selectedCurrency;
+        });
+      }
+      if (elements.btnGenerarExcelSemanal) {
+        elements.btnGenerarExcelSemanal.addEventListener('click', () => semanalProcessor.generarExcel());
+      }
+
+      // Main Search Function
+      async function buscarVentasDelDia() {
+        const btn = elements.btnBuscarVentas;
+        btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Buscando...';
+        try {
+          ui.updateEstadoMensaje('Cargando datos...');
+          appState.csvData = await dataProcessor.loadCSVData(appState.selectedCsvUrl);
+          const { consolidadas, detalladas } = dataProcessor.processSalesData(appState.csvData, appState.selectedDate);
+          appState.ventasDetalladasGlobal = detalladas;
+          mostrarVentasConsolidadas(consolidadas);
+        } catch (e) {
+          console.error(e); alert('Error: ' + e.message);
+        } finally {
+          btn.disabled = false; btn.innerHTML = '<i class="fas fa-search mr-2"></i>Buscar';
+        }
+      }
+
+      function mostrarVentasConsolidadas(data) {
+        const tbody = elements.tablaVentas.querySelector('tbody');
+        tbody.innerHTML = '';
+        const keys = Object.keys(data);
+
+        if (keys.length === 0) {
+          ui.updateEstadoMensaje('No se encontraron ventas');
+          elements.tablaVentasContainer.style.display = 'none';
+          return;
+        }
+
+        let tTrans = 0, tMonto = 0;
+        keys.forEach(k => {
+          const d = data[k];
+          const row = tbody.insertRow();
+          row.className = 'clickeable';
+          row.innerHTML = `
+            <td class="font-medium">${k}</td>
+            <td class="text-center">${d.cantidad}</td>
+            <td class="text-right">${utils.formatNumber(d.montoTotal)}</td>
+          `;
+          row.addEventListener('click', () => toggleDetalle(row, k));
+          tTrans += d.cantidad; tMonto += d.montoTotal;
+        });
+
+        const totRow = tbody.insertRow();
+        totRow.className = 'fila-total';
+        totRow.innerHTML = `
+          <td>TOTAL</td>
+          <td class="text-center">${tTrans}</td>
+          <td class="text-right">${utils.formatNumber(tMonto)}</td>
+        `;
+
+        elements.tablaVentasContainer.style.display = 'block';
+        ui.updateEstadoMensaje(`Encontradas ${tTrans} transacciones. Total: ${appState.selectedCurrency} ${utils.formatNumber(tMonto)}`);
+      }
+
+      function toggleDetalle(row, concepto) {
+        const expanded = row.classList.contains('bg-blue-50');
+        // Close others
+        document.querySelectorAll('.detalle-transacciones').forEach(e => e.remove());
+        document.querySelectorAll('.clickeable').forEach(e => e.classList.remove('bg-blue-50'));
+
+        if (!expanded) {
+          row.classList.add('bg-blue-50');
+          const detRow = row.parentNode.insertRow(row.rowIndex + 1);
+          detRow.className = 'detalle-transacciones';
+          const cell = detRow.insertCell(0);
+          cell.colSpan = 3;
+
+          const items = appState.ventasDetalladasGlobal[concepto] || [];
+          let html = '<div class="detalle-content"><h4 class="text-sm font-bold mb-2 text-gray-700">Detalle de Transacciones</h4>';
+          items.forEach(item => {
+            html += `
+              <div class="transaccion-item">
+                <span class="text-gray-600">${item.concepto}</span>
+                <span class="font-medium">${utils.formatNumber(item.monto)}</span>
+              </div>
+            `;
+          });
+          html += '</div>';
+          cell.innerHTML = html;
+        }
+      }
+    });
+  </script>
+</body>
+
+</html>

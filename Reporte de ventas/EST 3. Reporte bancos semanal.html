@@ -1,0 +1,885 @@
+<!-- ============================================================== -->
+<!-- APP REPORTE BANCARIO (Optimizado para WP/Astra + Preline) -->
+<!-- ============================================================== -->
+
+<!-- 1. RECURSOS -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<!-- Librerías JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+
+<!-- Preline y Tailwind -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://preline.co/assets/js/hs-ui.bundle.js"></script>
+
+<!-- 2. CONFIGURACIÓN TAILWIND SCOPED -->
+<script>
+  tailwind.config = {
+    important: '#app-bancario', // Encapsula estilos solo a nuestro div
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: { sans: ['Inter', 'sans-serif'] },
+        colors: {
+          brand: { 600: '#1b8943', 700: '#157235' }
+        }
+      }
+    },
+    corePlugins: {
+      preflight: false, // No resetea estilos globales de WordPress
+    }
+  }
+</script>
+
+<!-- 3. ESTILOS BASE DEL CONTENEDOR -->
+<style>
+  #app-bancario {
+    font-family: 'Inter', sans-serif;
+    color: #1f2937;
+    line-height: 1.5;
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+
+  /* Resets manuales necesarios porque quitamos preflight */
+  #app-bancario *,
+  #app-bancario ::before,
+  #app-bancario ::after {
+    box-sizing: border-box;
+    border-width: 0;
+    border-style: solid;
+    border-color: #e5e7eb;
+  }
+
+  #app-bancario h1,
+  #app-bancario h2,
+  #app-bancario h3,
+  #app-bancario h4 {
+    font-weight: 700;
+    margin: 0;
+  }
+
+  #app-bancario table {
+    border-collapse: collapse;
+    width: 100%;
+  }
+
+  #app-bancario input,
+  #app-bancario select {
+    display: block;
+    width: 100%;
+  }
+
+  /* Estilos específicos de pasos */
+  #app-bancario .step-circle {
+    transition: all 0.3s;
+  }
+
+  #app-bancario .config-step.active .step-circle {
+    background-color: #eff6ff;
+    color: #2563eb;
+  }
+
+  #app-bancario .config-step.completed .step-circle {
+    background-color: #ecfdf5;
+    color: #059669;
+  }
+
+  #app-bancario .config-step.future .step-circle {
+    background-color: #f3f4f6;
+    color: #9ca3af;
+  }
+</style>
+
+<!-- 4. UI HTML -->
+<div id="app-bancario" class="p-4">
+
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row justify-between items-center mb-8 pb-4 border-b border-gray-200">
+    <h1 class="text-2xl text-gray-900 flex items-center gap-3">
+      <i class="fas fa-university text-blue-600"></i>
+      Reporte Bancos Semanal
+    </h1>
+    <span id="fecha-reporte" class="mt-2 sm:mt-0 px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm font-medium">
+      -- Seleccionar periodo --
+    </span>
+  </div>
+
+  <!-- Panel de Configuración (Card 1) -->
+  <div class="space-y-6 mb-8">
+    <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 config-step active">
+      <div class="flex items-center gap-3 mb-4 border-b border-gray-100 pb-3">
+        <span class="step-circle flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm">01</span>
+        <h2 class="text-lg text-gray-800">Configuración</h2>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <!-- Selectores estilo Preline -->
+        <div>
+          <label class="block mb-2 text-sm font-medium text-gray-900">Año</label>
+          <select id="year-selector"
+            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+            <option value="">Seleccionar año</option>
+            <option value="2024">2024</option>
+            <option value="2025">2025</option>
+            <option value="2026">2026</option>
+          </select>
+        </div>
+        <div>
+          <label class="block mb-2 text-sm font-medium text-gray-900">Mes</label>
+          <select id="month-selector"
+            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 disabled:bg-gray-200 disabled:cursor-not-allowed">
+            <option value="">Seleccionar mes</option>
+          </select>
+        </div>
+        <div>
+          <label class="block mb-2 text-sm font-medium text-gray-900">Semana</label>
+          <select id="week-selector"
+            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 disabled:bg-gray-200 disabled:cursor-not-allowed"
+            disabled>
+            <option value="">Seleccionar semana</option>
+          </select>
+        </div>
+        <div>
+          <label class="block mb-2 text-sm font-medium text-gray-900">Moneda</label>
+          <select id="currency-selector"
+            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 disabled:bg-gray-200 disabled:cursor-not-allowed">
+            <option value="">Seleccionar moneda</option>
+            <option value="PEN"
+              data-url="https://docs.google.com/spreadsheets/d/e/2PACX-1vRRhWBlTXTz5h_v8OIH-3LrKdc6tjqLR15ZG1LlxsFRbZ6867Rn0L3jnWYOUtH6Cv-LQ7QRpULms8ah/pub?gid=0&single=true&output=csv">
+              PEN</option>
+            <option value="USD"
+              data-url="https://docs.google.com/spreadsheets/d/e/2PACX-1vS9bRPb-3jZj8mBz7Al-4p39nG2ua3WWgva9ieg46GvH9jAg2AYk5oSXpEW1H0lWXEJCFZgSnhCv3z3/pub?gid=0&single=true&output=csv">
+              USD</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="mt-5 flex justify-end">
+        <button id="btn-cargar-datos"
+          class="py-2 px-4 inline-flex items-center gap-x-2 text-sm font-semibold rounded-lg border border-transparent bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none"
+          disabled>
+          <i class="fas fa-download"></i> Cargar Datos
+        </button>
+      </div>
+    </div>
+
+    <!-- Grid Inferior (Card 2 y 3) -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+      <!-- Carga Excel -->
+      <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 h-full config-step future">
+        <div class="flex items-center gap-3 mb-4">
+          <span class="step-circle flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm">02</span>
+          <h2 class="text-lg text-gray-800">Gastos Ica (PEN)</h2>
+        </div>
+        <div class="space-y-4">
+          <div id="paso-excel" style="display: none;" class="space-y-3">
+            <label class="sr-only">Archivo</label>
+            <input type="file" id="excel-file-input" accept=".xlsx,.xls"
+              class="block w-full border border-gray-200 shadow-sm rounded-lg text-sm focus:z-10 focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 file:bg-gray-50 file:border-0 file:me-4 file:py-3 file:px-4">
+            <button id="btn-cargar-excel"
+              class="w-full py-3 px-4 inline-flex justify-center items-center gap-x-2 text-sm font-semibold rounded-lg border border-transparent bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 disabled:pointer-events-none"
+              disabled>
+              <i class="fas fa-file-excel"></i> Procesar Excel
+            </button>
+          </div>
+          <div id="mensaje-sin-excel"
+            class="p-4 bg-gray-50 border border-gray-100 rounded-lg text-center text-sm text-gray-500 italic">
+            Esta opción solo está disponible para moneda PEN.
+          </div>
+        </div>
+      </div>
+
+      <!-- Generar PDF -->
+      <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 h-full config-step future" id="paso-pdf">
+        <div class="flex items-center gap-3 mb-4">
+          <span id="numero-paso-pdf"
+            class="step-circle flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm">03</span>
+          <h2 class="text-lg text-gray-800">Exportar</h2>
+        </div>
+        <div class="flex flex-col justify-center h-full pb-2">
+          <button id="btn-generar-pdf"
+            class="w-full py-3 px-4 inline-flex justify-center items-center gap-x-2 text-sm font-semibold rounded-lg border border-transparent bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 disabled:pointer-events-none"
+            disabled>
+            <i class="fas fa-file-pdf"></i> Generar Reporte PDF
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabla Resumen -->
+  <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden mb-8">
+    <div class="px-6 py-4 grid gap-3 md:flex md:justify-between md:items-center border-b border-gray-200 bg-gray-50">
+      <h3 class="text-lg font-bold text-gray-800"><i class="fas fa-table text-blue-600 mr-2"></i> Resumen por Día</h3>
+      <div class="flex items-center gap-2">
+        <span class="text-sm font-medium text-gray-600">Saldo Inicial:</span>
+        <input type="text" id="saldo-inicial-input"
+          class="py-2 px-3 block w-32 border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 bg-white text-right font-bold text-blue-600"
+          placeholder="0.00">
+      </div>
+    </div>
+    <div class="overflow-x-auto">
+      <table id="tabla-resumen" class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-100">
+          <tr>
+            <th class="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase">Día</th>
+            <th class="px-6 py-3 text-end text-xs font-medium text-gray-500 uppercase">Compra</th>
+            <th class="px-6 py-3 text-end text-xs font-medium text-gray-500 uppercase">Ingresos</th>
+            <th class="px-6 py-3 text-end text-xs font-medium text-gray-500 uppercase">Egresos</th>
+            <th class="px-6 py-3 text-end text-xs font-medium text-gray-500 uppercase">Saldo</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200 bg-white">
+          <!-- Filas Placeholder -->
+          <tr data-date="lunes">
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">Lunes</td>
+            <td class="px-6 py-4 text-sm text-end text-gray-500">--</td>
+            <td class="px-6 py-4 text-sm text-end text-gray-500">--</td>
+            <td class="px-6 py-4 text-sm text-end text-gray-500">--</td>
+            <td class="px-6 py-4 text-sm text-end text-gray-500">--</td>
+          </tr>
+          <tr data-date="martes">
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">Martes</td>
+            <td class="px-6 py-4 text-sm text-end text-gray-500">--</td>
+            <td class="px-6 py-4 text-sm text-end text-gray-500">--</td>
+            <td class="px-6 py-4 text-sm text-end text-gray-500">--</td>
+            <td class="px-6 py-4 text-sm text-end text-gray-500">--</td>
+          </tr>
+          <tr data-date="miercoles">
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">Miércoles</td>
+            <td class="px-6 py-4 text-sm text-end text-gray-500">--</td>
+            <td class="px-6 py-4 text-sm text-end text-gray-500">--</td>
+            <td class="px-6 py-4 text-sm text-end text-gray-500">--</td>
+            <td class="px-6 py-4 text-sm text-end text-gray-500">--</td>
+          </tr>
+          <tr data-date="jueves">
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">Jueves</td>
+            <td class="px-6 py-4 text-sm text-end text-gray-500">--</td>
+            <td class="px-6 py-4 text-sm text-end text-gray-500">--</td>
+            <td class="px-6 py-4 text-sm text-end text-gray-500">--</td>
+            <td class="px-6 py-4 text-sm text-end text-gray-500">--</td>
+          </tr>
+          <tr data-date="viernes">
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">Viernes</td>
+            <td class="px-6 py-4 text-sm text-end text-gray-500">--</td>
+            <td class="px-6 py-4 text-sm text-end text-gray-500">--</td>
+            <td class="px-6 py-4 text-sm text-end text-gray-500">--</td>
+            <td class="px-6 py-4 text-sm text-end text-gray-500">--</td>
+          </tr>
+          <tr data-date="sabado">
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">Sábado</td>
+            <td class="px-6 py-4 text-sm text-end text-gray-500">--</td>
+            <td class="px-6 py-4 text-sm text-end text-gray-500">--</td>
+            <td class="px-6 py-4 text-sm text-end text-gray-500">--</td>
+            <td class="px-6 py-4 text-sm text-end text-gray-500">--</td>
+          </tr>
+          <tr data-date="domingo">
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">Domingo</td>
+            <td class="px-6 py-4 text-sm text-end text-gray-500">--</td>
+            <td class="px-6 py-4 text-sm text-end text-gray-500">--</td>
+            <td class="px-6 py-4 text-sm text-end text-gray-500">--</td>
+            <td class="px-6 py-4 text-sm text-end text-gray-500">--</td>
+          </tr>
+          <tr class="fila-total bg-blue-50">
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-blue-900">TOTAL</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-end text-blue-800">--</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-end text-blue-800">--</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-end text-blue-800">--</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-end text-blue-800">--</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Contenedores Ocultos para Detalles (Usados para el PDF) -->
+  <div class="hidden">
+    <div id="detalle-lunes">
+      <table>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div id="detalle-martes">
+      <table>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div id="detalle-miercoles">
+      <table>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div id="detalle-jueves">
+      <table>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div id="detalle-viernes">
+      <table>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div id="detalle-sabado">
+      <table>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div id="detalle-domingo">
+      <table>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Gestión de Caja (Solo PEN) -->
+  <div id="seccion-gestion-caja" class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden mb-8"
+    style="display: none;">
+    <div class="px-6 py-4 border-b border-gray-200 bg-amber-50">
+      <h3 class="text-lg font-bold text-amber-800 flex items-center gap-2">
+        <i class="fas fa-coins"></i> Gestión de Caja
+      </h3>
+    </div>
+    <div class="overflow-x-auto">
+      <table id="tabla-gestion-caja" class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase">Concepto</th>
+            <th class="px-6 py-3 text-end text-xs font-medium text-gray-500 uppercase">Monto</th>
+            <th class="px-6 py-3 text-end text-xs font-medium text-gray-500 uppercase">Detalles</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200 bg-white">
+          <!-- JS Generated -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- 5. LÓGICA JAVASCRIPT -->
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    // Inicializar componentes Preline si existen
+    if (window.HSStaticMethods) window.HSStaticMethods.autoInit();
+
+    // --- Variables Globales ---
+    let weekIsoDates = [];
+    let processedDayData = {};
+    let csvData = [];
+    let selectedCurrency = '';
+    let selectedCsvUrl = '';
+    let lastExcelData = null;
+
+    // --- Colores PDF (Estilo Profesional Azul/Gris) ---
+    const pdfColors = {
+      headerFill: [41, 58, 74],      // Azul oscuro
+      headerText: [255, 255, 255],
+      zebraFill: [248, 249, 250],
+      totalFill: [226, 232, 240],
+      totalText: [30, 41, 59],
+      accent: [59, 130, 246]
+    };
+
+    const formatNumber = (num) => (num === 0 || isNaN(num)) ? '--' : num.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+    // --- UI Helpers ---
+    function updateStepState(stepNum, state) {
+      const step = document.querySelector(`#app-bancario .config-step:nth-child(${stepNum})`) || (stepNum === 2 ? document.querySelectorAll('.config-step')[1] : document.querySelectorAll('.config-step')[2]);
+      if (!step) return;
+
+      step.className = step.className.replace(/active|completed|future/g, '');
+      step.classList.add(state);
+
+      const circle = step.querySelector('.step-circle');
+      if (state === 'completed') {
+        circle.innerHTML = '<i class="fas fa-check"></i>';
+      }
+    }
+
+    // --- Fechas ---
+    function populateMonths() {
+      const yearSelector = document.getElementById('year-selector');
+      const monthSelector = document.getElementById('month-selector');
+      const weekSelector = document.getElementById('week-selector');
+
+      monthSelector.innerHTML = '<option value="">Seleccionar mes</option>';
+      weekSelector.innerHTML = '<option value="">Seleccionar semana</option>';
+
+      if (!yearSelector.value) {
+        monthSelector.disabled = true;
+        weekSelector.disabled = true;
+        return;
+      }
+
+      // Habilitar mes cuando hay año seleccionado
+      monthSelector.disabled = false;
+      weekSelector.disabled = true;
+
+      const months = [
+        { v: '01', n: 'Enero' }, { v: '02', n: 'Febrero' }, { v: '03', n: 'Marzo' },
+        { v: '04', n: 'Abril' }, { v: '05', n: 'Mayo' }, { v: '06', n: 'Junio' },
+        { v: '07', n: 'Julio' }, { v: '08', n: 'Agosto' }, { v: '09', n: 'Septiembre' },
+        { v: '10', n: 'Octubre' }, { v: '11', n: 'Noviembre' }, { v: '12', n: 'Diciembre' }
+      ];
+      months.forEach(m => monthSelector.add(new Option(m.n, m.v)));
+    }
+
+    function populateWeeks() {
+      const y = document.getElementById('year-selector').value;
+      const m = document.getElementById('month-selector').value;
+      const ws = document.getElementById('week-selector');
+      ws.innerHTML = '<option value="">Seleccionar semana</option>';
+
+      if (!y || !m) {
+        ws.disabled = true;
+        return;
+      }
+
+      // Habilitar semana cuando hay año y mes seleccionados
+      ws.disabled = false;
+
+      let d = new Date(Date.UTC(y, m - 1, 1));
+      const weeks = [];
+      const getMon = (date) => {
+        const day = date.getUTCDay();
+        const diff = date.getUTCDate() - day + (day === 0 ? -6 : 1);
+        return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), diff));
+      };
+
+      while (d.getUTCMonth() === parseInt(m) - 1) {
+        const mon = getMon(d);
+        const sun = new Date(Date.UTC(mon.getUTCFullYear(), mon.getUTCMonth(), mon.getUTCDate() + 6));
+        const iso = mon.toISOString().split('T')[0];
+        if (!weeks.some(w => w.val === iso)) {
+          const dates = [];
+          for (let i = 0; i < 7; i++) {
+            dates.push(new Date(Date.UTC(mon.getUTCFullYear(), mon.getUTCMonth(), mon.getUTCDate() + i)).toISOString().split('T')[0]);
+          }
+          weeks.push({
+            val: iso,
+            txt: `${mon.getUTCDate()}/${mon.getUTCMonth() + 1} al ${sun.getUTCDate()}/${sun.getUTCMonth() + 1}`,
+            dates: JSON.stringify(dates)
+          });
+        }
+        d = new Date(Date.UTC(sun.getUTCFullYear(), sun.getUTCMonth(), sun.getUTCDate() + 1));
+        d = getMon(d);
+      }
+      weeks.forEach(w => {
+        const opt = new Option(w.txt, w.val);
+        opt.dataset.dates = w.dates;
+        ws.add(opt);
+      });
+    }
+
+    function updateTitle() {
+      const ws = document.getElementById('week-selector');
+      if (ws.value) {
+        document.getElementById('fecha-reporte').textContent = "Del " + ws.options[ws.selectedIndex].text;
+        weekIsoDates = JSON.parse(ws.options[ws.selectedIndex].dataset.dates);
+        updateTableDates();
+      } else {
+        document.getElementById('fecha-reporte').textContent = '-- Seleccionar --';
+        weekIsoDates = [];
+      }
+    }
+
+    function updateTableDates() {
+      const rows = document.querySelectorAll('#tabla-resumen tbody tr[data-date]');
+      const dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+      rows.forEach((r, i) => {
+        if (weekIsoDates[i]) {
+          const parts = weekIsoDates[i].split('-');
+          r.cells[0].textContent = `${dias[i]} ${parts[2]}/${parts[1]}`;
+        } else {
+          r.cells[0].textContent = dias[i];
+        }
+      });
+    }
+
+    // --- CSV Parser & Logic ---
+    async function loadCSV() {
+      if (!selectedCsvUrl) return alert("Seleccione moneda");
+      const btn = document.getElementById('btn-cargar-datos');
+      btn.disabled = true; btn.innerHTML = '<span class="animate-spin inline-block size-4 border-[3px] border-current border-t-transparent text-white rounded-full mr-2"></span> Cargando...';
+
+      try {
+        const res = await fetch(selectedCsvUrl);
+        const txt = await res.text();
+        csvData = txt.split('\n').map(l => {
+          const r = []; let c = '', q = false;
+          for (let ch of l) { if (ch === '"') q = !q; else if (ch === ',' && !q) { r.push(c.trim()); c = ''; } else c += ch; }
+          r.push(c.trim()); return r;
+        });
+        processData();
+        updateStepState(2, 'active'); // Activar paso 2 visualmente
+
+        if (selectedCurrency === 'USD') {
+          updateStepState(3, 'active');
+          document.getElementById('btn-generar-pdf').disabled = false;
+        }
+      } catch (e) {
+        alert("Error cargando datos CSV: " + e.message);
+      } finally {
+        btn.disabled = false; btn.innerHTML = '<i class="fas fa-download mr-2"></i> Cargar Datos';
+      }
+    }
+
+    function processData() {
+      const d = {};
+      weekIsoDates.forEach(iso => d[iso] = { ing: 0, egr: 0, comp: 0, ini: 0, fin: 0, det: [] });
+
+      csvData.forEach(r => {
+        if (r.length < 5) return;
+        // Mapeo: 0=Fecha, 1=Concepto, 2=Proveedor, 3=Monto, 4=Saldo, 7=Referencia
+        const [fStr, con, prov, mStr, sStr, , , ref] = r;
+        if (!fStr) return;
+
+        const p = fStr.split('/');
+        if (p.length !== 3) return;
+        const iso = `${p[2]}-${p[1].padStart(2, '0')}-${p[0].padStart(2, '0')}`;
+
+        if (d[iso]) {
+          const m = parseFloat(mStr.replace(/[^\d.-]/g, '')) || 0;
+          const s = parseFloat(sStr.replace(/[^\d.-]/g, '')) || 0;
+          const cUp = con.toUpperCase();
+
+          if (cUp.includes('SALDO INICIAL')) d[iso].ini = s;
+          else if (cUp.includes('SALDO FINAL')) d[iso].fin = s;
+          else if (cUp.startsWith('COMU') && m > 0) d[iso].comp += m;
+          else if (m > 0) d[iso].ing += m;
+          else if (m < 0) {
+            d[iso].egr += Math.abs(m);
+            let fullC = con;
+            // Lógica de Referencia solicitada
+            if (ref && ref !== '---') fullC += ` (${ref})`;
+            d[iso].det.push({ c: fullC, p: prov, m: m });
+          }
+        }
+      });
+
+      processedDayData = d;
+      renderMain(d);
+
+      // Poblar tablas ocultas para PDF
+      const dias = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+      dias.forEach((k, i) => {
+        const iso = weekIsoDates[i];
+        const tb = document.querySelector(`#detalle-${k} tbody`);
+        tb.innerHTML = '';
+        if (d[iso] && d[iso].det.length) {
+          d[iso].det.forEach(x => {
+            const tr = tb.insertRow();
+            tr.innerHTML = `<td>${x.c}</td><td>${x.p}</td><td>${x.m}</td>`;
+          });
+        }
+      });
+    }
+
+    function renderMain(d) {
+      let saldo = 0;
+      if (weekIsoDates.length && d[weekIsoDates[0]]) saldo = d[weekIsoDates[0]].ini;
+      const inp = document.getElementById('saldo-inicial-input');
+      if (!inp.value && saldo !== 0) inp.value = formatNumber(saldo);
+
+      let run = parseFloat(inp.value.replace(/,/g, '')) || saldo;
+      const rows = document.querySelectorAll('#tabla-resumen tbody tr[data-date]');
+      let tC = 0, tI = 0, tE = 0;
+
+      rows.forEach((r, i) => {
+        const info = d[weekIsoDates[i]] || { comp: 0, ing: 0, egr: 0 };
+        r.cells[1].textContent = formatNumber(info.comp);
+        r.cells[2].textContent = formatNumber(info.ing);
+        r.cells[3].textContent = info.egr > 0 ? '-' + formatNumber(info.egr) : '--';
+
+        run = run + info.ing - info.egr;
+        r.cells[4].textContent = formatNumber(run);
+
+        tC += info.comp; tI += info.ing; tE += info.egr;
+      });
+
+      const tot = document.querySelector('#tabla-resumen .fila-total');
+      tot.cells[1].textContent = formatNumber(tC);
+      tot.cells[2].textContent = formatNumber(tI);
+      tot.cells[3].textContent = tE > 0 ? '-' + formatNumber(tE) : '--';
+      tot.cells[4].textContent = formatNumber(run);
+    }
+
+    // --- Excel Handling ---
+    async function handleExcel() {
+      const f = document.getElementById('excel-file-input').files[0];
+      if (!f) return;
+      const btn = document.getElementById('btn-cargar-excel');
+      btn.disabled = true; btn.innerHTML = 'Procesando...';
+
+      try {
+        const ab = await f.arrayBuffer();
+        const wb = XLSX.read(ab, { type: 'array' });
+        const s1 = wb.Sheets[wb.SheetNames[0]], s2 = wb.Sheets[wb.SheetNames[1]], s3 = wb.Sheets[wb.SheetNames[2]];
+
+        const getV = (s, c) => s[c] ? s[c].v : '';
+        const getLast = (s, c) => { for (let r = 1000; r > 0; r--) if (s[c + r] && s[c + r].v) return { r, v: parseFloat(s[c + r].v) || 0 }; return { r: 0, v: 0 }; };
+
+        const caja = { n: getV(s1, 'G3'), m: 10000 - getLast(s1, 'P').v };
+        const ext = (s, cM, startRow) => {
+          const lr = getLast(s, 'F').r; const arr = [];
+          // Empezar lectura desde la fila especificada
+          for (let i = startRow; i <= lr; i++) if (getV(s, 'F' + i)) arr.push({ c: getV(s, 'G' + i) || '--', p: getV(s, 'F' + i), m: parseFloat(getV(s, cM + i)) || 0 });
+          return { t: getLast(s, cM).v, d: arr };
+        };
+
+        lastExcelData = { caja, ap: ext(s2, 'J', 13), ot: ext(s3, 'H', 14) };
+        renderCaja(lastExcelData);
+        updateStepState(3, 'active');
+        document.getElementById('btn-generar-pdf').disabled = false;
+
+      } catch (e) { alert("Error Excel: " + e.message); }
+      finally { btn.disabled = false; btn.innerHTML = '<i class="fas fa-file-excel mr-2"></i> Procesar Excel'; }
+    }
+
+    function renderCaja(d) {
+      const tb = document.getElementById('tabla-gestion-caja').querySelector('tbody');
+      tb.innerHTML = '';
+
+      const add = (c, m, det) => {
+        const tr = tb.insertRow();
+        tr.className = 'hover:bg-gray-50 transition-colors border-b border-gray-100';
+        tr.innerHTML = `<td class="px-6 py-4 text-sm font-medium text-gray-800">${c}</td><td class="px-6 py-4 text-sm text-end text-gray-800 font-mono">${formatNumber(m)}</td><td class="px-6 py-4 text-sm text-end text-gray-500">${det && det.length ? '<span class="inline-flex items-center gap-x-1.5 py-1.5 px-3 rounded-full text-xs font-medium bg-blue-100 text-blue-800">' + det.length + ' items</span>' : '--'}</td>`;
+
+        if (det && det.length) {
+          tr.style.cursor = 'pointer';
+          tr.onclick = () => {
+            const nx = tr.nextSibling;
+            if (nx && nx.className.includes('hs-collapse-open')) nx.remove();
+            else {
+              const r = tb.insertRow(tr.rowIndex);
+              r.className = 'hs-collapse-open bg-gray-50 border-b border-gray-200';
+              r.innerHTML = `<td colspan="3" class="p-4"><div class="grid gap-2 pl-4 border-l-2 border-blue-200">${det.map(x => `<div class="flex justify-between text-xs border-b border-gray-200 pb-1"><span>${x.c}</span><span class="text-gray-500 mx-2 truncate max-w-[150px]">${x.p}</span><span class="font-mono font-medium">${formatNumber(x.m)}</span></div>`).join('')}</div></td>`;
+            }
+          };
+        }
+      };
+
+      add(`${d.caja.n} ${document.getElementById('fecha-reporte').textContent}`, d.caja.m);
+      add('PERSONAL APOYO', d.ap.t, d.ap.d);
+      add('OTROS GASTOS', d.ot.t, d.ot.d);
+
+      const tot = d.caja.m + d.ap.t + d.ot.t;
+      const rt = tb.insertRow(); rt.className = 'bg-gray-100 font-bold';
+      rt.innerHTML = `<td class="px-6 py-4">TOTAL</td><td class="px-6 py-4 text-end font-mono">${formatNumber(tot)}</td><td></td>`;
+
+      const rp = tb.insertRow(); rp.className = 'text-red-600 font-bold';
+      rp.innerHTML = `<td class="px-6 py-4">PENDIENTE</td><td class="px-6 py-4 text-end font-mono">${formatNumber(tot - 10000)}</td><td></td>`;
+    }
+
+    // --- PDF GENERATION (COMPACTO & CORREGIDO) ---
+    function genPDF() {
+      if (!window.jspdf) return;
+      const doc = new window.jspdf.jsPDF();
+      const w = doc.internal.pageSize.getWidth();
+      const m = { top: 15, left: 10, right: 10 };
+
+      // Estilos compactos
+      const style = { fontSize: 7, cellPadding: 1.5, valign: 'middle' };
+      const head = { fillColor: pdfColors.headerFill, textColor: 255, fontSize: 8, fontStyle: 'bold' };
+
+      doc.setFontSize(14).setFont('helvetica', 'bold').text("Reporte Bancario", w / 2, m.top, { align: 'center' });
+      doc.setFontSize(10).setFont('helvetica', 'normal').text(document.getElementById('fecha-reporte').textContent, w / 2, m.top + 6, { align: 'center' });
+      doc.setFontSize(8).text(`Moneda: ${selectedCurrency}`, m.left, m.top + 12);
+
+      let y = m.top + 15;
+
+      // 1. TABLA RESUMEN
+      const rRows = [];
+      const ini = document.getElementById('saldo-inicial-input').value;
+      if (ini) {
+        const iniNum = parseFloat(ini.replace(/,/g, '')) || 0;
+        rRows.push(['SALDO INICIAL', '', '', '', formatNumber(iniNum)]);
+      }
+
+      document.querySelectorAll('#tabla-resumen tbody tr').forEach(r => {
+        const cells = r.cells;
+        // Filtrar filas válidas
+        if (cells.length >= 5) {
+          // Función helper para parsear y formatear números
+          const parseAndFormat = (text) => {
+            if (!text || text === '--' || text.trim() === '') return '--';
+            const num = parseFloat(text.replace(/,/g, '').replace(/[^\d.-]/g, ''));
+            return isNaN(num) ? '--' : formatNumber(Math.abs(num));
+          };
+
+          const col1 = cells[0].textContent.replace(/[\n\r]+|[\s]{2,}/g, ' ').trim();
+          const col2 = parseAndFormat(cells[1].textContent);
+          const col3 = parseAndFormat(cells[2].textContent);
+          const col4Text = cells[3].textContent;
+          const col4 = col4Text.includes('-') ? '-' + parseAndFormat(col4Text) : parseAndFormat(col4Text);
+          const col5 = parseAndFormat(cells[4].textContent);
+
+          rRows.push([col1, col2, col3, col4, col5]);
+        }
+      });
+
+      doc.autoTable({
+        head: [['Día', 'Compra', 'Ingresos', 'Egresos', 'Saldo']],
+        body: rRows,
+        startY: y, margin: { left: 10, right: 10 },
+        styles: style, headStyles: head, theme: 'grid',
+        columnStyles: { 0: { fontStyle: 'bold' }, 4: { halign: 'right', fontStyle: 'bold' } },
+        didParseCell: d => {
+          if (d.section === 'body' && (d.cell.text[0].includes('TOTAL') || d.cell.text[0].includes('SALDO'))) {
+            d.cell.styles.fillColor = pdfColors.totalFill;
+            d.cell.styles.fontStyle = 'bold';
+          }
+          // Aplicar negrita y sombreado a TODA la fila TOTAL
+          if (d.section === 'body' && d.row.index === rRows.length - 1 && rRows[d.row.index][0] === 'TOTAL') {
+            d.cell.styles.fillColor = pdfColors.totalFill;
+            d.cell.styles.fontStyle = 'bold';
+          }
+        }
+      });
+      y = doc.lastAutoTable.finalY + 10;
+
+      // 2. GESTIÓN DE CAJA (Solo PEN)
+      if (selectedCurrency === 'PEN' && lastExcelData) {
+        doc.setFontSize(10).setFont('helvetica', 'bold').text("Gestión Caja", m.left, y);
+        const cRows = [
+          [`${lastExcelData.caja.n}`, formatNumber(lastExcelData.caja.m)],
+          ['PERSONAL APOYO', formatNumber(lastExcelData.ap.t)],
+          ['OTROS GASTOS', formatNumber(lastExcelData.ot.t)],
+          ['TOTAL', formatNumber(lastExcelData.caja.m + lastExcelData.ap.t + lastExcelData.ot.t)],
+          ['PENDIENTE', formatNumber((lastExcelData.caja.m + lastExcelData.ap.t + lastExcelData.ot.t) - 10000)]
+        ];
+        doc.autoTable({
+          head: [['Concepto', 'Monto']], body: cRows, startY: y + 2, margin: { right: 120, left: 10 },
+          styles: style, headStyles: head,
+          columnStyles: { 1: { halign: 'right' } },
+          didParseCell: d => { if (d.cell.text[0] === 'TOTAL' || d.cell.text[0] === 'PENDIENTE') d.cell.styles.fontStyle = 'bold'; }
+        });
+
+        // Detalles a la derecha
+        let dy = y + 2;
+        const printDet = (t, a) => {
+          if (!a.length) return;
+          doc.setFontSize(8).text(t, 100, dy);
+          doc.autoTable({
+            head: [['Concepto', 'Prov', 'Monto']],
+            body: a.map(x => [x.c, x.p, formatNumber(x.m)]),
+            startY: dy + 2, margin: { left: 100, right: 10 },
+            styles: { fontSize: 6, cellPadding: 1 }, headStyles: head,
+            columnStyles: { 2: { halign: 'right' } }
+          });
+          dy = doc.lastAutoTable.finalY + 5;
+        };
+        printDet('Detalle Apoyo', lastExcelData.ap.d);
+        printDet('Detalle Otros', lastExcelData.ot.d);
+        y = Math.max(doc.lastAutoTable.finalY, dy) + 10;
+      }
+
+      // 3. DETALLE DE EGRESOS (Corregido)
+      doc.addPage();
+      doc.setFontSize(12).text("Detalle de Egresos", w / 2, 15, { align: 'center' });
+
+      let currentY = 25; // Inicializar currentY
+
+      const dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+      dias.forEach((d, i) => {
+        const div = document.getElementById(`detalle-${d.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")}`);
+        if (!div) return;
+
+        const egresosDia = [];
+        let sum = 0;
+
+        div.querySelectorAll('tbody tr').forEach(tr => {
+          if (tr.cells.length === 3) {
+            const concepto = tr.cells[0].textContent;
+            const proveedor = tr.cells[1].textContent;
+            const mStr = tr.cells[2].textContent;
+
+            // Parsear el monto y formatearlo correctamente
+            const monto = parseFloat(mStr.replace(/,/g, '').replace(/[^\d.-]/g, '')) || 0;
+            const montoFormateado = monto < 0 ? '-' + formatNumber(Math.abs(monto)) : formatNumber(Math.abs(monto));
+
+            egresosDia.push([concepto, proveedor, montoFormateado]);
+            sum += Math.abs(monto);
+          }
+        });
+
+        // Si no hay egresos, agregar fila indicando sin movimientos (para asegurar que salga el día)
+        if (egresosDia.length === 0) {
+          egresosDia.push(['Sin movimientos', '---', formatNumber(0)]);
+        } else {
+          egresosDia.push(['TOTAL DEL DÍA', '', formatNumber(sum)]);
+        }
+
+        // Calcular espacio necesario (Header día + Tabla min)
+        const spaceNeeded = 30 + (egresosDia.length * 10);
+        const pageHeight = doc.internal.pageSize.getHeight();
+
+        // Si no hay suficiente espacio, nueva página. Si es el primero, no salta (ya se creó página al inicio de sección)
+        if (currentY + spaceNeeded > pageHeight - 20 && i > 0) {
+          doc.addPage();
+          currentY = 15;
+        } else if (i > 0) {
+          // Espacio entre días si no es salto de página
+          currentY += 10;
+        }
+
+        doc.setFontSize(9).setFont('helvetica', 'bold').text(d, m.left, currentY);
+
+        doc.autoTable({
+          head: [['Concepto', 'Proveedor', 'Monto']],
+          body: egresosDia,
+          startY: currentY + 2,
+          margin: { left: m.left },
+          theme: 'striped',
+          styles: style, headStyles: head,
+          columnStyles: { 0: { cellWidth: 80 }, 2: { halign: 'right' } },
+          didParseCell: (data) => {
+            // Aplicar estilo a TODA la fila de TOTAL DEL DÍA (última fila) si hay datos
+            if (sum > 0 && data.section === 'body' && data.row.index === egresosDia.length - 1) {
+              data.cell.styles.fontStyle = 'bold';
+              data.cell.styles.fillColor = [180, 180, 180]; // Gris más oscuro para destacar
+            }
+          }
+        });
+        currentY = doc.lastAutoTable.finalY;
+      });
+
+      doc.save(`Reporte_${selectedCurrency}.pdf`);
+    }
+
+    // --- Event Listeners ---
+    document.getElementById('year-selector').onchange = populateMonths;
+    document.getElementById('month-selector').onchange = populateWeeks;
+    document.getElementById('week-selector').onchange = () => { updateTitle(); updateStepState(1, 'completed'); };
+
+    document.getElementById('currency-selector').onchange = function () {
+      selectedCurrency = this.value;
+      selectedCsvUrl = this.options[this.selectedIndex].dataset.url;
+      document.getElementById('btn-cargar-datos').disabled = false;
+
+      const isPen = selectedCurrency === 'PEN';
+      document.getElementById('paso-excel').style.display = isPen ? 'block' : 'none';
+      document.getElementById('mensaje-sin-excel').style.display = isPen ? 'none' : 'block';
+      document.getElementById('seccion-gestion-caja').style.display = isPen ? 'block' : 'none';
+
+      // Actualizar número de paso visualmente
+      document.getElementById('numero-paso-pdf').textContent = isPen ? '03' : '03'; // Mantener consistencia visual
+    };
+
+    document.getElementById('btn-cargar-datos').onclick = loadCSV;
+    document.getElementById('excel-file-input').onchange = function () { document.getElementById('btn-cargar-excel').disabled = !this.files.length; };
+    document.getElementById('btn-cargar-excel').onclick = handleExcel;
+    document.getElementById('btn-generar-pdf').onclick = genPDF;
+    document.getElementById('saldo-inicial-input').oninput = () => renderMain(processedDayData);
+
+    // Init
+    populateMonths();
+  });
+</script>

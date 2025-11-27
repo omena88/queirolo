@@ -1,35 +1,52 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-_8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Carga de Movimientos Bancarios</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  
+
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-    
+
     :root {
-      --color-principal: #1b8943;      /* Verde corporativo */
-      --color-principal-hover: #157235; /* Verde más oscuro */
-      --color-secundario: #a98f43;     /* Dorado/Marrón corporativo */
-      --color-secundario-hover: #8f7a39; /* Dorado más oscuro */
-      --color-success: #2ecc71;        /* Verde éxito */
-      --color-warning: #e67e22;        /* Naranja advertencia */
-      --color-danger: #e74c3c;         /* Rojo peligro */
-      --color-fondo: #f5f5f5;          /* Fondo general más oscuro */
-      --color-superficie: #ffffff;     /* Blanco para tarjetas */
-      --color-superficie-alt: #edf2ed; /* Fondo alternativo con tono verde suave */
-      --color-superficie-sec: #f5f2e6; /* Fondo alternativo con tono dorado suave */
-      --color-texto: #333333;          /* Texto principal casi negro */
-      --color-texto-secundario: #666666; /* Texto secundario gris oscuro */
-      --color-texto-claro: #ffffff;    /* Texto claro/blanco */
-      --color-borde: #e0e0e0;          /* Borde claro */
-      --color-borde-enfasis: #cccccc;  /* Borde con énfasis */
-      --shadow-sm: 0 1px 2px rgba(0,0,0,0.1);
-      --shadow-md: 0 2px 4px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
-      --shadow-lg: 0 4px 6px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.06);
+      --color-principal: #1b8943;
+      /* Verde corporativo */
+      --color-principal-hover: #157235;
+      /* Verde más oscuro */
+      --color-secundario: #a98f43;
+      /* Dorado/Marrón corporativo */
+      --color-secundario-hover: #8f7a39;
+      /* Dorado más oscuro */
+      --color-success: #2ecc71;
+      /* Verde éxito */
+      --color-warning: #e67e22;
+      /* Naranja advertencia */
+      --color-danger: #e74c3c;
+      /* Rojo peligro */
+      --color-fondo: #f5f5f5;
+      /* Fondo general más oscuro */
+      --color-superficie: #ffffff;
+      /* Blanco para tarjetas */
+      --color-superficie-alt: #edf2ed;
+      /* Fondo alternativo con tono verde suave */
+      --color-superficie-sec: #f5f2e6;
+      /* Fondo alternativo con tono dorado suave */
+      --color-texto: #333333;
+      /* Texto principal casi negro */
+      --color-texto-secundario: #666666;
+      /* Texto secundario gris oscuro */
+      --color-texto-claro: #ffffff;
+      /* Texto claro/blanco */
+      --color-borde: #e0e0e0;
+      /* Borde claro */
+      --color-borde-enfasis: #cccccc;
+      /* Borde con énfasis */
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.1);
+      --shadow-md: 0 2px 4px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+      --shadow-lg: 0 4px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06);
       --border-radius-sm: 4px;
       --border-radius: 6px;
       --border-radius-lg: 8px;
@@ -60,8 +77,8 @@
     }
 
     .reporte-container {
-      max-width: 100%;
-      width: 1380px;
+      max-width: 900px;
+      width: 100%;
       margin: 0 auto;
       padding: var(--spacing-lg);
       box-sizing: border-box;
@@ -73,16 +90,17 @@
       align-items: center;
       margin-bottom: var(--spacing-xl);
     }
-    
+
     .titulo-reporte h1 {
-      color: var(--color-texto);
-      font-size: 22px;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      gap: var(--spacing-sm);
+      font-size: 1.5rem !important;
+      font-weight: 700 !important;
+      color: #111827 !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 0.75rem !important;
+      margin: 0 !important;
     }
-    
+
     .titulo-reporte h1 i {
       color: var(--color-principal);
     }
@@ -96,50 +114,57 @@
       background-color: var(--color-superficie);
       border: 1px solid var(--color-borde);
       position: relative;
-      margin-bottom: var(--spacing-xl); /* Added for spacing */
+      margin-bottom: var(--spacing-xl);
+      /* Added for spacing */
     }
-    
+
     .config-step:hover {
       box-shadow: var(--shadow-sm);
       border-color: var(--color-borde-enfasis);
     }
-    
+
     .step-header {
       display: flex;
       align-items: center;
       gap: var(--spacing-md);
       margin-bottom: var(--spacing-sm);
     }
-    
+
     .step-number {
       display: flex;
       justify-content: center;
       align-items: center;
-      width: 30px; /* Adjusted size */
-      height: 30px; /* Adjusted size */
+      width: 30px;
+      /* Adjusted size */
+      height: 30px;
+      /* Adjusted size */
       background-color: var(--color-principal);
       color: var(--color-texto-claro);
       font-weight: 600;
       font-size: 14px;
-      border-radius: 50%; /* Circular */
+      border-radius: 50%;
+      /* Circular */
     }
-    
+
     .step-header h4 {
       margin: 0;
       font-size: 15px;
       font-weight: 600;
       color: var(--color-texto);
     }
-    
+
     .step-content {
-      padding-left: 0; /* Remove left padding for grid layout */
+      padding-left: 0;
+      /* Remove left padding for grid layout */
     }
-     .config-controls {
+
+    .config-controls {
       display: flex;
       flex-wrap: wrap;
       gap: var(--spacing-sm);
       width: 100%;
     }
+
     .btn {
       background-color: var(--color-principal);
       color: white;
@@ -157,25 +182,25 @@
       white-space: nowrap;
       box-shadow: var(--shadow-sm);
     }
-    
+
     .btn:hover:not(:disabled) {
       background-color: var(--color-principal-hover);
       box-shadow: var(--shadow-md);
       transform: translateY(-1px);
     }
-    
+
     .btn:active:not(:disabled) {
       transform: translateY(0);
       box-shadow: var(--shadow-sm);
     }
-    
+
     .btn:disabled {
       background-color: var(--color-texto-secundario);
       cursor: not-allowed;
       opacity: 0.7;
       box-shadow: none;
     }
-    
+
     .btn i {
       font-size: 13px;
     }
@@ -183,9 +208,11 @@
     .seccion {
       margin-bottom: var(--spacing-xl);
     }
-        
-    .reporte-ventas-container, /* Reuse for consistency */
-    .reporte-inferior-grid > div { /* Reuse for consistency */
+
+    .reporte-ventas-container,
+    /* Reuse for consistency */
+    .reporte-inferior-grid>div {
+      /* Reuse for consistency */
       background-color: var(--color-superficie);
       border-radius: var(--border-radius);
       box-shadow: var(--shadow-sm);
@@ -194,18 +221,19 @@
       border: 1px solid var(--color-borde);
       max-width: 100%;
     }
-    
+
     .reporte-ventas-container:hover,
-    .reporte-inferior-grid > div:hover {
+    .reporte-inferior-grid>div:hover {
       box-shadow: var(--shadow-md);
     }
 
     .reporte-tabla-container {
       width: 100%;
       position: relative;
-      overflow: auto; /* Changed to auto for horizontal scroll if needed */
+      overflow: auto;
+      /* Changed to auto for horizontal scroll if needed */
     }
-    
+
     .tabla-header {
       padding: var(--spacing-md) var(--spacing-lg);
       border-bottom: 1px solid var(--color-borde);
@@ -214,7 +242,7 @@
       justify-content: space-between;
       align-items: center;
     }
-    
+
     .tabla-header h3 {
       font-size: 15px;
       font-weight: 600;
@@ -224,28 +252,29 @@
       align-items: center;
       gap: var(--spacing-sm);
     }
-    
+
     .tabla-header h3 i {
       color: var(--color-principal);
     }
-    
+
     .tabla-body {
-      padding: 0; /* Removed padding as table itself will have it or cells */
+      padding: 0;
+      /* Removed padding as table itself will have it or cells */
       overflow: hidden;
     }
 
     .reporte-tabla {
       width: 100% !important;
       max-width: none !important;
-      border-collapse: separate; 
+      border-collapse: separate;
       border-spacing: 0;
       margin: 0;
-      table-layout: auto; 
+      table-layout: auto;
       position: relative;
-      border-radius: var(--border-radius); 
+      border-radius: var(--border-radius);
       overflow: hidden;
     }
-    
+
     .reporte-tabla th {
       background-color: var(--color-superficie-alt);
       color: var(--color-texto);
@@ -256,27 +285,30 @@
       text-transform: uppercase;
       letter-spacing: 0.3px;
       font-size: 12px;
-      white-space: normal; 
+      white-space: normal;
       word-wrap: break-word;
       hyphens: auto;
       vertical-align: middle;
       height: auto;
       min-height: 50px;
-      text-align: left; /* Default for th */
+      text-align: left;
+      /* Default for th */
       padding: 10px 8px;
       border-bottom: 1px solid var(--color-borde);
+      font-size: 9px !important;
     }
-    
+
     .reporte-tabla td {
       white-space: nowrap;
-      text-align: left; /* Default for td */
+      text-align: left;
+      /* Default for td */
       padding: 10px 8px;
-      font-size: 12px;
+      font-size: 9px !important;
       overflow: hidden;
       text-overflow: ellipsis;
       border-bottom: 1px solid var(--color-borde);
     }
-    
+
     /* Excepción para la columna de referencia */
     .reporte-tabla td.celda-referencia {
       white-space: normal;
@@ -284,45 +316,47 @@
       text-overflow: unset;
       max-width: none;
     }
-    
+
     .reporte-tabla tr:hover td,
     .reporte-tabla tr:hover th {
       background-color: rgba(27, 137, 67, 0.15);
     }
-    
+
     .reporte-tabla tbody tr {
       border-bottom: 1px solid var(--color-borde);
       transition: background-color 0.2s ease;
     }
-    
+
     .reporte-tabla tbody tr:last-child {
       border-bottom: none;
     }
-    
+
     .reporte-tabla .column-hover {
       background-color: rgba(27, 137, 67, 0.15) !important;
       position: relative;
       z-index: 1;
     }
+
     .text-right {
-        text-align: right !important;
+      text-align: right !important;
     }
-    
+
     .celda-editable {
       background-color: rgba(27, 137, 67, 0.05) !important;
       border: 1px dashed rgba(27, 137, 67, 0.2);
       cursor: text;
       min-width: 80px;
       padding: 8px !important;
-      white-space: normal; /* Permitir saltos de línea */
+      white-space: normal;
+      /* Permitir saltos de línea */
       word-wrap: break-word;
     }
-    
+
     .celda-editable:hover {
       background-color: rgba(27, 137, 67, 0.1) !important;
       border-color: rgba(27, 137, 67, 0.4);
     }
-    
+
     .celda-editable:focus {
       outline: 2px solid var(--color-principal);
       background-color: rgba(27, 137, 67, 0.15) !important;
@@ -342,27 +376,30 @@
     /* Grid para los pasos lado a lado */
     .config-steps-grid {
       display: grid;
-      grid-template-columns: repeat(2, 1fr); /* Dos columnas para paso 1 y 2 */
+      grid-template-columns: repeat(2, 1fr);
+      /* Dos columnas para paso 1 y 2 */
       gap: var(--spacing-lg);
       margin-bottom: var(--spacing-xl);
     }
-    
+
     /* Responsive para pasos */
     @media (max-width: 768px) {
       .config-steps-grid {
-        grid-template-columns: 1fr; /* Una columna en mobile */
+        grid-template-columns: 1fr;
+        /* Una columna en mobile */
       }
     }
-    
+
     .config-step {
       background-color: var(--color-superficie);
       border: 1px solid var(--color-borde);
       border-radius: var(--border-radius);
       padding: var(--spacing-md);
       transition: all 0.2s ease;
-      margin-bottom: 0; /* Remove previous margin */
+      margin-bottom: 0;
+      /* Remove previous margin */
     }
-    
+
     .config-step:hover {
       box-shadow: var(--shadow-sm);
     }
@@ -371,7 +408,7 @@
     .fila-con-hover {
       position: relative;
     }
-    
+
     .btn-copiar-fila {
       position: absolute;
       left: 8px;
@@ -395,22 +432,22 @@
       gap: 4px;
       white-space: nowrap;
     }
-    
+
     .fila-con-hover:hover .btn-copiar-fila {
       opacity: 1;
       visibility: visible;
     }
-    
+
     .btn-copiar-fila:hover {
       background-color: var(--color-secundario-hover);
       box-shadow: var(--shadow-md);
       transform: translateY(-50%) scale(1.05);
     }
-    
+
     .btn-copiar-fila:active {
       transform: translateY(-50%) scale(0.95);
     }
-    
+
     .btn-copiar-fila i {
       font-size: 10px;
     }
@@ -422,7 +459,7 @@
       width: 120px;
       min-width: 120px;
     }
-    
+
     .btn-accion i {
       font-size: 9px;
     }
@@ -432,15 +469,16 @@
       width: 80px;
       text-align: center;
     }
-    
+
     .acciones-container {
       display: flex;
       justify-content: center;
       gap: var(--spacing-xs);
-      opacity: 1; /* Siempre visible */
+      opacity: 1;
+      /* Siempre visible */
       transition: opacity 0.2s ease;
     }
-    
+
     .btn-accion {
       background: none;
       border: none;
@@ -452,17 +490,17 @@
       font-size: 14px;
       position: relative;
     }
-    
+
     .btn-accion:hover {
       background-color: var(--color-superficie-alt);
       color: var(--color-principal);
       transform: scale(1.1);
     }
-    
+
     .btn-accion.btn-split:hover {
       color: var(--color-secundario);
     }
-    
+
     .btn-accion.btn-delete:hover {
       color: var(--color-danger);
     }
@@ -483,12 +521,12 @@
       visibility: hidden;
       transition: all 0.3s ease;
     }
-    
+
     .modal-overlay.active {
       opacity: 1;
       visibility: visible;
     }
-    
+
     .modal-content {
       background-color: var(--color-superficie);
       border-radius: var(--border-radius-lg);
@@ -501,11 +539,11 @@
       transform: scale(0.9);
       transition: transform 0.3s ease;
     }
-    
+
     .modal-overlay.active .modal-content {
       transform: scale(1);
     }
-    
+
     .modal-header {
       display: flex;
       justify-content: space-between;
@@ -514,14 +552,14 @@
       padding-bottom: var(--spacing-md);
       border-bottom: 1px solid var(--color-borde);
     }
-    
+
     .modal-header h3 {
       margin: 0;
       color: var(--color-texto);
       font-size: 18px;
       font-weight: 600;
     }
-    
+
     .modal-close {
       background: none;
       border: none;
@@ -537,33 +575,33 @@
       border-radius: 50%;
       transition: all 0.2s ease;
     }
-    
+
     .modal-close:hover {
       background-color: var(--color-superficie-alt);
       color: var(--color-danger);
     }
-    
+
     .split-info {
       background-color: var(--color-superficie-alt);
       padding: var(--spacing-md);
       border-radius: var(--border-radius);
       margin-bottom: var(--spacing-lg);
     }
-    
+
     .split-info p {
       margin: 0;
       font-size: 14px;
       color: var(--color-texto);
     }
-    
+
     .split-info strong {
       color: var(--color-principal);
     }
-    
+
     .split-lines {
       margin-bottom: var(--spacing-lg);
     }
-    
+
     .split-line {
       display: grid;
       grid-template-columns: 1fr 150px 40px;
@@ -571,7 +609,7 @@
       margin-bottom: var(--spacing-md);
       align-items: center;
     }
-    
+
     .split-line input {
       padding: 8px var(--spacing-md);
       border: 1px solid var(--color-borde);
@@ -579,13 +617,13 @@
       font-size: 14px;
       font-family: inherit;
     }
-    
+
     .split-line input:focus {
       outline: none;
       border-color: var(--color-principal);
       box-shadow: 0 0 0 2px rgba(27, 137, 67, 0.2);
     }
-    
+
     .split-line .btn-remove {
       background: none;
       border: none;
@@ -596,25 +634,25 @@
       border-radius: var(--border-radius-sm);
       transition: all 0.2s ease;
     }
-    
+
     .split-line .btn-remove:hover {
       background-color: rgba(231, 76, 60, 0.1);
     }
-    
+
     .split-totals {
       background-color: var(--color-superficie-sec);
       padding: var(--spacing-md);
       border-radius: var(--border-radius);
       margin-bottom: var(--spacing-lg);
     }
-    
+
     .split-total-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
       margin-bottom: var(--spacing-sm);
     }
-    
+
     .split-total-row:last-child {
       margin-bottom: 0;
       font-weight: 600;
@@ -622,25 +660,25 @@
       padding-top: var(--spacing-sm);
       border-top: 1px solid var(--color-borde);
     }
-    
+
     .total-amount {
       font-family: 'Courier New', monospace;
     }
-    
+
     .total-error {
       color: var(--color-danger);
     }
-    
+
     .total-success {
       color: var(--color-success);
     }
-    
+
     .modal-actions {
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
-    
+
     .btn-add-line {
       background-color: var(--color-secundario);
       color: var(--color-texto-claro);
@@ -656,16 +694,16 @@
       gap: var(--spacing-sm);
       transition: background-color 0.2s ease;
     }
-    
+
     .btn-add-line:hover {
       background-color: var(--color-secundario-hover);
     }
-    
+
     .modal-buttons {
       display: flex;
       gap: var(--spacing-md);
     }
-    
+
     .btn-modal {
       padding: 10px 20px;
       border: none;
@@ -676,25 +714,25 @@
       font-weight: 500;
       transition: all 0.2s ease;
     }
-    
+
     .btn-modal.btn-cancel {
       background-color: var(--color-texto-secundario);
       color: var(--color-texto-claro);
     }
-    
+
     .btn-modal.btn-cancel:hover {
       background-color: #555555;
     }
-    
+
     .btn-modal.btn-confirm {
       background-color: var(--color-principal);
       color: var(--color-texto-claro);
     }
-    
+
     .btn-modal.btn-confirm:hover:not(:disabled) {
       background-color: var(--color-principal-hover);
     }
-    
+
     .btn-modal.btn-confirm:disabled {
       background-color: var(--color-texto-secundario);
       cursor: not-allowed;
@@ -702,85 +740,91 @@
     }
   </style>
 </head>
+
 <body>
   <div class="reporte-container">
     <!-- Título -->
     <div class="titulo-reporte">
-        <h1><i class="fas fa-university" style="color: var(--color-principal);"></i> Carga de Movimientos Bancarios</h1>
+      <h1><i class="fas fa-university" style="color: var(--color-principal);"></i> Carga de Movimientos Bancarios</h1>
     </div>
 
     <!-- Sección de Configuración -->
     <div class="config-steps-grid">
-        <!-- Sección de Carga de Archivo -->
-        <div class="config-step active">
-            <div class="step-header">
-                <div class="step-number">01</div>
-                <h4>Cargar archivo de movimientos</h4>
-            </div>
-            <div class="step-content">
-                <div class="config-controls">
-                    <button id="btn-cargar-bancos" class="btn">
-                        <i class="fas fa-upload"></i> Seleccionar Excel
-                    </button>
-                    <input type="file" id="bancos-file-input" accept=".xls,.xlsx,.csv" style="display: none;">
-                    <span id="bancos-nombre-archivo" style="font-size: 12px; color: var(--color-texto-secundario); margin-left: 8px; align-self: center;"></span>
-                </div>
-                 <div id="info-cuenta-container" style="margin-top: var(--spacing-md); font-size: 13px; color: var(--color-texto-secundario); background-color: var(--color-superficie-alt); padding: var(--spacing-sm); border-radius: var(--border-radius-sm);">
-                    <p><strong>Cuenta:</strong> <span id="info-cuenta-numero">---</span></p>
-                    <p><strong>Moneda:</strong> <span id="info-cuenta-moneda">---</span></p>
-                    <p><strong>Tipo:</strong> <span id="info-cuenta-tipo">---</span></p>
-                </div>
-            </div>
+      <!-- Sección de Carga de Archivo -->
+      <div class="config-step active">
+        <div class="step-header">
+          <div class="step-number">01</div>
+          <h4>Cargar archivo de movimientos</h4>
         </div>
+        <div class="step-content">
+          <div class="config-controls">
+            <button id="btn-cargar-bancos" class="btn">
+              <i class="fas fa-upload"></i> Seleccionar Excel
+            </button>
+            <input type="file" id="bancos-file-input" accept=".xls,.xlsx,.csv" style="display: none;">
+            <span id="bancos-nombre-archivo"
+              style="font-size: 12px; color: var(--color-texto-secundario); margin-left: 8px; align-self: center;"></span>
+          </div>
+          <div id="info-cuenta-container"
+            style="margin-top: var(--spacing-md); font-size: 13px; color: var(--color-texto-secundario); background-color: var(--color-superficie-alt); padding: var(--spacing-sm); border-radius: var(--border-radius-sm);">
+            <p><strong>Cuenta:</strong> <span id="info-cuenta-numero">---</span></p>
+            <p><strong>Moneda:</strong> <span id="info-cuenta-moneda">---</span></p>
+            <p><strong>Tipo:</strong> <span id="info-cuenta-tipo">---</span></p>
+          </div>
+        </div>
+      </div>
 
-        <!-- Sección de Carga de Transacciones -->
-        <div class="config-step">
-            <div class="step-header">
-                <div class="step-number">02</div>
-                <h4>Cargar transacciones</h4>
-            </div>
-            <div class="step-content">
-                <div class="config-controls">
-                    <button id="btn-cargar-transacciones" class="btn" disabled>
-                        <i class="fas fa-cloud-upload-alt"></i> Enviar Transacciones
-                    </button>
-                    <span id="estado-carga" style="font-size: 12px; color: var(--color-texto-secundario); margin-left: 8px; align-self: center;"></span>
-                </div>
-                <div id="resultado-carga" style="margin-top: var(--spacing-md); font-size: 13px; padding: var(--spacing-sm); border-radius: var(--border-radius-sm); display: none;">
-                </div>
-            </div>
+      <!-- Sección de Carga de Transacciones -->
+      <div class="config-step">
+        <div class="step-header">
+          <div class="step-number">02</div>
+          <h4>Cargar transacciones</h4>
         </div>
+        <div class="step-content">
+          <div class="config-controls">
+            <button id="btn-cargar-transacciones" class="btn" disabled>
+              <i class="fas fa-cloud-upload-alt"></i> Enviar Transacciones
+            </button>
+            <span id="estado-carga"
+              style="font-size: 12px; color: var(--color-texto-secundario); margin-left: 8px; align-self: center;"></span>
+          </div>
+          <div id="resultado-carga"
+            style="margin-top: var(--spacing-md); font-size: 13px; padding: var(--spacing-sm); border-radius: var(--border-radius-sm); display: none;">
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Sección de Tabla de Movimientos -->
     <div class="seccion reporte-ventas-container"> <!-- Reuse class for styling -->
-        <div class="tabla-header">
-            <h3><i class="fas fa-list-alt" style="color: var(--color-principal);"></i> Movimientos Registrados</h3>
+      <div class="tabla-header">
+        <h3><i class="fas fa-list-alt" style="color: var(--color-principal);"></i> Movimientos Registrados</h3>
+      </div>
+      <div class="tabla-body">
+        <div class="reporte-tabla-container">
+          <table class="reporte-tabla" id="tabla-movimientos-bancos">
+            <thead>
+              <tr>
+                <th>Acciones</th>
+                <th>Fecha</th>
+                <th>Concepto</th>
+                <th>Proveedor</th>
+                <th class="text-right">Monto</th>
+                <th class="text-right">Saldo</th>
+                <th># Operacion</th>
+                <th>Hora</th>
+                <th>Referencia</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td colspan="9" style="text-align: center; padding: 20px; color: var(--color-texto-secundario);">Cargue
+                  un archivo para ver los movimientos.</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
-        <div class="tabla-body">
-            <div class="reporte-tabla-container">
-                <table class="reporte-tabla" id="tabla-movimientos-bancos">
-                    <thead>
-                        <tr>
-                            <th>Acciones</th>
-                            <th>Fecha</th>
-                            <th>Concepto</th>
-                            <th>Proveedor</th>
-                            <th class="text-right">Monto</th>
-                            <th class="text-right">Saldo</th>
-                            <th># Operacion</th>
-                            <th>Hora</th>
-                            <th>Referencia</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td colspan="9" style="text-align: center; padding: 20px; color: var(--color-texto-secundario);">Cargue un archivo para ver los movimientos.</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
+      </div>
     </div>
   </div>
 
@@ -791,16 +835,16 @@
         <h3><i class="fas fa-cut"></i> Dividir Transacción</h3>
         <button class="modal-close" id="modal-close">&times;</button>
       </div>
-      
+
       <div class="split-info">
         <p><strong>Monto Original:</strong> <span id="split-original-amount" class="total-amount">0.00</span></p>
         <p><strong>Concepto:</strong> <span id="split-original-concept">---</span></p>
       </div>
-      
+
       <div class="split-lines" id="split-lines-container">
         <!-- Las líneas de split se generarán dinámicamente -->
       </div>
-      
+
       <div class="split-totals">
         <div class="split-total-row">
           <span>Total Asignado:</span>
@@ -811,12 +855,12 @@
           <span id="split-difference" class="total-amount">0.00</span>
         </div>
       </div>
-      
+
       <div class="modal-actions">
         <button class="btn-add-line" id="btn-add-split-line">
           <i class="fas fa-plus"></i> Agregar Línea
         </button>
-        
+
         <div class="modal-buttons">
           <button class="btn-modal btn-cancel" id="btn-cancel-split">Cancelar</button>
           <button class="btn-modal btn-confirm" id="btn-confirm-split" disabled>Confirmar Split</button>
@@ -830,20 +874,20 @@
     function eliminarFila(boton) {
       const fila = boton.closest('tr');
       const tablaBody = fila.parentNode;
-      
+
       // Confirmar eliminación
       if (confirm('¿Está seguro de que desea eliminar esta transacción?')) {
         // Efecto visual antes de eliminar
         fila.style.backgroundColor = 'rgba(231, 76, 60, 0.2)';
         fila.style.transition = 'all 0.3s ease';
-        
+
         setTimeout(() => {
           fila.remove();
-          
+
           // Actualizar el contador de transacciones
           const totalFilas = tablaBody.querySelectorAll('tr').length;
           const estadoCarga = document.getElementById('estado-carga');
-          
+
           if (totalFilas === 0) {
             tablaBody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 20px; color: var(--color-texto-secundario);">No hay movimientos para mostrar.</td></tr>';
             const btnCargarTransacciones = document.getElementById('btn-cargar-transacciones');
@@ -865,26 +909,26 @@
     function abrirModalSplit(button) {
       const row = button.closest('tr');
       currentSplitRow = row;
-      
+
       // Obtener datos de la fila
       const cells = row.querySelectorAll('td');
       const concepto = cells[2].textContent.trim(); // Ajustado para nueva estructura
       const montoTexto = cells[4].textContent.trim(); // Ajustado para nueva estructura
       originalAmount = montoTexto === '---' ? 0 : parseFloat(montoTexto.replace(/[,\s]/g, '')) || 0;
-      
+
       // Configurar el modal
       document.getElementById('split-original-concept').textContent = concepto;
       document.getElementById('split-original-amount').textContent = formatNumber(originalAmount);
-      
+
       // Inicializar con 2 líneas
       splitLines = [
         { concepto: concepto, monto: originalAmount / 2 },
         { concepto: '', monto: originalAmount / 2 }
       ];
-      
+
       renderSplitLines();
       updateSplitTotals();
-      
+
       // Mostrar modal
       document.getElementById('split-modal').classList.add('active');
     }
@@ -893,7 +937,7 @@
     function renderSplitLines() {
       const container = document.getElementById('split-lines-container');
       container.innerHTML = '';
-      
+
       splitLines.forEach((line, index) => {
         const lineDiv = document.createElement('div');
         lineDiv.className = 'split-line';
@@ -939,14 +983,14 @@
     function updateSplitTotals() {
       const totalAssigned = splitLines.reduce((sum, line) => sum + (line.monto || 0), 0);
       const difference = originalAmount - totalAssigned;
-      
+
       document.getElementById('split-total-assigned').textContent = formatNumber(totalAssigned);
       document.getElementById('split-difference').textContent = formatNumber(difference);
-      
+
       // Actualizar clases de color
       const diffElement = document.getElementById('split-difference');
       const confirmButton = document.getElementById('btn-confirm-split');
-      
+
       if (Math.abs(difference) < 0.01) { // Consideramos diferencias menores a 0.01 como iguales
         diffElement.className = 'total-amount total-success';
         confirmButton.disabled = false;
@@ -961,7 +1005,7 @@
       if (!currentSplitRow || Math.abs(originalAmount - splitLines.reduce((sum, line) => sum + (line.monto || 0), 0)) >= 0.01) {
         return;
       }
-      
+
       // Obtener datos originales de la fila
       const cells = currentSplitRow.querySelectorAll('td');
       const fecha = cells[1].textContent.trim(); // Ajustado para nueva estructura
@@ -970,10 +1014,10 @@
       const numOperacion = cells[6].textContent.trim(); // Ajustado para nueva estructura
       const hora = cells[7].textContent.trim(); // Ajustado para nueva estructura
       const referencia = cells[8].textContent.trim(); // Ajustado para nueva estructura
-      
+
       // Eliminar la fila original
       currentSplitRow.remove();
-      
+
       // Crear nuevas filas para cada split
       const tablaBody = document.getElementById('tabla-movimientos-bancos').querySelector('tbody');
       splitLines.forEach(line => {
@@ -1002,7 +1046,7 @@
           tablaBody.appendChild(tr);
         }
       });
-      
+
       cerrarModalSplit();
     }
 
@@ -1016,24 +1060,24 @@
     // Función global para formatear números
     function formatNumber(num, decimals = 2) {
       if (num === undefined || num === null || String(num).trim() === '') {
-          return '---'; 
+        return '---';
       }
       const numericValue = Number(num);
       if (isNaN(numericValue)) {
-          return '---'; 
+        return '---';
       }
-      return numericValue.toLocaleString('es-PE', { 
+      return numericValue.toLocaleString('es-PE', {
         minimumFractionDigits: decimals,
         maximumFractionDigits: decimals
       });
     }
 
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
       const btnCargarBancos = document.getElementById('btn-cargar-bancos');
       const bancosFileInput = document.getElementById('bancos-file-input');
       const bancosNombreArchivo = document.getElementById('bancos-nombre-archivo');
       const tablaMovimientosBancosBody = document.getElementById('tabla-movimientos-bancos').querySelector('tbody');
-      
+
       const infoCuentaNumero = document.getElementById('info-cuenta-numero');
       const infoCuentaMoneda = document.getElementById('info-cuenta-moneda');
       const infoCuentaTipo = document.getElementById('info-cuenta-tipo');
@@ -1045,14 +1089,14 @@
 
       // Variable global para almacenar los datos del CSV
       let csvData = [];
-      
+
       // Variable global para almacenar los movimientos procesados
       let movimientosProcesados = [];
 
       // URLs para validación de saldos (mismo patrón que consolidador de ventas)
       const csvUrls = {
-        'PEN': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRRhWBlTXTz5h_v8OIH-3LrKdc6tjqLR15ZG1LlxsFRbZ6867Rn0L3jnWYOUtH6Cv-LQ7QRpULms8ah/pub?gid=0&single=true&output=csv',
-        'USD': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS9bRPb-3jZj8mBz7Al-4p39nG2ua3WWgva9ieg46GvH9jAg2AYk5oSXpEW1H0lWXEJCFZgSnhCv3z3/pub?gid=0&single=true&output=csv'
+        'PEN': 'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://docs.google.com/spreadsheets/d/e/2PACX-1vRRhWBlTXTz5h_v8OIH-3LrKdc6tjqLR15ZG1LlxsFRbZ6867Rn0L3jnWYOUtH6Cv-LQ7QRpULms8ah/pub?gid=0&single=true&output=csv'),
+        'USD': 'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://docs.google.com/spreadsheets/d/e/2PACX-1vS9bRPb-3jZj8mBz7Al-4p39nG2ua3WWgva9ieg46GvH9jAg2AYk5oSXpEW1H0lWXEJCFZgSnhCv3z3/pub?gid=0&single=true&output=csv')
       };
 
       // Variables para validación de saldos
@@ -1076,25 +1120,25 @@
       cargarCSVExterno();
 
       // == Funciones para validación de saldos ==
-      
+
       function parseDateFromCSV(dateStr) {
         if (!dateStr || dateStr.trim() === '') return null;
-        
+
         // Manejar formato DD/MM/YYYY
         const dateParts = dateStr.trim().split('/');
         if (dateParts.length === 3) {
           const day = parseInt(dateParts[0]);
           const month = parseInt(dateParts[1]) - 1; // Mes es 0-indexado en JS
           const year = parseInt(dateParts[2]);
-          
+
           if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
             return new Date(Date.UTC(year, month, day));
           }
         }
-        
+
         return null;
       }
-      
+
       function formatDateISO(date) {
         if (!(date instanceof Date) || isNaN(date)) return '';
         const year = date.getUTCFullYear();
@@ -1115,10 +1159,10 @@
         const result = [];
         let current = '';
         let inQuotes = false;
-        
+
         for (let i = 0; i < line.length; i++) {
           const char = line[i];
-          
+
           if (char === '"') {
             inQuotes = !inQuotes;
           } else if (char === ',' && !inQuotes) {
@@ -1128,7 +1172,7 @@
             current += char;
           }
         }
-        
+
         result.push(current.trim());
         return result;
       }
@@ -1146,17 +1190,17 @@
           if (!response.ok) {
             throw new Error(`Error HTTP: ${response.status}`);
           }
-          
+
           const csvText = await response.text();
           console.log('CSV de validación cargado exitosamente');
-          
+
           // Parsear CSV
           const lines = csvText.split('\n').filter(line => line.trim() !== '');
           const csvDataValidacion = lines.map(line => parseCSVLineValidacion(line));
-          
+
           console.log('Datos CSV validación parseados:', csvDataValidacion.length, 'filas');
           return csvDataValidacion;
-          
+
         } catch (error) {
           console.error('Error al cargar CSV de validación:', error);
           return [];
@@ -1167,14 +1211,14 @@
         // Convertir fecha DD/MM/YYYY a objeto Date
         const dateParts = fechaStr.split('/');
         if (dateParts.length !== 3) return null;
-        
+
         const day = parseInt(dateParts[0]);
         const month = parseInt(dateParts[1]) - 1;
         const year = parseInt(dateParts[2]);
-        
+
         const fecha = new Date(Date.UTC(year, month, day));
         if (isNaN(fecha)) return null;
-        
+
         // Restar un día
         fecha.setUTCDate(fecha.getUTCDate() - 1);
         return formatDateDisplay(fecha);
@@ -1190,7 +1234,7 @@
         let filaEncontrada = null;
         csvDataValidacion.forEach((row, rowIndex) => {
           if (rowIndex === 0 || !row || row.length < 8) return; // Saltar header y filas inválidas
-          
+
           const fechaStr = row[0]; // Columna: Fecha
           const concepto = row[1] || ''; // Columna: Concepto
           const proveedor = row[2] || ''; // Columna: Proveedor
@@ -1199,7 +1243,7 @@
           const operacion = row[5] || ''; // Columna: # Operacion
           const hora = row[6] || ''; // Columna: Hora
           const referencia = row[7] || ''; // Columna: Referencia
-          
+
           // Buscar fila con fecha del día anterior Y concepto "SALDO FINAL"
           if (fechaStr === fechaAnterior && concepto.toUpperCase().trim() === 'SALDO FINAL') {
             const saldo = parseFloat(saldoStr.replace(/[^-0-9.]/g, '')) || 0;
@@ -1240,7 +1284,7 @@
         // Obtener la fecha del último día del Excel
         const ultimaTransaccion = movimientos[movimientos.length - 1];
         const fechaUltimoDia = ultimaTransaccion.fecha;
-        
+
         console.log('Última fecha del Excel:', fechaUltimoDia, 'Moneda:', moneda);
 
         // Cargar CSV de validación
@@ -1252,33 +1296,33 @@
 
         // Obtener saldo del día anterior desde CSV
         saldoValidacionInfo = obtenerSaldoDelDiaAnterior(fechaUltimoDia, csvValidacionData);
-        
+
         if (!saldoValidacionInfo) {
           mostrarValidacionSaldos(`⚠️ No se encontraron datos del día anterior (${obtenerDiaAnterior(fechaUltimoDia)}) para validar saldos.`, 'warning');
           return;
         }
 
-                 // Obtener saldo inicial calculado (del Excel en pantalla)
-         // Saldo inicial = saldo de la última fila - monto de la última fila
-         const saldoTextoUltima = ultimaTransaccion.saldo;
-         const saldoUltimaFila = parseFloat(String(saldoTextoUltima).replace(/[,\s]/g, '')) || 0;
-         const montoUltimaFila = parseFloat(String(ultimaTransaccion.monto).replace(/[,\s]/g, '')) || 0;
-         const saldoInicialCalculado = saldoUltimaFila - montoUltimaFila;
+        // Obtener saldo inicial calculado (del Excel en pantalla)
+        // Saldo inicial = saldo de la última fila - monto de la última fila
+        const saldoTextoUltima = ultimaTransaccion.saldo;
+        const saldoUltimaFila = parseFloat(String(saldoTextoUltima).replace(/[,\s]/g, '')) || 0;
+        const montoUltimaFila = parseFloat(String(ultimaTransaccion.monto).replace(/[,\s]/g, '')) || 0;
+        const saldoInicialCalculado = saldoUltimaFila - montoUltimaFila;
 
-         // Comparar saldos: Saldo inicial calculado vs Saldo final del día anterior (CSV)
-         const diferencia = Math.abs(saldoInicialCalculado - saldoValidacionInfo.saldoFinal);
-         const tolerancia = 0.01; // Tolerancia de 1 centavo
+        // Comparar saldos: Saldo inicial calculado vs Saldo final del día anterior (CSV)
+        const diferencia = Math.abs(saldoInicialCalculado - saldoValidacionInfo.saldoFinal);
+        const tolerancia = 0.01; // Tolerancia de 1 centavo
 
-         console.log('Validación de saldos:');
-         console.log('- Saldo inicial calculado (Excel):', saldoInicialCalculado);
-         console.log('- Saldo final día anterior (CSV):', saldoValidacionInfo.saldoFinal);
-         console.log('- Diferencia:', diferencia);
+        console.log('Validación de saldos:');
+        console.log('- Saldo inicial calculado (Excel):', saldoInicialCalculado);
+        console.log('- Saldo final día anterior (CSV):', saldoValidacionInfo.saldoFinal);
+        console.log('- Diferencia:', diferencia);
 
-         if (diferencia <= tolerancia) {
-           mostrarValidacionSaldos(`✅ Validación exitosa: Los saldos coinciden. Saldo inicial: ${formatNumber(saldoInicialCalculado)} = Saldo final día anterior: ${formatNumber(saldoValidacionInfo.saldoFinal)}. Diferencia: ${formatNumber(diferencia)}`, 'success');
-         } else {
-           mostrarValidacionSaldos(`❌ Discrepancia encontrada: Saldo inicial calculado (${formatNumber(saldoInicialCalculado)}) vs Saldo final del ${saldoValidacionInfo.fecha} (${formatNumber(saldoValidacionInfo.saldoFinal)}). Diferencia: ${formatNumber(diferencia)}`, 'error');
-         }
+        if (diferencia <= tolerancia) {
+          mostrarValidacionSaldos(`✅ Validación exitosa: Los saldos coinciden. Saldo inicial: ${formatNumber(saldoInicialCalculado)} = Saldo final día anterior: ${formatNumber(saldoValidacionInfo.saldoFinal)}. Diferencia: ${formatNumber(diferencia)}`, 'success');
+        } else {
+          mostrarValidacionSaldos(`❌ Discrepancia encontrada: Saldo inicial calculado (${formatNumber(saldoInicialCalculado)}) vs Saldo final del ${saldoValidacionInfo.fecha} (${formatNumber(saldoValidacionInfo.saldoFinal)}). Diferencia: ${formatNumber(diferencia)}`, 'error');
+        }
       }
 
       function mostrarValidacionSaldos(mensaje, tipo) {
@@ -1295,14 +1339,14 @@
             font-weight: 500;
             display: block;
           `;
-          
+
           // Insertar después del info-cuenta-container
           const infoCuentaContainer = document.getElementById('info-cuenta-container');
           infoCuentaContainer.parentNode.insertBefore(validacionElement, infoCuentaContainer.nextSibling);
         }
 
         validacionElement.textContent = mensaje;
-        
+
         if (tipo === 'success') {
           validacionElement.style.backgroundColor = 'rgba(46, 204, 113, 0.1)';
           validacionElement.style.color = 'var(--color-success)';
@@ -1322,17 +1366,17 @@
 
       async function cargarCSVExterno() {
         try {
-          const response = await fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vRKeFI1f8VGIlLuN_yPSctoqlyrAUiSU7TwYIXiUs1X83gIWSnwprTN50AZ_hKSzmcigHxOXiQGoUTl/pub?gid=0&single=true&output=csv');
+          const response = await fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent('https://docs.google.com/spreadsheets/d/e/2PACX-1vRKeFI1f8VGIlLuN_yPSctoqlyrAUiSU7TwYIXiUs1X83gIWSnwprTN50AZ_hKSzmcigHxOXiQGoUTl/pub?gid=0&single=true&output=csv'));
           const csvText = await response.text();
-          
+
           // Parsear CSV
           const lines = csvText.split('\n');
           const headers = lines[0].split(',');
-          
+
           csvData = [];
           for (let i = 1; i < lines.length; i++) {
             if (lines[i].trim() === '') continue;
-            
+
             const values = parseCSVLine(lines[i]);
             if (values.length >= headers.length) {
               const record = {};
@@ -1342,7 +1386,7 @@
               csvData.push(record);
             }
           }
-          
+
           console.log(`CSV cargado exitosamente: ${csvData.length} registros`);
         } catch (error) {
           console.error('Error al cargar CSV:', error);
@@ -1353,10 +1397,10 @@
         const result = [];
         let current = '';
         let inQuotes = false;
-        
+
         for (let i = 0; i < line.length; i++) {
           const char = line[i];
-          
+
           if (char === '"') {
             inQuotes = !inQuotes;
           } else if (char === ',' && !inQuotes) {
@@ -1366,14 +1410,14 @@
             current += char;
           }
         }
-        
+
         result.push(current);
         return result;
       }
 
       function buscarEnCSV(numeroOperacion) {
         if (!numeroOperacion || numeroOperacion === '---') return null;
-        
+
         // Buscar coincidencia parcial - el número del CSV debe coincidir con el final del número del Excel
         for (let record of csvData) {
           const csvNumero = String(record['número_operación'] || '').trim();
@@ -1386,9 +1430,9 @@
 
       function transformarNumeroOperacion(descripcionOp, numeroOp) {
         if (!numeroOp || numeroOp === '---') return numeroOp;
-        
+
         const descripcion = String(descripcionOp || '').toUpperCase().trim();
-        
+
         if (descripcion.includes('TRANFERENCIA CCE')) {
           // Reemplazar el primer '4' por '2'
           const numeroStr = String(numeroOp).trim();
@@ -1417,11 +1461,11 @@
           let hours = Math.floor(excelValue * 24);
           let minutes = Math.floor(((excelValue * 24) - hours) * 60);
           let seconds = Math.floor(((((excelValue * 24) - hours) * 60) - minutes) * 60);
-          
+
           return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-        } else if (typeof excelValue === 'string'){
+        } else if (typeof excelValue === 'string') {
           if (/^\d{2}:\d{2}:\d{2}$/.test(excelValue.trim())) {
-              return excelValue.trim();
+            return excelValue.trim();
           }
         }
         return '---';
@@ -1429,14 +1473,14 @@
 
       function formatNumberWithSpaces(num, decimals = 2) {
         if (num === undefined || num === null || String(num).trim() === '') {
-            return '---'; 
+          return '---';
         }
         const numericValue = Number(num);
         if (isNaN(numericValue)) {
-            return '---'; 
+          return '---';
         }
         // Formatear con comas primero y luego reemplazar comas por espacios
-        const formatted = numericValue.toLocaleString('es-PE', { 
+        const formatted = numericValue.toLocaleString('es-PE', {
           minimumFractionDigits: decimals,
           maximumFractionDigits: decimals
         });
@@ -1452,12 +1496,12 @@
         bancosNombreArchivo.textContent = file.name;
 
         const reader = new FileReader();
-        reader.onload = function(e) {
+        reader.onload = function (e) {
           const data = new Uint8Array(e.target.result);
-          const workbook = XLSX.read(data, { type: 'array' }); 
+          const workbook = XLSX.read(data, { type: 'array' });
           const firstSheetName = workbook.SheetNames[0];
           const worksheet = workbook.Sheets[firstSheetName];
-          
+
           const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: true, defval: "" });
 
           if (jsonData.length < 6) {
@@ -1468,13 +1512,13 @@
           infoCuentaNumero.textContent = jsonData[0] && jsonData[0][1] !== undefined ? String(jsonData[0][1]) : '---';
           infoCuentaMoneda.textContent = jsonData[1] && jsonData[1][1] !== undefined ? String(jsonData[1][1]) : '---';
           infoCuentaTipo.textContent = jsonData[2] && jsonData[2][1] !== undefined ? String(jsonData[2][1]) : '---';
-          
+
           const movimientos = [];
           for (let i = 5; i < jsonData.length; i++) {
             const row = jsonData[i];
-            if (!row || row.length === 0 || (String(row[0]).trim() === '' && String(row[3]).trim() === '')) continue; 
+            if (!row || row.length === 0 || (String(row[0]).trim() === '' && String(row[3]).trim() === '')) continue;
 
-            const fecha = row[0]; 
+            const fecha = row[0];
             const descripcionOperacion = String(row[2] || '');
             const monto = row[3];
             const saldoExcel = row[4]; // Extraer saldo del Excel
@@ -1494,7 +1538,7 @@
 
             // Aplicar reglas de transformación según el tipo de transacción
             const descripcionUpper = descripcionOperacion.toUpperCase().trim();
-            
+
             // Regla TRANSF.EXT -> Prioridad máxima
             if (descripcionUpper.includes('TRANSF.EXT')) {
               console.log('TRANSF.EXT detectado:', descripcionOperacion, 'csvMatch:', csvMatch);
@@ -1511,10 +1555,10 @@
               }
             }
             // Regla 1: IMPUESTO, COM.MANTENIM, ENVIO.EST.CTA, COM.OP -> COMISIÓN BANCARIA
-            else if (descripcionUpper.startsWith('IMPUESTO') || 
-                descripcionUpper.startsWith('COM.MANTENIM') || 
-                descripcionUpper.startsWith('ENVIO.EST.CTA') || 
-                descripcionUpper.startsWith('COM.OP')) {
+            else if (descripcionUpper.startsWith('IMPUESTO') ||
+              descripcionUpper.startsWith('COM.MANTENIM') ||
+              descripcionUpper.startsWith('ENVIO.EST.CTA') ||
+              descripcionUpper.startsWith('COM.OP')) {
               referencia = descripcionOperacion; // Concepto real va a referencia
               concepto = 'COMISION BANCARIA';
             }
@@ -1545,6 +1589,14 @@
               }
             }
 
+            // NUEVO: LÓGICA DE EGRESOS MODIFICADA
+            // Si es un egreso (monto negativo) y hay una referencia válida, agregarla al concepto
+            if (monto < 0 && referencia && referencia !== '---' && referencia.trim() !== '') {
+              // Limpiar referencia de etiquetas HTML si las tuviera (como <br>) para el concepto
+              const refLimpia = referencia.replace(/<br>/g, ' ').trim();
+              concepto = `${concepto} (${refLimpia})`;
+            }
+
             // Determinar el monto a mostrar en la fila original
             let montoFila = monto;
             if ((descripcionUpper.includes('TRANFERENCIA CCE') || descripcionUpper.includes('TRANSF.EXT')) && csvMatch) {
@@ -1570,14 +1622,14 @@
             if ((descripcionUpper.includes('TRANSF.EXT') || descripcionUpper.includes('TRANFERENCIA CCE')) && csvMatch) {
               const montoExcel = Number(monto) || 0;
               const montoCSV = Number(csvMatch['monto_neto']) || 0;
-              
+
               // Para montos negativos: Excel es más negativo que CSV
               // Ejemplo: CSV = -4,014.22, Excel = -4,500.00
               // Comisión = Excel - CSV = -4,500.00 - (-4,014.22) = -485.78
               const comision = montoExcel - montoCSV;
 
-              console.log('Calculando comisión para', descripcionUpper.includes('TRANSF.EXT') ? 'TRANSF.EXT' : 'TRANFERENCIA CCE', 
-                         '- Excel:', montoExcel, '- CSV:', montoCSV, '- Comisión:', comision);
+              console.log('Calculando comisión para', descripcionUpper.includes('TRANSF.EXT') ? 'TRANSF.EXT' : 'TRANFERENCIA CCE',
+                '- Excel:', montoExcel, '- CSV:', montoCSV, '- Comisión:', comision);
 
               const movimientoComision = {
                 fecha: formatDateFromExcel(fecha),
@@ -1616,14 +1668,14 @@
         // Ejecutar validación de saldos
         const monedaExcel = infoCuentaMoneda.textContent.trim();
         let monedaValidacion = null;
-        
+
         // Mapear monedas del Excel a códigos de validación
         if (monedaExcel === 'Soles' || monedaExcel === 'PEN') {
           monedaValidacion = 'PEN';
         } else if (monedaExcel === 'Dólares' || monedaExcel === 'USD') {
           monedaValidacion = 'USD';
         }
-        
+
         if (monedaValidacion) {
           await validarSaldos(movimientos, monedaValidacion);
         } else {
@@ -1634,7 +1686,7 @@
         const ultimaTransaccion = movimientos[movimientos.length - 1];
         let saldoInicial = '---';
         const fechaInicial = ultimaTransaccion ? ultimaTransaccion.fecha : '---';
-        
+
         if (ultimaTransaccion) {
           // Saldo inicial = saldo de la última fila - monto de la última fila
           const saldoUltima = parseFloat(String(ultimaTransaccion.saldo).replace(/[,\s]/g, '')) || 0;
@@ -1642,7 +1694,7 @@
           const saldoCalculado = saldoUltima - montoUltima;
           saldoInicial = formatNumber(saldoCalculado);
         }
-        
+
         const filaInicial = document.createElement('tr');
         filaInicial.style.backgroundColor = 'rgba(27, 137, 67, 0.1)';
         filaInicial.style.fontWeight = '600';
@@ -1692,7 +1744,7 @@
         const primeraTransaccion = movimientos[0];
         const saldoFinal = primeraTransaccion ? primeraTransaccion.saldo : '---';
         const fechaFinal = primeraTransaccion ? primeraTransaccion.fecha : '---';
-        
+
         const filaFinal = document.createElement('tr');
         filaFinal.style.backgroundColor = 'rgba(27, 137, 67, 0.1)';
         filaFinal.style.fontWeight = '600';
@@ -1733,7 +1785,7 @@
         try {
           // Leer los datos actuales de la tabla (incluyendo ediciones)
           const filas = tablaMovimientosBancosBody.querySelectorAll('tr');
-          
+
           const fechas = [];
           const conceptos = [];
           const proveedores = [];
@@ -1750,12 +1802,12 @@
               fechas.push(celdas[1].textContent.trim() || '---');
               conceptos.push(celdas[2].textContent.trim() || '---');
               proveedores.push(celdas[3].textContent.trim() || '---');
-              
+
               // Para el monto, extraer el número del texto formateado
               const montoTexto = celdas[4].textContent.trim();
               const monto = montoTexto === '---' ? 0 : parseFloat(montoTexto.replace(/[,\s]/g, '')) || 0;
               montos.push(monto);
-              
+
               // Para el saldo, aplicar la misma lógica que el monto
               const saldoTexto = celdas[5].textContent.trim();
               const saldo = saldoTexto === '---' ? 0 : parseFloat(saldoTexto.replace(/[,\s]/g, '')) || 0;
@@ -1812,7 +1864,7 @@
       function mostrarResultado(mensaje, tipo) {
         resultadoCarga.textContent = mensaje;
         resultadoCarga.style.display = 'block';
-        
+
         if (tipo === 'success') {
           resultadoCarga.style.backgroundColor = 'rgba(46, 204, 113, 0.1)';
           resultadoCarga.style.color = 'var(--color-success)';
@@ -1831,7 +1883,7 @@
       document.getElementById('btn-add-split-line').addEventListener('click', addSplitLine);
 
       // Cerrar modal al hacer clic fuera
-      document.getElementById('split-modal').addEventListener('click', function(e) {
+      document.getElementById('split-modal').addEventListener('click', function (e) {
         if (e.target === this) {
           cerrarModalSplit();
         }
@@ -1840,4 +1892,5 @@
     });
   </script>
 </body>
+
 </html>

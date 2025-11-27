@@ -1,0 +1,1802 @@
+<!-- ============================================================== -->
+<!-- APP CONCILIADOR BANCARIO (Optimizado para WP/Astra + Preline) -->
+<!-- ============================================================== -->
+
+<!-- 1. RECURSOS -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<!-- Librerías JS -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  
+<!-- Preline y Tailwind -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://preline.co/assets/js/hs-ui.bundle.js"></script>
+
+<!-- 2. CONFIGURACIÓN TAILWIND SCOPED -->
+<script>
+  tailwind.config = {
+    important: '#app-conciliador', // Encapsula estilos solo a nuestro div
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: { sans: ['Inter', 'sans-serif'] },
+        colors: {
+          brand: { 600: '#1b8943', 700: '#157235' }
+        }
+      }
+    },
+    corePlugins: {
+      preflight: false, // No resetea estilos globales de WordPress
+    }
+  }
+</script>
+
+<!-- 3. ESTILOS BASE DEL CONTENEDOR -->
+  <style>
+  #app-conciliador {
+      font-family: 'Inter', sans-serif;
+    color: #1f2937;
+    line-height: 1.5;
+    max-width: 1000px;
+      margin: 0 auto;
+  }
+
+  /* Resets manuales necesarios porque quitamos preflight */
+  #app-conciliador *,
+  #app-conciliador ::before,
+  #app-conciliador ::after {
+    box-sizing: border-box;
+    border-width: 0;
+    border-style: solid;
+    border-color: #e5e7eb;
+  }
+
+  #app-conciliador h1,
+  #app-conciliador h2,
+  #app-conciliador h3,
+  #app-conciliador h4 {
+    font-weight: 700;
+    margin: 0;
+  }
+
+  #app-conciliador table {
+    border-collapse: collapse;
+    width: 100%;
+  }
+
+  #app-conciliador input,
+  #app-conciliador select {
+    display: block;
+    width: 100%;
+  }
+
+  /* Estilos específicos de pasos */
+  #app-conciliador .step-circle {
+    transition: all 0.3s;
+  }
+
+  #app-conciliador .config-step {
+    transition: all 0.3s ease;
+    border: 1px solid #e5e7eb;
+  }
+
+  #app-conciliador .config-step.active {
+    border-color: #3b82f6;
+    box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.1), 0 2px 4px -1px rgba(59, 130, 246, 0.06);
+  }
+
+  #app-conciliador .config-step.active .step-circle {
+    background-color: #eff6ff;
+    color: #2563eb;
+  }
+
+  #app-conciliador .config-step.completed .step-circle {
+    background-color: #ecfdf5;
+    color: #059669;
+  }
+
+  #app-conciliador .config-step.future {
+    opacity: 0.7;
+  }
+  
+  #app-conciliador .config-step.future .step-circle {
+    background-color: #f3f4f6;
+    color: #9ca3af;
+  }
+
+  /* Drag and Drop Styles */
+  #app-conciliador .drop-zone {
+    transition: all 0.2s ease;
+  }
+  #app-conciliador .drop-zone.drag-over {
+    border-color: #3b82f6;
+    background-color: #eff6ff;
+  }
+
+  #app-conciliador .file-item {
+      animation: fadeIn 0.3s ease-in-out;
+  }
+  
+  @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+
+<!-- 4. UI HTML -->
+<div id="app-conciliador" class="p-4">
+
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row justify-between items-center mb-8 pb-4 border-b border-gray-200">
+    <h1 class="text-2xl text-gray-900 flex items-center gap-3">
+      <i class="fas fa-file-invoice-dollar text-blue-600"></i>
+      Conciliador Bancario
+    </h1>
+    <div id="status-badge" class="mt-2 sm:mt-0 px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm font-medium flex items-center gap-2">
+      <span class="w-2 h-2 rounded-full bg-gray-400"></span>
+      Esperando configuración
+      </div>
+    </div>
+
+  <!-- Grid Principal -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+    
+    <!-- Columna Izquierda: Configuración y Carga (Pasos 1, 2, 3) -->
+    <div class="lg:col-span-7 space-y-6">
+      
+      <!-- Paso 1: Configuración -->
+      <div id="card-step-1" class="bg-white shadow-sm rounded-xl p-6 config-step active">
+        <div class="flex items-center gap-3 mb-4 border-b border-gray-100 pb-3">
+          <span class="step-circle flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm">01</span>
+          <h2 class="text-lg text-gray-800">Configuración Inicial</h2>
+        </div>
+        
+        <div>
+          <label class="block mb-2 text-sm font-medium text-gray-900">Moneda de Conciliación</label>
+          <select id="currency-selector" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+            <option value="">Seleccionar moneda</option>
+            <option value="PEN">PEN (Soles)</option>
+            <option value="USD">USD (Dólares)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Paso 2: Extracto Bancario -->
+      <div id="card-step-2" class="bg-white shadow-sm rounded-xl p-6 config-step future">
+        <div class="flex items-center gap-3 mb-4 border-b border-gray-100 pb-3">
+          <span class="step-circle flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm">02</span>
+          <h2 class="text-lg text-gray-800">Extracto Bancario (EECC)</h2>
+        </div>
+
+        <div id="extract-upload-area" class="drop-zone p-4 text-center border-2 border-dashed border-gray-300 rounded-xl bg-gray-50 hover:bg-gray-100 cursor-pointer transition-colors duration-200">
+            <div class="flex flex-col items-center justify-center pt-2 pb-3">
+                <i class="fas fa-bank text-3xl text-gray-400 mb-2"></i>
+                <p class="text-sm text-gray-500 font-medium">Arrastra el Extracto Bancario o clic aquí</p>
+          </div>
+          <input type="file" id="file-input" accept=".xlsx,.xls" class="hidden">
+        </div>
+        <div id="file-display-container" class="mt-3 hidden"></div>
+        
+        <!-- Cache Section -->
+        <div id="pen-cache-notification" class="hidden mt-3 p-3 bg-blue-50 text-blue-700 text-sm rounded-lg flex justify-between items-center">
+           <span id="pen-cache-msg">Archivo detectado en memoria</span>
+           <button id="btn-load-cache" class="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700">Cargar</button>
+        </div>
+      </div>
+
+      <!-- Paso 3: Archivos de Pasarelas -->
+      <div id="card-step-3" class="bg-white shadow-sm rounded-xl p-6 config-step future">
+        <div class="flex items-center justify-between mb-4 border-b border-gray-100 pb-3">
+            <div class="flex items-center gap-3">
+                <span class="step-circle flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm">03</span>
+                <h2 class="text-lg text-gray-800">Archivos de Pasarelas</h2>
+            </div>
+            <button id="btn-clear-gateways" class="text-xs text-red-500 hover:text-red-700 hidden"><i class="fas fa-trash"></i> Limpiar</button>
+          </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- AMEX -->
+            <div class="space-y-2">
+                <div id="amex-upload-area" class="drop-zone h-24 border-2 border-dashed border-blue-200 rounded-lg bg-blue-50 flex flex-col items-center justify-center cursor-pointer hover:bg-blue-100">
+                    <i class="fab fa-cc-amex text-2xl text-blue-500 mb-1"></i>
+                    <span class="text-xs text-blue-700 font-medium">AMEX</span>
+                    <input type="file" id="amex-file-input" accept=".xlsx,.xls" multiple class="hidden">
+            </div>
+                <div id="amex-file-list" class="space-y-1 max-h-32 overflow-y-auto text-xs"></div>
+          </div>
+
+            <!-- DINERS -->
+            <div class="space-y-2">
+                <div id="diners-upload-area" class="drop-zone h-24 border-2 border-dashed border-green-200 rounded-lg bg-green-50 flex flex-col items-center justify-center cursor-pointer hover:bg-green-100">
+                    <i class="fab fa-cc-diners-club text-2xl text-green-600 mb-1"></i>
+                    <span class="text-xs text-green-700 font-medium">DINERS</span>
+                    <input type="file" id="diners-file-input" accept=".xlsx,.xls" multiple class="hidden">
+            </div>
+                <div id="diners-file-list" class="space-y-1 max-h-32 overflow-y-auto text-xs"></div>
+        </div>
+
+            <!-- MASTERCARD -->
+            <div class="space-y-2">
+                <div id="mc-upload-area" class="drop-zone h-24 border-2 border-dashed border-red-200 rounded-lg bg-red-50 flex flex-col items-center justify-center cursor-pointer hover:bg-red-100">
+                    <i class="fab fa-cc-mastercard text-2xl text-red-500 mb-1"></i>
+                    <span class="text-xs text-red-700 font-medium">MASTERCARD</span>
+                    <input type="file" id="mc-file-input" accept=".xlsx,.xls" multiple class="hidden">
+        </div>
+                <div id="mc-file-list" class="space-y-1 max-h-32 overflow-y-auto text-xs"></div>
+      </div>
+
+            <!-- VISA -->
+            <div class="space-y-2">
+                <div id="visa-upload-area" class="drop-zone h-24 border-2 border-dashed border-purple-200 rounded-lg bg-purple-50 flex flex-col items-center justify-center cursor-pointer hover:bg-purple-100">
+                    <i class="fab fa-cc-visa text-2xl text-purple-500 mb-1"></i>
+                    <span class="text-xs text-purple-700 font-medium">VISA</span>
+                    <input type="file" id="visa-file-input" accept=".xlsx,.xls" multiple class="hidden">
+          </div>
+                <div id="visa-file-list" class="space-y-1 max-h-32 overflow-y-auto text-xs"></div>
+      </div>
+
+            <!-- PAYU (Solo USD) -->
+            <div id="payu-section" class="space-y-2 hidden col-span-1 sm:col-span-2">
+                <div id="payu-upload-area" class="drop-zone h-24 border-2 border-dashed border-yellow-200 rounded-lg bg-yellow-50 flex flex-col items-center justify-center cursor-pointer hover:bg-yellow-100">
+                    <i class="fas fa-money-bill-wave text-2xl text-yellow-500 mb-1"></i>
+                    <span class="text-xs text-yellow-700 font-medium">PAYU (Solo USD)</span>
+                    <input type="file" id="payu-file-input" accept=".xlsx,.xls" multiple class="hidden">
+          </div>
+                <div id="payu-file-list" class="space-y-1 max-h-32 overflow-y-auto text-xs"></div>
+            </div>
+        </div>
+      </div>
+
+  </div>
+
+    <!-- Columna Derecha: Acciones y Estado (Paso 4, 5) -->
+    <div class="lg:col-span-5 space-y-6">
+        
+        <!-- Resumen y Acciones -->
+        <div id="card-step-4" class="bg-white shadow-sm rounded-xl p-6 config-step future sticky top-4">
+            <div class="flex items-center gap-3 mb-6 border-b border-gray-100 pb-3">
+                <span class="step-circle flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm">04</span>
+                <h2 class="text-lg text-gray-800">Procesar</h2>
+            </div>
+
+            <div class="space-y-4 mb-6">
+                <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <h3 class="text-xs font-bold text-gray-500 uppercase mb-2">Resumen de Archivos</h3>
+                    <ul class="space-y-2 text-sm">
+                        <li class="flex justify-between">
+                            <span class="text-gray-600">Extracto:</span>
+                            <span id="summary-extract" class="font-medium text-gray-800">--</span>
+                        </li>
+                        <li class="flex justify-between">
+                            <span class="text-gray-600">AMEX:</span>
+                            <span id="summary-amex" class="font-medium text-gray-800">0</span>
+                        </li>
+                        <li class="flex justify-between">
+                            <span class="text-gray-600">DINERS:</span>
+                            <span id="summary-diners" class="font-medium text-gray-800">0</span>
+                        </li>
+                        <li class="flex justify-between">
+                            <span class="text-gray-600">MC:</span>
+                            <span id="summary-mc" class="font-medium text-gray-800">0</span>
+                        </li>
+                        <li class="flex justify-between">
+                            <span class="text-gray-600">VISA:</span>
+                            <span id="summary-visa" class="font-medium text-gray-800">0</span>
+                        </li>
+                        <li id="summary-payu-row" class="flex justify-between hidden">
+                            <span class="text-gray-600">PAYU:</span>
+                            <span id="summary-payu" class="font-medium text-gray-800">0</span>
+                        </li>
+                    </ul>
+    </div>
+  </div>
+
+            <button id="btn-process" class="w-full py-3 px-4 inline-flex justify-center items-center gap-x-2 text-sm font-semibold rounded-lg border border-transparent bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none transition-all" disabled>
+                <i class="fas fa-cogs"></i> Conciliar Todo
+                </button>
+
+            <div id="processing-indicator" class="hidden mt-4 text-center">
+                <div class="animate-spin inline-block w-8 h-8 border-[3px] border-current border-t-transparent text-blue-600 rounded-full" role="status" aria-label="loading">
+                    <span class="sr-only">Loading...</span>
+              </div>
+                <p class="mt-2 text-sm text-gray-600">Analizando y conciliando datos...</p>
+            </div>
+
+            <div id="result-area" class="hidden mt-4 pt-4 border-t border-gray-200">
+                <div class="p-4 bg-green-50 border border-green-200 rounded-lg text-center mb-4">
+                    <i class="fas fa-check-circle text-green-600 text-3xl mb-2"></i>
+                    <h3 class="text-lg font-bold text-green-800">¡Conciliación Exitosa!</h3>
+                    <p class="text-sm text-green-700">El archivo ha sido generado correctamente.</p>
+                </div>
+                <button id="btn-download" class="w-full py-3 px-4 inline-flex justify-center items-center gap-x-2 text-sm font-semibold rounded-lg border border-transparent bg-green-600 text-white hover:bg-green-700 transition-all">
+                    <i class="fas fa-download"></i> Descargar Excel
+                  </button>
+                </div>
+              </div>
+
+        <!-- Log de Mensajes -->
+        <div class="bg-white shadow-sm rounded-xl p-4 border border-gray-200 h-64 overflow-hidden flex flex-col">
+             <h3 class="text-xs font-bold text-gray-500 uppercase mb-2 border-b border-gray-100 pb-2">Registro de Actividad</h3>
+             <div id="log-container" class="flex-1 overflow-y-auto text-xs space-y-1.5 font-mono text-gray-600 p-1">
+                 <div class="text-gray-400 italic">Esperando inicio del proceso...</div>
+             </div>
+        </div>
+
+                </div>
+                </div>
+
+              </div>
+
+<!-- 5. LÓGICA JAVASCRIPT -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+      // Inicializar componentes Preline
+      if (window.HSStaticMethods) window.HSStaticMethods.autoInit();
+
+      // --- STATE MANAGEMENT ---
+      let state = {
+          currency: null,
+          uploadedFile: null,
+          files: {
+              amex: [],
+              diners: [],
+              mc: [],
+              visa: [],
+              payu: []
+          },
+          processedData: { extracto: [], amex: [], diners: [], mc: [], visa: [], payu: [] }
+      };
+
+      // --- UI ELEMENTS ---
+      const ui = {
+          currencySelector: document.getElementById('currency-selector'),
+          cards: {
+              step1: document.getElementById('card-step-1'),
+              step2: document.getElementById('card-step-2'),
+              step3: document.getElementById('card-step-3'),
+              step4: document.getElementById('card-step-4'),
+          },
+          inputs: {
+              file: document.getElementById('file-input'),
+              amex: document.getElementById('amex-file-input'),
+              diners: document.getElementById('diners-file-input'),
+              mc: document.getElementById('mc-file-input'),
+              visa: document.getElementById('visa-file-input'),
+              payu: document.getElementById('payu-file-input'),
+          },
+          areas: {
+              extract: document.getElementById('extract-upload-area'),
+              amex: document.getElementById('amex-upload-area'),
+              diners: document.getElementById('diners-upload-area'),
+              mc: document.getElementById('mc-upload-area'),
+              visa: document.getElementById('visa-upload-area'),
+              payu: document.getElementById('payu-upload-area'),
+          },
+          lists: {
+              extract: document.getElementById('file-display-container'),
+              amex: document.getElementById('amex-file-list'),
+              diners: document.getElementById('diners-file-list'),
+              mc: document.getElementById('mc-file-list'),
+              visa: document.getElementById('visa-file-list'),
+              payu: document.getElementById('payu-file-list'),
+          },
+          summary: {
+              extract: document.getElementById('summary-extract'),
+              amex: document.getElementById('summary-amex'),
+              diners: document.getElementById('summary-diners'),
+              mc: document.getElementById('summary-mc'),
+              visa: document.getElementById('summary-visa'),
+              payu: document.getElementById('summary-payu'),
+              payuRow: document.getElementById('summary-payu-row'),
+          },
+          buttons: {
+              process: document.getElementById('btn-process'),
+              download: document.getElementById('btn-download'),
+              clearGateways: document.getElementById('btn-clear-gateways'),
+              loadCache: document.getElementById('btn-load-cache'),
+          },
+          status: {
+              badge: document.getElementById('status-badge'),
+              log: document.getElementById('log-container'),
+              processing: document.getElementById('processing-indicator'),
+              result: document.getElementById('result-area'),
+          }
+      };
+
+      // --- LOG SYSTEM ---
+      function log(msg, type = 'info') {
+          const div = document.createElement('div');
+          const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          
+          let icon = '';
+          let colorClass = 'text-gray-600';
+          
+          if (type === 'success') { icon = '✅'; colorClass = 'text-green-600'; }
+          else if (type === 'error') { icon = '❌'; colorClass = 'text-red-600'; }
+          else if (type === 'warning') { icon = '⚠️'; colorClass = 'text-yellow-600'; }
+          else { icon = 'ℹ️'; }
+
+          div.innerHTML = `<span class="text-gray-400">[${timestamp}]</span> ${icon} <span class="${colorClass}">${msg}</span>`;
+          
+          // Remove initial placeholder if exists
+          if (ui.status.log.children.length === 1 && ui.status.log.children[0].classList.contains('italic')) {
+              ui.status.log.innerHTML = '';
+          }
+          
+          ui.status.log.appendChild(div);
+          ui.status.log.scrollTop = ui.status.log.scrollHeight;
+          
+          // Update status badge
+          updateStatusBadge(msg, type);
+      }
+
+      function updateStatusBadge(msg, type) {
+          let bgClass = 'bg-gray-100 text-gray-600';
+          let dotClass = 'bg-gray-400';
+          
+          if (type === 'success') { bgClass = 'bg-green-100 text-green-700'; dotClass = 'bg-green-500'; }
+          if (type === 'processing') { bgClass = 'bg-blue-100 text-blue-700'; dotClass = 'bg-blue-500 animate-pulse'; }
+          if (type === 'error') { bgClass = 'bg-red-100 text-red-700'; dotClass = 'bg-red-500'; }
+
+          ui.status.badge.className = `mt-2 sm:mt-0 px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2 ${bgClass}`;
+          ui.status.badge.innerHTML = `<span class="w-2 h-2 rounded-full ${dotClass}"></span> ${msg.substring(0, 40)}${msg.length > 40 ? '...' : ''}`;
+      }
+
+      // --- STEP MANAGEMENT ---
+      function setStepActive(cardId) {
+          document.getElementById(cardId).classList.remove('future');
+          document.getElementById(cardId).classList.add('active');
+      }
+      
+      function setStepCompleted(cardId) {
+          document.getElementById(cardId).classList.remove('active');
+          document.getElementById(cardId).classList.add('completed');
+      }
+
+      // --- EVENT LISTENERS ---
+      
+      // 1. Currency Selection
+      ui.currencySelector.addEventListener('change', (e) => {
+          state.currency = e.target.value;
+          if (state.currency) {
+              setStepCompleted('card-step-1');
+              setStepActive('card-step-2');
+              setStepActive('card-step-3');
+              setStepActive('card-step-4'); // Activate all cards to allow workflow
+              
+              // Handle PayU visibility
+              if (state.currency === 'USD') {
+                  document.getElementById('payu-section').classList.remove('hidden');
+                  ui.summary.payuRow.classList.remove('hidden');
+          } else {
+                  document.getElementById('payu-section').classList.add('hidden');
+                  ui.summary.payuRow.classList.add('hidden');
+              }
+              
+              log(`Moneda seleccionada: ${state.currency}`, 'success');
+              
+              // Check cache for PEN
+              if (state.currency === 'PEN') {
+                  checkPENCache();
+              }
+          }
+      });
+
+      // 2. File Upload Handlers (Generic)
+      function setupDragAndDrop(area, input, handler) {
+          area.addEventListener('click', () => input.click());
+          area.addEventListener('dragover', (e) => {
+            e.preventDefault();
+              area.classList.add('drag-over');
+        });
+          area.addEventListener('dragleave', () => area.classList.remove('drag-over'));
+          area.addEventListener('drop', (e) => {
+            e.preventDefault();
+              area.classList.remove('drag-over');
+              if (e.dataTransfer.files.length) handler(e.dataTransfer.files);
+          });
+          input.addEventListener('change', (e) => {
+              if (e.target.files.length) handler(e.target.files);
+          });
+      }
+
+      // Handlers Implementation
+      setupDragAndDrop(ui.areas.extract, ui.inputs.file, (files) => handleExtractUpload(files[0]));
+      setupDragAndDrop(ui.areas.amex, ui.inputs.amex, (files) => handleGatewayUpload('amex', Array.from(files)));
+      setupDragAndDrop(ui.areas.diners, ui.inputs.diners, (files) => handleGatewayUpload('diners', Array.from(files)));
+      setupDragAndDrop(ui.areas.mc, ui.inputs.mc, (files) => handleGatewayUpload('mc', Array.from(files)));
+      setupDragAndDrop(ui.areas.visa, ui.inputs.visa, (files) => handleGatewayUpload('visa', Array.from(files)));
+      setupDragAndDrop(ui.areas.payu, ui.inputs.payu, (files) => handleGatewayUpload('payu', Array.from(files)));
+
+      // 3. Process Buttons
+      ui.buttons.process.addEventListener('click', processReconciliation);
+      ui.buttons.download.addEventListener('click', generateAndDownloadExcel);
+      ui.buttons.clearGateways.addEventListener('click', clearAllGateways);
+      ui.buttons.loadCache.addEventListener('click', loadLatestPENCachedFile);
+
+      // --- LOGIC ---
+
+      function handleExtractUpload(file) {
+          if (!file) return;
+          state.uploadedFile = file;
+          
+          // Update UI
+          ui.lists.extract.innerHTML = `
+            <div class="p-2 bg-blue-50 border border-blue-200 rounded text-sm flex items-center justify-between file-item">
+              <div class="flex items-center gap-2 overflow-hidden">
+                <i class="fas fa-file-excel text-blue-600"></i>
+                <span class="font-medium text-blue-900 truncate">${file.name}</span>
+          </div>
+              <button onclick="removeExtract()" class="text-red-500 hover:text-red-700 ml-2"><i class="fas fa-times"></i></button>
+          </div>`;
+          ui.lists.extract.classList.remove('hidden');
+          ui.areas.extract.classList.add('hidden'); // Hide dropzone to save space
+          
+          setStepCompleted('card-step-2');
+          updateSummary();
+          log(`Extracto cargado: ${file.name}`, 'success');
+          
+          // Cache logic
+          if (state.currency === 'PEN') savePENFileToCache(file);
+      }
+
+      window.removeExtract = function() {
+          state.uploadedFile = null;
+          ui.lists.extract.innerHTML = '';
+          ui.lists.extract.classList.add('hidden');
+          ui.areas.extract.classList.remove('hidden');
+          ui.inputs.file.value = '';
+          updateSummary();
+          log('Extracto eliminado', 'warning');
+      }
+
+      function handleGatewayUpload(type, files) {
+        files.forEach(file => {
+              if (state.files[type].some(f => f.name === file.name)) {
+                  log(`El archivo ${file.name} ya existe en ${type.toUpperCase()}`, 'warning');
+            return;
+          }
+
+              // Detect Month-Year format
+              const formato = detectarFormatoMesAnio(file.name);
+              file.formatoMesAnio = formato.encontrado;
+              file.mesMesAnio = formato.mes;
+              file.anioMesAnio = formato.anio;
+
+              state.files[type].push(file);
+              
+              // Update UI List
+              const list = ui.lists[type];
+              const div = document.createElement('div');
+              div.className = 'p-1.5 bg-gray-50 border border-gray-200 rounded flex items-center justify-between file-item';
+              div.innerHTML = `
+                <div class="flex items-center gap-2 min-w-0">
+                    <i class="fas fa-file-excel text-xs text-gray-500"></i>
+                    <span class="truncate text-gray-700">${file.name}</span>
+                    ${file.formatoMesAnio ? `<span class="text-[10px] bg-orange-100 text-orange-700 px-1 rounded">${file.mesMesAnio}${file.anioMesAnio}</span>` : ''}
+            </div>
+                <button onclick="removeGatewayFile('${type}', '${file.name}')" class="text-red-400 hover:text-red-600 ml-1"><i class="fas fa-times"></i></button>
+              `;
+              list.appendChild(div);
+          });
+
+          if (state.files[type].length > 0) {
+              ui.buttons.clearGateways.classList.remove('hidden');
+          }
+          
+          updateSummary();
+          log(`Cargados ${files.length} archivo(s) a ${type.toUpperCase()}`, 'info');
+      }
+
+      window.removeGatewayFile = function(type, fileName) {
+          state.files[type] = state.files[type].filter(f => f.name !== fileName);
+          
+          // Re-render list (simpler than finding ID)
+          const list = ui.lists[type];
+          list.innerHTML = '';
+          state.files[type].forEach(file => {
+              const div = document.createElement('div');
+              div.className = 'p-1.5 bg-gray-50 border border-gray-200 rounded flex items-center justify-between file-item';
+              div.innerHTML = `
+                <div class="flex items-center gap-2 min-w-0">
+                    <i class="fas fa-file-excel text-xs text-gray-500"></i>
+                    <span class="truncate text-gray-700">${file.name}</span>
+                     ${file.formatoMesAnio ? `<span class="text-[10px] bg-orange-100 text-orange-700 px-1 rounded">${file.mesMesAnio}${file.anioMesAnio}</span>` : ''}
+            </div>
+                <button onclick="removeGatewayFile('${type}', '${file.name}')" class="text-red-400 hover:text-red-600 ml-1"><i class="fas fa-times"></i></button>
+              `;
+              list.appendChild(div);
+          });
+
+          updateSummary();
+      }
+
+      function clearAllGateways() {
+          ['amex', 'diners', 'mc', 'visa', 'payu'].forEach(type => {
+              state.files[type] = [];
+              ui.lists[type].innerHTML = '';
+          });
+          ui.buttons.clearGateways.classList.add('hidden');
+          updateSummary();
+          log('Se han limpiado todos los archivos de pasarelas', 'warning');
+      }
+
+      function updateSummary() {
+          ui.summary.extract.textContent = state.uploadedFile ? 'Cargado' : '--';
+          ui.summary.extract.className = state.uploadedFile ? 'font-medium text-green-600' : 'font-medium text-gray-800';
+          
+          ui.summary.amex.textContent = state.files.amex.length;
+          ui.summary.diners.textContent = state.files.diners.length;
+          ui.summary.mc.textContent = state.files.mc.length;
+          ui.summary.visa.textContent = state.files.visa.length;
+          ui.summary.payu.textContent = state.files.payu.length;
+
+          const hasFiles = state.uploadedFile && (
+              state.files.amex.length > 0 || 
+              state.files.diners.length > 0 || 
+              state.files.mc.length > 0 || 
+              state.files.visa.length > 0 || 
+              state.files.payu.length > 0
+          );
+          
+          ui.buttons.process.disabled = !hasFiles;
+          if (hasFiles) {
+              setStepActive('card-step-4');
+          }
+      }
+
+      // --- PROCESSING LOGIC (ADAPTED FROM ORIGINAL) ---
+      async function processReconciliation() {
+          ui.buttons.process.disabled = true;
+          ui.buttons.process.classList.add('hidden');
+          ui.status.processing.classList.remove('hidden');
+          ui.status.result.classList.add('hidden');
+          
+          updateStatusBadge('Procesando conciliación...', 'processing');
+          log('Iniciando proceso de conciliación...', 'info');
+
+          // Small delay to allow UI to update
+          setTimeout(async () => {
+              try {
+                  await executeCoreLogic();
+                  ui.status.processing.classList.add('hidden');
+                  ui.status.result.classList.remove('hidden');
+                  setStepCompleted('card-step-4');
+                  updateStatusBadge('Conciliación completada', 'success');
+                  log('Conciliación finalizada con éxito.', 'success');
+              } catch (error) {
+                  console.error(error);
+                  ui.status.processing.classList.add('hidden');
+                  ui.buttons.process.classList.remove('hidden');
+                  ui.buttons.process.disabled = false;
+                  updateStatusBadge('Error en el proceso', 'error');
+                  log(`Error: ${error.message}`, 'error');
+                  alert(`Ocurrió un error: ${error.message}`);
+              }
+          }, 500);
+      }
+
+      async function executeCoreLogic() {
+          // Here we paste/adapt the core logic from the previous file
+          // Mapping headers and data processing
+              const INPUT_EXTRACTO_HEADERS = ['FECHA', 'DESCRIPCIÓN OPERACIÓN', 'MONTO', 'OPERACIÓN - NÚMERO', 'REFERENCIA2'];
+              const INPUT_AMEX_HEADERS = ['CODIGO', 'NETO_TOTAL', 'FECHA_ABONO'];
+              const INPUT_DINERS_HEADERS = ['CÓDIGO DE COMERCIO', 'ORDEN DE PAGO', 'FECHA DE PAGO', 'IMPORTE NETO DE PAGO'];
+              const INPUT_MC_HEADERS = ['CODCOM', 'NETO_TOTAL', 'FECHA_ABONO'];
+              const INPUT_VISA_HEADERS = ['COMERCIO/CADENA', 'FECHA PROCESO', 'IMPORTE NETO'];
+              const INPUT_PAYU_HEADERS = ['FECHA', 'DOCUMENTO', 'DESCRIPCION', 'CREDITOS', 'DEBITOS', 'NUEVO SALDO', 'SALDO CONGELADO ANTERIOR', 'SALDO RESERVA', 'SALDO DISPONIBLE'];
+
+              const FINAL_EXTRACTO_HEADERS = ['FECHA', 'DESCRIPCIÓN OPERACIÓN', 'MONTO', 'OPERACIÓN - NÚMERO', 'REFERENCIA2', 'ESTADO', '#REF'];
+          // ... Other output headers same as original ...
+              const FINAL_AMEX_HEADERS = ['CODIGO', 'NETO_TOTAL', 'FECHA_ABONO', 'ESTADO', '#REF'];
+              const FINAL_DINERS_HEADERS = ['CÓDIGO DE COMERCIO', 'ORDEN DE PAGO', 'FECHA DE PAGO', 'IMPORTE NETO DE PAGO', 'ESTADO', '#REF'];
+              const FINAL_MC_HEADERS = ['CODCOM', 'NETO_TOTAL', 'FECHA_ABONO', 'ESTADO', '#REF'];
+              const FINAL_VISA_HEADERS = ['COMERCIO/CADENA', 'FECHA PROCESO', 'IMPORTE NETO', 'ESTADO', '#REF'];
+              const FINAL_PAYU_HEADERS = ['FECHA', 'DOCUMENTO', 'DESCRIPCION', 'CREDITOS', 'DEBITOS', 'NUEVO SALDO', 'SALDO CONGELADO ANTERIOR', 'SALDO RESERVA', 'SALDO DISPONIBLE', 'ESTADO', '#REF'];
+
+          // 1. Read Extract
+          log('Leyendo extracto bancario...', 'info');
+              const requiredExtractHeaders = [...new Set(['DESCRIPCIÓN OPERACIÓN', ...INPUT_EXTRACTO_HEADERS])];
+          const [rawExtractHeaders, ...rawExtractData] = await readFileAndGetData(state.uploadedFile, {
+                  headerRow: 5,
+                  requiredHeaders: requiredExtractHeaders
+              });
+              
+          // Filter Extract
+              const descColIndex = rawExtractHeaders.findIndex(h => h.toUpperCase().trim() === 'DESCRIPCIÓN OPERACIÓN');
+              const filteredRawExtractData = rawExtractData.filter(row => {
+                  const desc = row[descColIndex] ? String(row[descColIndex]).toUpperCase() : '';
+                  return desc.endsWith('DINERS CLUB') || 
+                         desc.endsWith('CIA DE SERV') || 
+                         desc.endsWith('DE PROCESOS DE MEDIOS') ||
+                         desc.endsWith('DINERS CLUB PERU S.') ||
+                         desc.endsWith('DE PAYU PERU S.A.C') ||
+                         desc.includes('COMPAN');
+              });
+
+              const extractoHeaderMap = INPUT_EXTRACTO_HEADERS.map(h => rawExtractHeaders.findIndex(rawH => rawH.toUpperCase().trim() === h));
+              const mappedExtractoData = filteredRawExtractData.map(row => extractoHeaderMap.map(index => row[index]));
+              const extractoDataWithEstado = mappedExtractoData.map(row => [...row, 'Pendiente', '']);
+              
+          // 2. Process Gateways
+          // Helper function to process files and collect data
+          const processGatewayFiles = async (files, headers, type) => {
+             let consolidated = [];
+             let filesInfo = [];
+             if (files.length > 0) log(`Procesando ${files.length} archivos de ${type.toUpperCase()}...`, 'info');
+             
+             for (const file of files) {
+                 let rawData, rawHeaders;
+                 
+                 if (type === 'mc') {
+                     // Special case MC
+                     const codcom = file.name.split('-')[0];
+                     [rawHeaders, ...rawData] = await readFileAndGetData(file, { requiredHeaders: ['NETO_TOTAL', 'FECHA_ABONO'] });
+                     const netoIdx = rawHeaders.findIndex(h => h.toUpperCase().trim() === 'NETO_TOTAL');
+                     const fechaIdx = rawHeaders.findIndex(h => h.toUpperCase().trim() === 'FECHA_ABONO');
+                     
+                     const mapped = rawData.map(row => [codcom, row[netoIdx], row[fechaIdx]])
+                        .filter(row => {
+                             const val = convertToNumber(row[1]);
+                             return !isNaN(val) && val !== 0;
+                        });
+                     consolidated.push(...mapped);
+                     mapped.forEach(() => filesInfo.push({ formatoMesAnio: file.formatoMesAnio, fileName: file.name, mes: file.mesMesAnio, anio: file.anioMesAnio }));
+                 
+                 } else if (type === 'payu') {
+                     // Special case PAYU
+                     [rawHeaders, ...rawData] = await readFileAndGetData(file, { headerRow: 5, requiredHeaders: headers });
+                     const map = headers.map(h => rawHeaders.findIndex(rh => rh.toUpperCase().trim() === h));
+                     
+                     // Filter Logic PayU
+                     const descIdx = rawHeaders.findIndex(h => h.toUpperCase().trim() === 'DESCRIPCION');
+                     const debIdx = rawHeaders.findIndex(h => h.toUpperCase().trim() === 'DEBITOS');
+                     const docIdx = rawHeaders.findIndex(h => h.toUpperCase().trim() === 'DOCUMENTO');
+                     
+                     const filtered = rawData.filter(row => {
+                          const desc = String(row[descIdx] || '').toUpperCase();
+                          const deb = row[debIdx];
+                          return desc === 'PAYMENT_ORDER [PAYMENT_ORDER]' && deb !== null && convertToNumber(deb) !== 0;
+                     });
+
+                     // Unique Logic
+                     const uniqueMap = new Map();
+                     const uniqueFiltered = filtered.filter(row => {
+                         const doc = String(row[docIdx]||'');
+                         const deb = convertToNumber(row[debIdx]);
+                         const key = `${doc}_${deb.toFixed(2)}`;
+                         if(uniqueMap.has(key)) return false;
+                         uniqueMap.set(key, true);
+                         return true;
+                     });
+
+                     const mapped = uniqueFiltered.map(row => map.map(i => row[i]));
+                     consolidated.push(...mapped);
+                     mapped.forEach(() => filesInfo.push({ formatoMesAnio: file.formatoMesAnio, fileName: file.name, mes: file.mesMesAnio, anio: file.anioMesAnio }));
+
+                 } else {
+                     // Standard (Amex, Diners, Visa)
+                     [rawHeaders, ...rawData] = await readFileAndGetData(file, { requiredHeaders: headers });
+                     const map = headers.map(h => rawHeaders.findIndex(rh => rh.toUpperCase().trim() === h));
+                     
+                     let mapped = [];
+                     if (type === 'diners') {
+                         mapped = rawData.filter(row => map.some(i => row[i] !== null && String(row[i]).trim() !== ''))
+                                         .map(row => map.map(i => row[i]));
+                     } else if (type === 'visa') {
+                          mapped = rawData.map(row => map.map(i => row[i]))
+                                          .filter(row => !isNaN(convertToNumber(row[2])) && convertToNumber(row[2]) !== 0);
+                     } else {
+                          // AMEX
+                          mapped = rawData.map(row => map.map(i => row[i]));
+                     }
+                     
+                     consolidated.push(...mapped);
+                     mapped.forEach(() => filesInfo.push({ formatoMesAnio: file.formatoMesAnio, fileName: file.name, mes: file.mesMesAnio, anio: file.anioMesAnio }));
+                 }
+             }
+             return { data: consolidated, info: filesInfo };
+          };
+
+          // Process all types
+          const amexRes = await processGatewayFiles(state.files.amex, INPUT_AMEX_HEADERS, 'amex');
+          
+          // Amex Filter Logic (Neto != 0)
+          let amexData = amexRes.data;
+          let amexInfo = amexRes.info;
+          if (amexData.length > 0) {
+              const filteredIndices = amexData.map((row, i) => ({ row, i, val: convertToNumber(row[1]) }))
+                                             .filter(x => !isNaN(x.val) && x.val !== 0)
+                                             .map(x => x.i);
+              amexData = filteredIndices.map(i => amexData[i]);
+              amexInfo = filteredIndices.map(i => amexInfo[i]);
+          }
+
+          const dinersRes = await processGatewayFiles(state.files.diners, INPUT_DINERS_HEADERS, 'diners');
+          const mcRes = await processGatewayFiles(state.files.mc, INPUT_MC_HEADERS, 'mc');
+          const visaRes = await processGatewayFiles(state.files.visa, INPUT_VISA_HEADERS, 'visa');
+          const payuRes = await processGatewayFiles(state.files.payu, INPUT_PAYU_HEADERS, 'payu');
+
+          // Add Status Columns
+          const addStatus = (data, info) => data.map((row, i) => {
+              const st = info[i]?.formatoMesAnio ? 'Pendiente MA' : 'Pendiente';
+              return [...row, st, ''];
+          });
+
+          const amexWithSt = addStatus(amexData, amexInfo);
+          const dinersWithSt = addStatus(dinersRes.data, dinersRes.info);
+          const mcWithSt = addStatus(mcRes.data, mcRes.info);
+          const visaWithSt = addStatus(visaRes.data, visaRes.info);
+          const payuWithSt = addStatus(payuRes.data, payuRes.info);
+
+          // 3. Perform Reconciliation
+          log('Ejecutando algoritmo de conciliación...', 'processing');
+          
+          const result = performReconciliationMultiStep(
+              [FINAL_EXTRACTO_HEADERS, ...extractoDataWithEstado],
+              [FINAL_AMEX_HEADERS, ...amexWithSt],
+              [FINAL_DINERS_HEADERS, ...dinersWithSt],
+              [FINAL_MC_HEADERS, ...mcWithSt],
+              [FINAL_VISA_HEADERS, ...visaWithSt],
+              [FINAL_PAYU_HEADERS, ...payuWithSt],
+              amexInfo, dinersRes.info, mcRes.info, visaRes.info, payuRes.info
+          );
+
+          // 4. Format Dates
+          // Helper to format specific columns in results
+          const formatColDate = (data, colName) => {
+               if (!data || data.length <= 1) return;
+               const headers = data[0];
+               const idx = headers.indexOf(colName);
+               if (idx === -1) return;
+               
+               for(let i=1; i<data.length; i++) {
+                   const val = data[i][idx];
+                   // Logic depends on gateway
+                   // Simple parser call
+                   const d = parseDate(val);
+                   if (d) data[i][idx] = d.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+               }
+          };
+
+          // Specific formatters from original code
+          if (result.conciliadoAmex.length > 0) {
+               const idx = result.conciliadoAmex[0].indexOf('FECHA_ABONO');
+               for(let i=1; i<result.conciliadoAmex.length; i++) {
+                   const val = String(result.conciliadoAmex[i][idx]).trim();
+                   if(val.length === 8 && !isNaN(val)) {
+                       result.conciliadoAmex[i][idx] = `${val.substring(6,8)}/${val.substring(4,6)}/${val.substring(0,4)}`;
+                   }
+               }
+          }
+          
+          formatColDate(result.conciliadoDiners, 'FECHA DE PAGO');
+          formatColDate(result.conciliadoMc, 'FECHA_ABONO');
+          formatColDate(result.conciliadoVisa, 'FECHA PROCESO');
+          formatColDate(result.conciliadoPayu, 'FECHA');
+
+          state.processedData = {
+              extracto: result.conciliadoExtracto,
+              amex: result.conciliadoAmex.length > 0 ? result.conciliadoAmex : [],
+              diners: result.conciliadoDiners.length > 0 ? result.conciliadoDiners : [],
+              mc: result.conciliadoMc.length > 0 ? result.conciliadoMc : [],
+              visa: result.conciliadoVisa.length > 0 ? result.conciliadoVisa : [],
+              payu: result.conciliadoPayu.length > 0 ? result.conciliadoPayu : []
+          };
+      }
+      
+      // --- HELPERS (Includes core logic functions simplified/condensed) ---
+      
+      function detectarFormatoMesAnio(fileName) {
+        const meses = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SET', 'OCT', 'NOV', 'DIC'];
+        const fileNameUpper = fileName.toUpperCase();
+        for (const mes of meses) {
+          const regex = new RegExp(`${mes}\\d{2}`);
+          if (regex.test(fileNameUpper)) {
+            const match = fileNameUpper.match(regex)[0];
+            return { encontrado: true, mes: mes, anio: match.substring(3) };
+          }
+        }
+        return { encontrado: false };
+      }
+
+      function convertToNumber(value) {
+          if (!value || value === null || value === undefined) {
+              return NaN;
+          }
+          
+          if (typeof value === 'number') {
+              return value;
+          }
+          
+          if (typeof value === 'string') {
+              if (value.trim() === '') {
+                  return NaN;
+              }
+              // Maneja formatos como "1.190,07" (remueve puntos, reemplaza coma) o "1190.07"
+              const cleanValue = value.replace(/\./g, '').replace(',', '.');
+              const num = parseFloat(cleanValue);
+              return num;
+          }
+          return NaN;
+      }
+
+      function parseDate(value) {
+          if (value === null || value === undefined) return null;
+          if (value instanceof Date && !isNaN(value)) return value;
+          
+          const strValue = String(value).trim();
+          if (strValue === '') return null;
+
+          // 2. Formato ISO: yyyy-mm-dd
+          if (strValue.includes('-') && strValue.length === 10) {
+              const parts = strValue.split('-');
+              if (parts.length === 3) {
+                  const year = parseInt(parts[0], 10);
+                  const month = parseInt(parts[1], 10) - 1;
+                  const day = parseInt(parts[2], 10);
+                  if (!isNaN(day) && !isNaN(month) && !isNaN(year) && year > 1900) {
+                      const date = new Date(year, month, day);
+                      return date;
+                  }
+              }
+          }
+
+          // 3. Formato de texto: dd/mm/aaaa
+          if (strValue.includes('/')) {
+              const parts = strValue.split('/');
+              if (parts.length === 3) {
+                  const day = parseInt(parts[0], 10);
+                  const month = parseInt(parts[1], 10) - 1;
+                  const year = parseInt(parts[2], 10);
+                  if (!isNaN(day) && !isNaN(month) && !isNaN(year) && year > 1900) {
+                      const date = new Date(year, month, day);
+                      return date;
+                  }
+              }
+          }
+
+          // 4. Formatos numéricos (como string o number)
+          if (!isNaN(strValue)) {
+              // A. Número de serie de Excel (son valores relativamente bajos)
+              const numValue = Number(value);
+              if (numValue > 0 && numValue < 100000) {
+                  const utc_days = Math.floor(numValue - 25569);
+                  const utc_value = utc_days * 86400;
+                  const date_info = new Date(utc_value * 1000);
+                  const date = new Date(date_info.getTime() + (date_info.getTimezoneOffset() * 60 * 1000));
+                  return date;
+              }
+
+              // B. Formato VISA (dmmaaaa o ddmmaaaa)
+              let visaStr = strValue;
+              if (visaStr.length === 7) visaStr = '0' + visaStr;
+              if (visaStr.length === 8) {
+                  const day = parseInt(visaStr.substring(0, 2), 10);
+                  const month = parseInt(visaStr.substring(2, 4), 10);
+                  const year = parseInt(visaStr.substring(4, 8), 10);
+                  if (month >= 1 && month <= 12 && day >= 1 && day <= 31 && year > 1900) {
+                      const date = new Date(year, month - 1, day);
+                      return date;
+                  }
+              }
+              
+              // C. Formato AMEX (aaaammdd)
+              if (strValue.length === 8) {
+                  const year = parseInt(strValue.substring(0, 4), 10);
+                  const month = parseInt(strValue.substring(4, 6), 10);
+                  const day = parseInt(strValue.substring(6, 8), 10);
+                  if (year > 1900 && month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+                      const date = new Date(year, month - 1, day);
+                      return date;
+                  }
+              }
+          }
+          return null;
+      }
+
+      async function readFileAndGetData(file, options) {
+          return new Promise((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = function(e) {
+                  try {
+                      const data = new Uint8Array(e.target.result);
+                      const workbook = XLSX.read(data, { type: 'array' });
+                      const sheetName = workbook.SheetNames[0];
+                      const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1, defval: null });
+                      
+                      const headerRowIndex = options.headerRow ? options.headerRow - 1 : 0;
+                      const headers = jsonData[headerRowIndex].map(h => String(h || '').trim());
+                      
+                      resolve([headers, ...jsonData.slice(headerRowIndex + 1)]);
+                  } catch (err) { reject(err); }
+              };
+              reader.readAsArrayBuffer(file);
+          });
+      }
+      
+      window.generateAndDownloadExcel = function() {
+          if (state.processedData.extracto.length === 0) return;
+          const wb = XLSX.utils.book_new();
+          
+          XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(state.processedData.extracto), 'EXTRACTO');
+          if (state.processedData.amex.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(state.processedData.amex), 'AMEX');
+          if (state.processedData.diners.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(state.processedData.diners), 'DINERS');
+          if (state.processedData.mc.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(state.processedData.mc), 'MC');
+          if (state.processedData.visa.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(state.processedData.visa), 'VISA');
+          if (state.processedData.payu.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(state.processedData.payu), 'PAYU');
+          
+          XLSX.writeFile(wb, `CONCILIACION_${state.currency}_${new Date().toISOString().slice(0,10)}.xlsx`);
+      }
+
+      // --- CACHE SYSTEM (SIMPLIFIED) ---
+      function savePENFileToCache(file) {
+          const reader = new FileReader();
+          reader.onload = function(e) {
+              const data = {
+                  name: file.name,
+                  type: file.type,
+                  lastModified: file.lastModified,
+                  data: e.target.result,
+                  timestamp: new Date().toISOString()
+              };
+              localStorage.setItem(`conciliador_pen_cache`, JSON.stringify(data));
+          };
+          reader.readAsDataURL(file);
+      }
+
+      function checkPENCache() {
+           const cached = localStorage.getItem('conciliador_pen_cache');
+           if (cached) {
+               const data = JSON.parse(cached);
+               document.getElementById('pen-cache-notification').classList.remove('hidden');
+               document.getElementById('pen-cache-msg').textContent = `Archivo reciente: ${data.name}`;
+           }
+      }
+
+      window.loadLatestPENCachedFile = function() {
+          const cached = localStorage.getItem('conciliador_pen_cache');
+          if (!cached) return;
+          const data = JSON.parse(cached);
+          
+          fetch(data.data)
+            .then(res => res.blob())
+            .then(blob => {
+                const file = new File([blob], data.name, { type: data.type, lastModified: data.lastModified });
+                handleExtractUpload(file);
+                document.getElementById('pen-cache-notification').classList.add('hidden');
+            });
+      }
+      
+      // --- CORE RECONCILIATION ALGORITHM (ORIGINAL LOGIC RESTORED) ---
+      function performReconciliationMultiStep(extractoConHeaders, amexConHeaders, dinersConHeaders, mcConHeaders, visaConHeaders, payuConHeaders, amexFilesInfo = [], dinersFilesInfo = [], mcFilesInfo = [], visaFilesInfo = [], payuFilesInfo = []) {
+          console.log('🔄 INICIANDO CONCILIACIÓN POR PASOS');
+          
+          const [extractoHeaders, ...extractoData] = extractoConHeaders;
+          const [amexHeaders, ...amexData] = amexConHeaders.length > 0 ? amexConHeaders : [[], []];
+          const [dinersHeaders, ...dinersData] = dinersConHeaders.length > 0 ? dinersConHeaders : [[], []];
+          const [mcHeaders, ...mcData] = mcConHeaders.length > 0 ? mcConHeaders : [[], []];
+          const [visaHeaders, ...visaData] = visaConHeaders.length > 0 ? visaConHeaders : [[], []];
+          const [payuHeaders, ...payuData] = payuConHeaders.length > 0 ? payuConHeaders : [[], []];
+
+          // Índices de columnas clave
+          const fechaExtractoIndex = extractoHeaders.indexOf('FECHA');
+          const montoExtractoIndex = extractoHeaders.indexOf('MONTO');
+          const opNumExtractoIndex = extractoHeaders.indexOf('OPERACIÓN - NÚMERO');
+          const descExtractoIndex = extractoHeaders.indexOf('DESCRIPCIÓN OPERACIÓN');
+          const ref2ExtractoIndex = extractoHeaders.indexOf('REFERENCIA2');
+          
+          // Usar headers y datos ya incluidos con ESTADO y #REF
+          let dataExtractoConEstado = extractoData; // Ya incluye ESTADO y #REF
+
+          // Preparar AMEX si hay datos
+          let amexMap = new Map();
+          let dataAmexConEstado = amexData;
+          
+          if (amexData.length > 0) {
+              const codAmexIndex = amexHeaders.indexOf('CODIGO');
+              const netoAmexIndex = amexHeaders.indexOf('NETO_TOTAL');
+              const fechaAbonoAmexIndex = amexHeaders.indexOf('FECHA_ABONO');
+              
+              dataAmexConEstado.forEach((row, index) => {
+                  const fechaRaw = row[fechaAbonoAmexIndex];
+                  const montoRaw = row[netoAmexIndex];
+                  
+                  let fechaKey = null;
+                  if (fechaRaw && String(fechaRaw).length === 8) {
+                      const str = String(fechaRaw);
+                      fechaKey = `${str.substring(0, 4)}-${str.substring(4, 6)}-${str.substring(6, 8)}`;
+                  }
+                  
+                  const monto = convertToNumber(montoRaw);
+                  
+                  if (fechaKey && !isNaN(monto)) {
+                      const key = `${fechaKey}_${monto.toFixed(2)}`;
+                      if (!amexMap.has(key)) amexMap.set(key, []);
+                      amexMap.get(key).push({ row, index, file: amexFilesInfo[index] });
+                  }
+              });
+          }
+
+          // Preparar DINERS si hay datos
+          let dinersMap = new Map();
+          let datadinersConEstado = dinersData;
+          
+          if (dinersData.length > 0) {
+              const ordenPagoDinersIndex = dinersHeaders.indexOf('ORDEN DE PAGO');
+              const fechaPagoDinersIndex = dinersHeaders.indexOf('FECHA DE PAGO');
+              const importeNetoDinersIndex = dinersHeaders.indexOf('IMPORTE NETO DE PAGO');
+              
+              const dinersGroupsByOrder = new Map(); // Primer nivel: agrupar por orden de pago
+              
+              datadinersConEstado.forEach((row, index) => {
+                  const ordenPago = String(row[ordenPagoDinersIndex] || '').trim();
+                  const fechaPago = row[fechaPagoDinersIndex];
+                  const importeNeto = row[importeNetoDinersIndex];
+                  
+                  if (ordenPago && fechaPago && importeNeto !== null && importeNeto !== undefined) {
+                      const last10 = ordenPago.slice(-10);
+                      
+                      if (last10.length === 10) {
+                          if (!dinersGroupsByOrder.has(last10)) {
+                              dinersGroupsByOrder.set(last10, new Map()); // Segundo nivel: Map por fecha
+                          }
+                          
+                          // Convertir fecha a formato comparable
+                          let fechaKey = null;
+                          if (fechaPago) {
+                             const parsedDate = parseDate(fechaPago);
+                             if (parsedDate) fechaKey = parsedDate.toISOString().split('T')[0];
+                          }
+                          
+                          if (fechaKey) {
+                              const orderGroup = dinersGroupsByOrder.get(last10);
+                              if (!orderGroup.has(fechaKey)) {
+                                  orderGroup.set(fechaKey, []);
+                              }
+                              orderGroup.get(fechaKey).push({ row, index, fechaKey });
+                          }
+                      }
+                  }
+              });
+
+              dinersGroupsByOrder.forEach((fechaGroups, ordenPago) => {
+                  fechaGroups.forEach((items, fechaPago) => {
+                      const total = items.reduce((sum, item) => {
+                          const importe = convertToNumber(item.row[importeNetoDinersIndex]);
+                          return sum + (isNaN(importe) ? 0 : importe);
+                      }, 0);
+                      
+                      const firstItemIndex = items[0].index;
+                      const fileInfo = dinersFilesInfo[firstItemIndex] || { formatoMesAnio: false };
+                      
+                      const compositeKey = `${ordenPago}_${fechaPago}`;
+                      dinersMap.set(compositeKey, { 
+                          total: total.toFixed(2), 
+                          items: items,
+                          ordenPago: ordenPago,
+                          fechaPago: fechaPago,
+                          formatoMesAnio: fileInfo.formatoMesAnio
+                      });
+                  });
+              });
+          }
+
+          // Preparar MC si hay datos - LÍNEA POR LÍNEA (sin agrupar por fecha)
+          let mcCommerceMap = new Map(); // Mapa simple por comercio: CODCOM -> [registros individuales]
+          let datamcConEstado = mcData;
+          
+          if (mcData.length > 0) {
+              const codComMcIndex = mcHeaders.indexOf('CODCOM');
+              const netoMcIndex = mcHeaders.indexOf('NETO_TOTAL');
+
+              datamcConEstado.forEach((row, index) => {
+                  const codcom = String(row[codComMcIndex] || '').trim();
+                  const monto = convertToNumber(row[netoMcIndex]);
+
+                  if (codcom && !isNaN(monto) && monto !== 0) {
+                      if (!mcCommerceMap.has(codcom)) {
+                          mcCommerceMap.set(codcom, []);
+                      }
+                      const fileInfo = mcFilesInfo[index] || { formatoMesAnio: false };
+                      mcCommerceMap.get(codcom).push({
+                          row,
+                          index,
+                          monto: parseFloat(monto.toFixed(2)),
+                          formatoMesAnio: fileInfo.formatoMesAnio
+                      });
+                  }
+              });
+          }
+
+          // Preparar VISA si hay datos - AGRUPAR POR FECHA PROCESO Y TOTALIZAR POR COMERCIO
+          let visaCommerceMap = new Map(); // Mapa: COMERCIO/CADENA -> { total, fechaProceso, items }
+          let datavisaConEstado = visaData;
+          
+          if (visaData.length > 0) {
+              const comercioVisaIndex = visaHeaders.indexOf('COMERCIO/CADENA');
+              const fechaProcesoVisaIndex = visaHeaders.indexOf('FECHA PROCESO');
+              const importeNetoVisaIndex = visaHeaders.indexOf('IMPORTE NETO');
+
+              let visaFechaGroups = new Map();
+              datavisaConEstado.forEach((row, index) => {
+                  const comercio = String(row[comercioVisaIndex] || '').trim();
+                  const fecha = parseDate(row[fechaProcesoVisaIndex]);
+                  const monto = convertToNumber(row[importeNetoVisaIndex]);
+
+                  if (comercio && fecha && !isNaN(monto)) {
+                      const fechaKey = createDateKey(row[fechaProcesoVisaIndex]);
+                      
+                      if (!visaFechaGroups.has(fechaKey)) visaFechaGroups.set(fechaKey, new Map());
+                      const fechaGroup = visaFechaGroups.get(fechaKey);
+                      
+                      if (!fechaGroup.has(comercio)) fechaGroup.set(comercio, { total: 0, items: [] });
+                      const comercioGroup = fechaGroup.get(comercio);
+                      comercioGroup.total += monto;
+                      comercioGroup.items.push({ row, index });
+                  }
+              });
+
+              visaFechaGroups.forEach((fechaGroup, fechaKey) => {
+                  fechaGroup.forEach((comercioGroup, comercio) => {
+                      if (!visaCommerceMap.has(comercio)) {
+                          visaCommerceMap.set(comercio, []);
+                      }
+                      
+                      const firstItemIndex = comercioGroup.items[0].index;
+                      const fileInfo = visaFilesInfo[firstItemIndex] || { formatoMesAnio: false };
+                      
+                      visaCommerceMap.get(comercio).push({
+                          fechaProceso: fechaKey,
+                          total: parseFloat(comercioGroup.total.toFixed(2)),
+                          items: comercioGroup.items,
+                          formatoMesAnio: fileInfo.formatoMesAnio
+                  });
+              });
+              });
+          }
+
+          // Preparar PAYU si hay datos
+          let payuMap = new Map();
+          let datapayuConEstado = payuData;
+          
+          if (payuData.length > 0) {
+              const debitosPayuIndex = payuHeaders.indexOf('DEBITOS');
+              
+              datapayuConEstado.forEach((row, index) => {
+                  const debitosRaw = row[debitosPayuIndex];
+                  const debitos = Math.abs(convertToNumber(debitosRaw));
+                  
+                  if (!isNaN(debitos)) {
+                      const key = `${debitos.toFixed(2)}`;
+                      const fileInfo = payuFilesInfo[index] || { formatoMesAnio: false };
+                      
+                      if (!payuMap.has(key)) payuMap.set(key, []);
+                      payuMap.get(key).push({ 
+                          row, 
+                          index, 
+                          formatoMesAnio: fileInfo.formatoMesAnio 
+                      });
+                  }
+              });
+          }
+
+          // PASO 2: Conciliación AMEX
+          if (amexMap.size > 0) {
+              dataExtractoConEstado.forEach((row, index) => {
+                  if (row[row.length - 2] !== 'Pendiente') return;
+
+                  const fechaRaw = row[fechaExtractoIndex];
+                  const montoRaw = row[montoExtractoIndex];
+                  
+                  const fecha = parseDate(fechaRaw);
+                  let fechaKey = null;
+                  if (fecha) {
+                      const year = fecha.getFullYear();
+                      const month = String(fecha.getMonth() + 1).padStart(2, '0');
+                      const day = String(fecha.getDate()).padStart(2, '0');
+                      fechaKey = `${year}-${month}-${day}`;
+                  }
+                  
+                  const monto = convertToNumber(montoRaw);
+                  
+                  if (fechaKey && !isNaN(monto)) {
+                      const key = `${fechaKey}_${monto.toFixed(2)}`;
+                      
+                      if (amexMap.has(key)) {
+                          const matches = amexMap.get(key);
+                          if (matches.length > 0) {
+                              const matchData = matches.shift();
+                              const matchRow = matchData.row;
+                              
+                              const codCom = matchRow[amexHeaders.indexOf('CODIGO')];
+                              const opNum = row[opNumExtractoIndex];
+                              const fechaStr = fecha.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                              
+                              const esArchivoMA = matchRow[matchRow.length - 2] === 'Pendiente MA';
+                              const etiqueta = esArchivoMA ? 'MA' : '';
+                              
+                              row[row.length - 2] = `${etiqueta}P2-F2-Conciliado`;
+                              row[row.length - 1] = `${etiqueta}${codCom} - ${fechaStr}`;
+                              matchRow[matchRow.length - 2] = `${etiqueta}P2-F2-Conciliado`;
+                              matchRow[matchRow.length - 1] = `${etiqueta}${opNum} - ${fechaStr}`;
+                              
+                              if (matches.length === 0) amexMap.delete(key);
+                          }
+                      }
+                  }
+              });
+
+              // PASO 2 - FASE 3: Conciliación AMEX solo por monto (fechas diferentes)
+              const amexMontoMap = new Map();
+              const netoAmexIndexF3 = amexHeaders.indexOf('NETO_TOTAL');
+
+              dataAmexConEstado.forEach((row, index) => {
+                  if (row[row.length - 2] === 'Pendiente') { 
+                      const montoRaw = row[netoAmexIndexF3];
+                      const monto = convertToNumber(montoRaw);
+
+                      if (!isNaN(monto)) {
+                          const montoKey = monto.toFixed(2);
+                          const file = amexFilesInfo[index];
+                          
+                          if (!amexMontoMap.has(montoKey)) amexMontoMap.set(montoKey, []);
+                          amexMontoMap.get(montoKey).push({ row, index, file });
+                      }
+                  }
+              });
+
+              dataExtractoConEstado.forEach((row, index) => {
+                  if (row[row.length - 2] !== 'Pendiente') return;
+
+                  const montoRaw = row[montoExtractoIndex];
+                  const monto = convertToNumber(montoRaw);
+
+                  if (!isNaN(monto)) {
+                      const montoKey = monto.toFixed(2);
+
+                      if (amexMontoMap.has(montoKey)) {
+                          const matches = amexMontoMap.get(montoKey);
+                          if (matches.length > 0) {
+                              const matchData = matches.shift();
+                              const matchRow = matchData.row;
+
+                              const codCom = matchRow[amexHeaders.indexOf('CODIGO')];
+                              const opNum = row[opNumExtractoIndex];
+
+                              const esArchivoMA = matchRow[matchRow.length - 2] === 'Pendiente MA';
+                              const etiqueta = esArchivoMA ? 'MA' : '';
+                              
+                              row[row.length - 2] = `${etiqueta}P2-F3-Conciliado`;
+                              row[row.length - 1] = `${etiqueta}${codCom} - Monto: ${montoKey} (fechas diferentes)`;
+                              matchRow[matchRow.length - 2] = `${etiqueta}P2-F3-Conciliado`;
+                              matchRow[matchRow.length - 1] = `${etiqueta}${opNum} - Monto: ${montoKey} (fechas diferentes)`;
+
+                              if (matches.length === 0) amexMontoMap.delete(montoKey);
+                          }
+                      }
+                  }
+              });
+          }
+
+          // PASO 3: Conciliación DINERS
+          if (dinersMap.size > 0) {
+              // FASE 1: Conciliación por fecha y monto exacto
+              dataExtractoConEstado.forEach((row, index) => {
+                  if (row[row.length - 2] !== 'Pendiente') return;
+
+                  const fechaExtracto = row[fechaExtractoIndex];
+                  const montoRaw = row[montoExtractoIndex];
+                  const monto = convertToNumber(montoRaw);
+                  
+                  if (fechaExtracto && !isNaN(monto)) {
+                      const parsedDate = parseDate(fechaExtracto);
+                      const fechaExtractoKey = parsedDate ? parsedDate.toISOString().split('T')[0] : null;
+                      
+                      if (fechaExtractoKey) {
+                          for (const [compositeKey, dinersGroup] of dinersMap.entries()) {
+                              const dinersTotal = parseFloat(dinersGroup.total);
+                              const dinersFecha = dinersGroup.fechaPago;
+                              
+                              if (dinersFecha === fechaExtractoKey && Math.abs(monto - dinersTotal) < 0.01) {
+                                  const opNum = row[opNumExtractoIndex];
+                                  const ordenPago = dinersGroup.ordenPago;
+                                  
+                                  const esArchivoMA = dinersGroup.items.some(item => item.row[item.row.length - 2] === 'Pendiente MA');
+                                  const etiqueta = esArchivoMA ? 'MA' : '';
+                                  
+                                  row[row.length - 2] = `${etiqueta}P3-F1 - CONCILIADO`;
+                                  row[row.length - 1] = `${etiqueta}${ordenPago} - ${dinersFecha}`;
+                                  
+                                  dinersGroup.items.forEach(item => {
+                                      item.row[item.row.length - 2] = `${etiqueta}P3-F1 - CONCILIADO`;
+                                      item.row[item.row.length - 1] = `${etiqueta}${opNum} - ${ordenPago} - ${dinersFecha}`;
+                                  });
+                                  
+                                  dinersMap.delete(compositeKey);
+                                  break;
+                              }
+                          }
+                      }
+                  }
+              });
+              
+              // FASE 2: Conciliación solo por monto restando 2.07
+              const dinersMontoMap = new Map();
+              for (const [compositeKey, dinersGroup] of dinersMap.entries()) {
+                  const dinersTotal = parseFloat(dinersGroup.total);
+                  const montoKey = dinersTotal.toFixed(2);
+                  
+                  if (!dinersMontoMap.has(montoKey)) dinersMontoMap.set(montoKey, []);
+                  dinersMontoMap.get(montoKey).push({ compositeKey, dinersGroup });
+              }
+              
+              dataExtractoConEstado.forEach((row, index) => {
+                  if (row[row.length - 2] !== 'Pendiente') return;
+                  
+                  const montoRaw = row[montoExtractoIndex];
+                  const monto = convertToNumber(montoRaw);
+                  
+                  if (!isNaN(monto)) {
+                      const montoAjustado = monto + 2.07;
+                      const montoAjustadoKey = montoAjustado.toFixed(2);
+                      
+                      if (dinersMontoMap.has(montoAjustadoKey)) {
+                          const matches = dinersMontoMap.get(montoAjustadoKey);
+                          if (matches.length > 0) {
+                              const matchData = matches.shift();
+                              const { compositeKey, dinersGroup } = matchData;
+                              const opNum = row[opNumExtractoIndex];
+                              
+                              const esArchivoMA = dinersGroup.items.some(item => item.row[item.row.length - 2] === 'Pendiente MA');
+                              const etiqueta = esArchivoMA ? 'MA' : '';
+                              
+                              row[row.length - 2] = `${etiqueta}P3-F2 - CONCILIADO`;
+                              row[row.length - 1] = `${etiqueta}DINERS - Monto: ${monto.toFixed(2)} + 2.07 = ${montoAjustadoKey}`;
+                              
+                              dinersGroup.items.forEach(item => {
+                                  item.row[item.row.length - 2] = `${etiqueta}P3-F2 - CONCILIADO`;
+                                  item.row[item.row.length - 1] = `${etiqueta}${opNum} - Monto ajustado: ${montoAjustadoKey}`;
+                              });
+                              
+                              dinersMap.delete(compositeKey);
+                              if (matches.length === 0) dinersMontoMap.delete(montoAjustadoKey);
+                          }
+                      }
+                  }
+              });
+          }
+
+          // PASO 4: Conciliación MC
+          if (mcCommerceMap.size > 0) {
+              // FASE 1: Conciliación por CODCOM + MONTO
+              dataExtractoConEstado.forEach((row, index) => {
+                  if (row[row.length - 2] !== 'Pendiente') return;
+
+                  const referencia2 = String(row[ref2ExtractoIndex] || '').trim();
+                  const monto = convertToNumber(row[montoExtractoIndex]);
+                  
+                  if (referencia2 && !isNaN(monto)) {
+                      const match = referencia2.match(/(\d{9})/);
+                      const fullCode = match ? match[1] : "";
+                      const codcomKey = fullCode.slice(-7);
+                      
+                      if (mcCommerceMap.has(codcomKey)) {
+                          const potentialMatches = mcCommerceMap.get(codcomKey);
+                          const matchIndex = potentialMatches.findIndex(match => Math.abs(monto - match.monto) < 0.01);
+
+                          if (matchIndex !== -1) {
+                              const mcRecord = potentialMatches[matchIndex];
+                              const opNum = row[opNumExtractoIndex];
+                              const fechaProceso = parseDate(row[fechaExtractoIndex]);
+                              const fechaProcesoStr = fechaProceso ? fechaProceso.toLocaleDateString('es-ES', {day: '2-digit', month: '2-digit', year: 'numeric'}) : 'N/A';
+                              
+                              const esArchivoMA = mcRecord.row[mcRecord.row.length - 2] === 'Pendiente MA';
+                              const etiqueta = esArchivoMA ? 'MA' : '';
+                              
+                              row[row.length - 2] = `${etiqueta}P4-F1-Conciliado`;
+                              row[row.length - 1] = `${etiqueta}MC-${codcomKey} - ${fechaProcesoStr}`;
+                              
+                              mcRecord.row[mcRecord.row.length - 2] = `${etiqueta}P4-F1-Conciliado`;
+                              mcRecord.row[mcRecord.row.length - 1] = `${etiqueta}${opNum} - ${fechaProcesoStr}`;
+                              
+                              potentialMatches.splice(matchIndex, 1);
+                          }
+                      }
+                  }
+              });
+
+              // FASE 2: Conciliación solo por MONTO
+              const mcMontoMap = new Map();
+              mcCommerceMap.forEach((registros, comercio) => {
+                  registros.forEach(registro => {
+                      if (registro.row[registro.row.length - 2] === 'Pendiente') {
+                          const montoKey = registro.monto.toFixed(2);
+                          if (!mcMontoMap.has(montoKey)) mcMontoMap.set(montoKey, []);
+                          mcMontoMap.get(montoKey).push(registro);
+                      }
+                  });
+              });
+
+              dataExtractoConEstado.forEach((row, index) => {
+                  if (row[row.length - 2] !== 'Pendiente') return;
+
+                  const monto = convertToNumber(row[montoExtractoIndex]);
+                  if (!isNaN(monto)) {
+                      const montoKey = monto.toFixed(2);
+                      
+                      if (mcMontoMap.has(montoKey)) {
+                          const matches = mcMontoMap.get(montoKey);
+                          if (matches.length > 0) {
+                              const mcRecord = matches.shift();
+                              const opNum = row[opNumExtractoIndex];
+                              const fechaProceso = parseDate(row[fechaExtractoIndex]);
+                              const fechaProcesoStr = fechaProceso ? fechaProceso.toLocaleDateString('es-ES', {day: '2-digit', month: '2-digit', year: 'numeric'}) : 'N/A';
+                              
+                              const esArchivoMA = mcRecord.row[mcRecord.row.length - 2] === 'Pendiente MA';
+                              const etiqueta = esArchivoMA ? 'MA' : '';
+                              
+                              row[row.length - 2] = `${etiqueta}P4-F2-Conciliado`;
+                              row[row.length - 1] = `${etiqueta}MC-Monto: ${montoKey} - ${fechaProcesoStr}`;
+                              
+                              mcRecord.row[mcRecord.row.length - 2] = `${etiqueta}P4-F2-Conciliado`;
+                              mcRecord.row[mcRecord.row.length - 1] = `${etiqueta}${opNum} - Monto: ${montoKey}`;
+                              
+                              if (matches.length === 0) mcMontoMap.delete(montoKey);
+                          }
+                      }
+                  }
+              });
+
+              // FASE 3: Agrupación por fecha del extracto vs pendientes MC
+              const extractoFechaGroups = new Map();
+              dataExtractoConEstado.forEach((row, index) => {
+                  if (row[row.length - 2] !== 'Pendiente') return;
+                  
+                  const fechaRaw = row[fechaExtractoIndex];
+                  const monto = convertToNumber(row[montoExtractoIndex]);
+                  
+                  if (fechaRaw && !isNaN(monto)) {
+                      const fechaKey = createDateKey(fechaRaw);
+                      if (fechaKey) {
+                          if (!extractoFechaGroups.has(fechaKey)) extractoFechaGroups.set(fechaKey, { total: 0, items: [] });
+                          const group = extractoFechaGroups.get(fechaKey);
+                          group.total += monto;
+                          group.items.push({ row, index });
+                      }
+                  }
+              });
+
+              const mcPendientes = [];
+              mcCommerceMap.forEach((registros, comercio) => {
+                  registros.forEach(registro => {
+                      if (registro.row[registro.row.length - 2] === 'Pendiente') {
+                          mcPendientes.push(registro);
+                      }
+                  });
+              });
+
+              extractoFechaGroups.forEach((extractoGroup, fechaKey) => {
+                  const totalExtracto = parseFloat(extractoGroup.total.toFixed(2));
+                  const mcCombination = findCombinationBySum(mcPendientes, totalExtracto);
+                  
+                  if (mcCombination.length > 0) {
+                      const esArchivoMA = mcCombination.some(mcRecord => mcRecord.row[mcRecord.row.length - 2] === 'Pendiente MA');
+                      const etiqueta = esArchivoMA ? 'MA' : '';
+                      
+                      extractoGroup.items.forEach(item => {
+                          item.row[item.row.length - 2] = `${etiqueta}P4-F3-Conciliado`;
+                          item.row[item.row.length - 1] = `${etiqueta}MC-Fecha: ${fechaKey} - Total: ${totalExtracto}`;
+                      });
+                      
+                      mcCombination.forEach(mcRecord => {
+                          const esRegistroMA = mcRecord.row[mcRecord.row.length - 2] === 'Pendiente MA';
+                          const etiquetaMC = esRegistroMA ? 'MA' : '';
+                          mcRecord.row[mcRecord.row.length - 2] = `${etiquetaMC}P4-F3-Conciliado`;
+                          mcRecord.row[mcRecord.row.length - 1] = `${etiquetaMC}Extracto-Fecha: ${fechaKey} - Total: ${totalExtracto}`;
+                      });
+                  }
+              });
+          }
+
+          // PASO 5: Conciliación VISA (2 FASES)
+          if (visaCommerceMap.size > 0) {
+              // FASE 1: Línea de extracto vs Grupos totalizados de VISA
+              dataExtractoConEstado.forEach((row, index) => {
+                  if (row[row.length - 2] !== 'Pendiente') return;
+
+                  const referencia2 = String(row[ref2ExtractoIndex] || '').trim();
+                  const monto = convertToNumber(row[montoExtractoIndex]);
+                  
+                  if (referencia2 && !isNaN(monto)) {
+                      const match = referencia2.match(/(\d{9})/);
+                      const fullCode = match ? match[1] : "";
+                      const codcomKey = fullCode.slice(-7);
+                      
+                      if (visaCommerceMap.has(codcomKey)) {
+                          const gruposVisa = visaCommerceMap.get(codcomKey);
+                          const matchIndex = gruposVisa.findIndex(grupo => Math.abs(monto - grupo.total) < 0.01);
+                          
+                          if (matchIndex !== -1) {
+                              const grupoVisa = gruposVisa[matchIndex];
+                              const opNum = row[opNumExtractoIndex];
+                              const fechaProceso = parseDate(row[fechaExtractoIndex]);
+                              const fechaProcesoStr = fechaProceso ? fechaProceso.toLocaleDateString('es-ES', {day: '2-digit', month: '2-digit', year: 'numeric'}) : 'N/A';
+                              
+                              const esArchivoMA = grupoVisa.items.some(item => item.row[item.row.length - 2] === 'Pendiente MA');
+                              const etiqueta = esArchivoMA ? 'MA' : '';
+                              
+                              row[row.length - 2] = `${etiqueta}P5-F1-Conciliado`;
+                              row[row.length - 1] = `${etiqueta}VISA-${codcomKey} - ${fechaProcesoStr}`;
+                              
+                              grupoVisa.items.forEach(item => {
+                                  item.row[item.row.length - 2] = `${etiqueta}P5-F1-Conciliado`;
+                                  item.row[item.row.length - 1] = `${etiqueta}${opNum} - ${fechaProcesoStr}`;
+                              });
+                              
+                              gruposVisa.splice(matchIndex, 1);
+                              if (gruposVisa.length === 0) visaCommerceMap.delete(codcomKey);
+                          }
+                      }
+                  }
+              });
+              
+              // FASE 2: Extracto agrupado por fecha vs VISA grupos por fecha
+              let extractoFechaGroups = new Map();
+              dataExtractoConEstado.forEach((row, index) => {
+                  if (row[row.length - 2] !== 'Pendiente') return;
+                  
+                  const fechaRaw = row[fechaExtractoIndex];
+                  const monto = convertToNumber(row[montoExtractoIndex]);
+                  const referencia2 = String(row[ref2ExtractoIndex] || '').trim();
+                  
+                  if (fechaRaw && !isNaN(monto) && referencia2) {
+                      const fechaKey = createDateKey(fechaRaw);
+                      if (fechaKey) {
+                          const match = referencia2.match(/(\d{9})/);
+                          const fullCode = match ? match[1] : "";
+                          const codcomKey = fullCode.slice(-7);
+                          
+                          if (codcomKey) {
+                              const groupKey = `${fechaKey}-${codcomKey}`;
+                              if (!extractoFechaGroups.has(groupKey)) {
+                                  extractoFechaGroups.set(groupKey, { fechaKey, codcomKey, total: 0, items: [] });
+                              }
+                              const group = extractoFechaGroups.get(groupKey);
+                              group.total += monto;
+                              group.items.push({ row, index });
+                          }
+                      }
+                  }
+              });
+              
+              extractoFechaGroups.forEach((grupoExtracto, groupKey) => {
+                  const { fechaKey, codcomKey } = grupoExtracto;
+                  
+                  if (visaCommerceMap.has(codcomKey)) {
+                      const gruposVisa = visaCommerceMap.get(codcomKey);
+                      const matchIndex = gruposVisa.findIndex(grupoVisa => Math.abs(grupoExtracto.total - grupoVisa.total) < 0.01);
+                      
+                      if (matchIndex !== -1) {
+                          const grupoVisa = gruposVisa[matchIndex];
+                          const visaFechaKey = createDateKey(grupoVisa.fechaProceso);
+                          
+                          const esArchivoMA = grupoVisa.items.some(item => item.row[item.row.length - 2] === 'Pendiente MA');
+                          const etiqueta = esArchivoMA ? 'MA' : '';
+                          
+                          grupoExtracto.items.forEach(item => {
+                              item.row[item.row.length - 2] = `${etiqueta}P5-F2-Conciliado`;
+                              item.row[item.row.length - 1] = `${etiqueta}VISA-${codcomKey} - Monto: ${grupoExtracto.total} (${fechaKey}→${visaFechaKey})`;
+                          });
+                          
+                          grupoVisa.items.forEach(item => {
+                              const firstOpNum = grupoExtracto.items[0].row[opNumExtractoIndex];
+                              const esRegistroMA = item.row[item.row.length - 2] === 'Pendiente MA';
+                              const etiquetaVisa = esRegistroMA ? 'MA' : '';
+                              item.row[item.row.length - 2] = `${etiquetaVisa}P5-F2-Conciliado`;
+                              item.row[item.row.length - 1] = `${etiquetaVisa}${firstOpNum} - Monto: ${grupoExtracto.total} (${fechaKey}→${visaFechaKey})`;
+                          });
+                          
+                          gruposVisa.splice(matchIndex, 1);
+                          if (gruposVisa.length === 0) visaCommerceMap.delete(codcomKey);
+                      }
+                  }
+              });
+          }
+
+          // PASO 6: Conciliación PAYU
+          if (payuMap.size > 0) {
+              dataExtractoConEstado.forEach((row, index) => {
+                  if (row[row.length - 2] !== 'Pendiente') return;
+
+                  const fechaRaw = row[fechaExtractoIndex];
+                  const montoRaw = row[montoExtractoIndex];
+                  const monto = convertToNumber(montoRaw);
+                  
+                  if (!isNaN(monto)) {
+                      const key = `${monto.toFixed(2)}`;
+                      
+                      if (payuMap.has(key)) {
+                          const matches = payuMap.get(key);
+                          if (matches.length > 0) {
+                              const matchData = matches.shift();
+                              const matchRow = matchData.row;
+                              
+                              const opNum = row[opNumExtractoIndex];
+                              const prefijo = matchData.formatoMesAnio ? 'AM-' : '';
+                              
+                              row[row.length - 2] = `${prefijo}P6 - CONCILIADO`;
+                              row[row.length - 1] = `PAYU - Monto: ${monto.toFixed(2)}`;
+                              matchRow[matchRow.length - 2] = `${prefijo}P6 - CONCILIADO`;
+                              matchRow[matchRow.length - 1] = `${opNum} - Monto: ${monto.toFixed(2)}`;
+                              
+                              if (matches.length === 0) payuMap.delete(key);
+                          }
+                      }
+                  }
+              });
+          }
+
+          return {
+              conciliadoExtracto: [extractoHeaders, ...extractoData],
+              conciliadoAmex: amexHeaders.length > 0 ? [amexHeaders, ...amexData] : [],
+              conciliadoDiners: dinersHeaders.length > 0 ? [dinersHeaders, ...dinersData] : [],
+              conciliadoMc: mcHeaders.length > 0 ? [mcHeaders, ...mcData] : [],
+              conciliadoVisa: visaHeaders.length > 0 ? [visaHeaders, ...visaData] : [],
+              conciliadoPayu: payuHeaders.length > 0 ? [payuHeaders, ...payuData] : []
+          };
+      }
+
+      // Funciones auxiliares para la conciliación
+      function createDateKey(dateValue) {
+          if (!dateValue) return null;
+          const parsed = parseDate(dateValue);
+          if (!parsed) return null;
+          
+          const year = parsed.getFullYear();
+          const month = String(parsed.getMonth() + 1).padStart(2, '0');
+          const day = String(parsed.getDate()).padStart(2, '0');
+          
+          return `${year}-${month}-${day}`;
+      }
+
+      function findCombinationBySum(records, targetSum) {
+          const maxRecords = Math.min(records.length, 50);
+          const limitedRecords = records.slice(0, maxRecords);
+          
+          for (let i = 0; i < limitedRecords.length; i++) {
+              if (Math.abs(limitedRecords[i].monto - targetSum) < 0.01) {
+                  return [limitedRecords[i]];
+              }
+          }
+          
+          const maxPairs = Math.min(limitedRecords.length, 20);
+          for (let i = 0; i < maxPairs; i++) {
+              for (let j = i + 1; j < maxPairs; j++) {
+                  const sum = limitedRecords[i].monto + limitedRecords[j].monto;
+                  if (Math.abs(sum - targetSum) < 0.01) {
+                      return [limitedRecords[i], limitedRecords[j]];
+                  }
+              }
+          }
+          
+          const maxTriples = Math.min(limitedRecords.length, 10);
+          for (let i = 0; i < maxTriples; i++) {
+              for (let j = i + 1; j < maxTriples; j++) {
+                  for (let k = j + 1; k < maxTriples; k++) {
+                      const sum = limitedRecords[i].monto + limitedRecords[j].monto + limitedRecords[k].monto;
+                      if (Math.abs(sum - targetSum) < 0.01) {
+                          return [limitedRecords[i], limitedRecords[j], limitedRecords[k]];
+                      }
+                  }
+              }
+          }
+          
+          return [];
+      }
+    });
+  </script>
+
+</html>
